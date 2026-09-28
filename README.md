@@ -1,5 +1,7 @@
 # GroovixBox V2
 
+NOTE: Built using Claude Code, with guidance on Features, architecture , Multiplatform Design, layout etc  .
+
 Hardware step sequencer: an 8×8 RGB pad grid, function buttons R1–R8 on the right and track
 buttons B1–B8 below. One codebase targets a Teensy 4.x, iPad, Mac and PC. The UI, storage,
 communication and sequencer engine are separate modules behind swappable interfaces; see
