@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First beat – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox tutorial 1: program a drum beat on three tracks, set the tempo and the loop length.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <div id="tutnav"></div>
+  <main>
+        <h2>1. Your first beat</h2>
+        <p class="section-intro">A drum loop on three tracks, in about five minutes. Everything here happens on one screenful of pads: eight tracks, thirty-two steps, no paging.</p>
+
+        <div class="callout">
+          <p><strong>About sound.</strong> GroovixBox sequences; it doesn’t make a sound on its own. Each track plays out of a MIDI port and channel, or out of one of the internal instrument slots — see <a href="global.html">Global settings</a>. With nothing connected the pads still light and the sequence still runs, so you can do this whole tutorial silently.</p>
+        </div>
+
+        <h3>What you are looking at</h3>
+        <p>It opens on your last project, in <strong>Note mode</strong>, on track 1, stopped. <span class="ctl">R3</span> is lit on the right because that is the mode you are in, and <span class="ctl">B1</span> is the brightest of the track buttons because track 1 is selected.</p>
+        <p>The grid is in two halves. The <strong>top four rows are the 32 steps</strong> of the selected track’s pattern — step 1 at the top left, step 8 at the end of the first row, step 9 at the start of the second. The <strong>bottom four rows are a keyboard</strong>, which the next tutorial is about; ignore it for now.</p>
+
+        <h3>Put a kick down</h3>
+        <p>Tap steps <strong>1, 5, 9 and 13</strong>: the first pad of row 1, the fifth pad of row 1, then the first and fifth pads of row 2. Each lights in the track colour.</p>
+        <p>A step you switch on plays the track’s current note, and a fresh track starts on a sensible drum note: track 1 is 36 (a kick), track 2 is 38 (a snare), track 3 is 42 (a closed hat), and so on down the usual drum map. That is why you can build a beat before touching the keyboard at all.</p>
+
+        <h3>Press play</h3>
+        <p><span class="ctl">R8</span> starts and stops playback — <kbd>Space</kbd> in the simulator. It lights green while running, and a white pad walks along the steps. Playback always starts from step 1.</p>
+        <p>Leave it running. Everything below can be done while the loop plays.</p>
+
+        <h3>Two more tracks</h3>
+        <ol>
+          <li><span class="ctl">B2</span> selects track 2 (<kbd>2</kbd>). The steps you see are now its own, and empty. Tap steps <strong>5 and 13</strong> for a backbeat.</li>
+          <li><span class="ctl">B3</span> selects track 3. Tap steps <strong>3, 7, 11 and 15</strong> for offbeat hats.</li>
+        </ol>
+        <p><span class="ctl">B1</span>–<span class="ctl">B8</span> switch tracks from any mode, and always land you back in Note mode. All eight tracks play together; you are only ever editing the selected one.</p>
+
+        <h3>Make the loop one bar</h3>
+        <p>A new pattern is 32 steps long, so what you have repeats over two bars of sixteenths. To hear a one-bar loop, hold <span class="ctl">SHIFT</span> and tap <strong>step 16</strong> — the last pad of row 2. It turns red, the steps after it go dark, and the loop is now 16 steps.</p>
+        <p>Each track keeps its own length, so this is per track. Set the same on tracks 1 and 2, or leave them long on purpose: a 16-step hat against a 32-step kick is two bars of music from one pattern.</p>
+
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-beat"></div></div>
+          <figcaption>Track 3 while the loop plays: hats on steps 3, 7, 11 and 15, step 16 red as the last step, everything past it dark, and the playhead white on step 7. <span class="ctl">R3</span> and <span class="ctl">R8</span> are lit; <span class="ctl">B3</span> is the bright track button.</figcaption>
+        </figure>
+
+        <h3>Fix what you got wrong</h3>
+        <ul>
+          <li><strong>Remove a step:</strong> hold <span class="ctl">R5</span> (Clear) and tap it. Tapping a lit step never switches it off — that would be too easy to do by accident while playing.</li>
+          <li><strong>Copy a step:</strong> hold <span class="ctl">R6</span> (Duplicate), tap the one you like, then tap where you want it. Keep tapping for more copies. This carries its notes, velocity, gate and probability.</li>
+          <li><strong>Start the track over:</strong> there is no clear-the-whole-track button; hold <span class="ctl">R5</span> and wipe the steps you don’t want.</li>
+        </ul>
+
+        <h3>Set the tempo</h3>
+        <ol>
+          <li>Hold <span class="ctl">SHIFT</span> and press <span class="ctl">R1</span> for <a href="global.html">Global settings</a>.</li>
+          <li>Tap <strong>pad 1</strong> of the top row. It turns green and the tempo appears across the middle of the grid in big digits — 120 to start with.</li>
+          <li>Move <strong>fader 1</strong>, the leftmost one under the track buttons, to sweep from 20 to 300 BPM. For exact values, tap <strong>pad 5 of the bottom row</strong> for +1 and <strong>pad 6</strong> for −1.</li>
+          <li>Press <span class="ctl">R3</span> to go back to Note mode.</li>
+        </ol>
+        <p>The tempo belongs to the project, so each project keeps its own.</p>
+
+        <h3>It saves itself</h3>
+        <p>There is no save button. The project is written when you quit (<kbd>Esc</kbd>) and whenever you switch to another project, and the simulator reopens it next time. To keep this beat and start something else, press <span class="ctl">R1</span> for <a href="project.html">Project mode</a>: the open project is the green pad, and any other pad you tap becomes your new project — the one you were in is saved first.</p>
+
+        <div class="callout">
+          <p><strong>Mouse tip.</strong> Some things want two pads at once. In the simulator, <strong>right-click latches a pad down</strong> and left-click stays momentary, so you can right-click <span class="ctl">R5</span>, clear several steps with the left button, then right-click it again to let go.</p>
+        </div>
+
+        <h3>What you learned</h3>
+        <ul>
+          <li>Steps are the top four rows; tap to switch on, <span class="ctl">R5</span> + tap to remove.</li>
+          <li><span class="ctl">B1</span>–<span class="ctl">B8</span> pick the track; every track has its own steps and its own length.</li>
+          <li><span class="ctl">SHIFT</span> + a step sets where the loop ends.</li>
+          <li><span class="ctl">R8</span> plays, <span class="ctl">SHIFT</span> + <span class="ctl">R1</span> holds the tempo, and nothing needs saving.</li>
+        </ul>
+
+        <div id="pager"></div>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTutorial(0);
+    var HATS = [2, 6, 10, 14], LAST = 15, PLAYHEAD = 6, T = g.TRACK[2];
+    g.surface("fig-beat", {
+      pad: function (i) {
+        if (i < 32) {
+          if (i > LAST) return { c: g.OFF };
+          if (i === PLAYHEAD) return { c: g.C.white, lit: true, t: String(i + 1) };
+          if (i === LAST) return { c: "#ff0000", lit: true, t: String(i + 1) };
+          return HATS.indexOf(i) >= 0 ? { c: T, lit: true, t: String(i + 1) }
+                                      : { c: g.dim(T, 0.12), t: String(i + 1) };
+        }
+        var n = g.noteForPad(i);
+        return { c: n % 12 === 0 ? g.dim(T, 0.35) : g.C.grey, t: g.noteName(n) };
+      },
+      right: g.functionButtons(2, true, false),
+      bottom: g.trackButtons(2)
+    });
+  })();
+</script>
+</body>
+</html>

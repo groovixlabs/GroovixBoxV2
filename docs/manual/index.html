@@ -1,0 +1,432 @@
+<title>GroovixBox Manual</title>
+<meta name="description" content="How to use the GroovixBox step sequencer and its simulator: modes, buttons, pages, LED colours and keyboard mapping.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+
+<div class="page">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">GroovixBox V2 · Simulator build</p>
+      <h1>GroovixBox Manual</h1>
+      <p class="lede">A pad-based step sequencer with 8×8 RGB pads, eight function buttons, eight track buttons, nine faders and a mixer of eight strips. This manual covers every mode, button and page gesture, plus the keyboard mapping of the Linux simulator.</p>
+      <ul class="spec-row">
+        <li><b>32</b>tracks</li>
+        <li><b>32</b>patterns per track</li>
+        <li><b>32</b>steps per pattern</li>
+        <li><b>512</b>projects</li>
+        <li><b>512</b>presets</li>
+      </ul>
+      <a class="sheet-link" href="cheatsheet.html">
+        <span>Cheat sheet</span>
+        Every mode on one page, with the buttons that open it and what the pads do
+      </a>
+    </div>
+    <figure style="margin:0">
+      <div class="device-frame"><div class="device" id="fig-overview"></div></div>
+      <figcaption>Note mode on track 1: steps in the top four rows, keyboard in the bottom four, playhead in white.</figcaption>
+    </figure>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p>Contents</p>
+      <ol>
+        <li><a href="#tutorials">Tutorials</a></li>
+        <li><a href="tutorial-beat.html">&nbsp;&nbsp;1. First beat</a></li>
+        <li><a href="tutorial-melody.html">&nbsp;&nbsp;2. Melody</a></li>
+        <li><a href="tutorial-live.html">&nbsp;&nbsp;3. Patterns and scenes</a></li>
+        <li><a href="#controls">Controls</a></li>
+        <li><a href="#cc">MIDI CC</a></li>
+        <li><a href="#leds">LED colours</a></li>
+        <li><a href="#modes">Modes</a></li>
+        <li><a href="note.html">&nbsp;&nbsp;Note mode</a></li>
+        <li><a href="scale.html">&nbsp;&nbsp;Scale mode</a></li>
+        <li><a href="params.html">&nbsp;&nbsp;Step parameters</a></li>
+        <li><a href="probability.html">&nbsp;&nbsp;Probability</a></li>
+        <li><a href="pattern.html">&nbsp;&nbsp;Pattern mode</a></li>
+        <li><a href="scene.html">&nbsp;&nbsp;Scenes</a></li>
+        <li><a href="song.html">&nbsp;&nbsp;Song</a></li>
+        <li><a href="project.html">&nbsp;&nbsp;Project mode</a></li>
+        <li><a href="preset.html">&nbsp;&nbsp;Preset mode</a></li>
+        <li><a href="global.html">&nbsp;&nbsp;Global settings</a></li>
+        <li><a href="#editing">Clear, Duplicate, Record, Play</a></li>
+        <li><a href="#pages">Pages</a></li>
+        <li><a href="#simulator">Simulator</a></li>
+        <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+        <li><a href="#how-to">How to…</a></li>
+        <li><a href="#reference">Reference</a></li>
+        <li><a href="#limitations">Current limitations</a></li>
+      </ol>
+    </nav>
+
+    <main>
+<section id="tutorials">
+        <h2>Tutorials</h2>
+        <p class="section-intro">Three sittings that build one track between them, using nothing but the first page of tracks, steps and patterns. Everything about paging comes after.</p>
+        <ul class="mode-grid">
+          <li><a class="mode-card" href="tutorial-beat.html"><span class="ctl">1</span><strong> Your first beat</strong><span class="blurb">Steps, tracks, the tempo and where the loop ends.</span></a></li>
+          <li><a class="mode-card" href="tutorial-melody.html"><span class="ctl">2</span><strong> A melody over the beat</strong><span class="blurb">The key, the keyboard, chords, velocity and gate.</span></a></li>
+          <li><a class="mode-card" href="tutorial-live.html"><span class="ctl">3</span><strong> Patterns, mutes and scenes</strong><span class="blurb">Variations, silencing tracks, scenes and the song.</span></a></li>
+        </ul>
+      </section>
+
+<section id="controls">
+        <h2>Controls</h2>
+        <p class="section-intro">The pads change meaning with the mode. The buttons around them are fixed.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Control</th><th>What it does</th><th>LED</th></tr></thead>
+            <tbody>
+              <tr><td><span class="ctl">PADS</span></td><td>8×8 grid. Steps and notes, patterns, projects or presets, depending on the mode.</td><td>See each mode</td></tr>
+              <tr><td><span class="ctl">R1</span> Project</td><td>Opens Project mode. Hold it and press <span class="ctl">B1</span>–<span class="ctl">B8</span> to jump to project page 1–8. <span class="ctl">SHIFT</span> + <span class="ctl">R1</span> opens <a href="global.html">Global settings</a>.</td><td>White when active</td></tr>
+              <tr><td><span class="ctl">R2</span> Pattern</td><td>Opens Pattern mode, and returns to it from <a href="scene.html">Scenes</a>. <span class="ctl">SHIFT</span> + <span class="ctl">R2</span> opens Scenes from any mode, Pattern mode included.</td><td>White when active, also in Scene mode</td></tr>
+              <tr><td><span class="ctl">R3</span> Note</td><td>Opens Note mode, and returns to it from Scale mode. Hold it and press <span class="ctl">B1</span>–<span class="ctl">B8</span> for another page of 32 steps. <span class="ctl">SHIFT</span> + <span class="ctl">R3</span> opens Scale mode.</td><td>White when active, also in Scale mode</td></tr>
+              <tr><td><span class="ctl">R4</span> Params</td><td>Opens <a href="params.html">Step parameters</a> for the selected track — per-step velocity and gate, which is the editing you do most. Hold it and press <span class="ctl">B1</span>–<span class="ctl">B8</span> for another page of 32 steps. <span class="ctl">SHIFT</span> + <span class="ctl">R4</span> opens <a href="preset.html">Preset mode</a>, and there holding it picks the preset page instead.</td><td>White when active, also in Preset mode</td></tr>
+              <tr><td><span class="ctl">R5</span> Clear</td><td>Hold and tap a pad to clear that step, pattern or project. <span class="ctl">SHIFT</span> + <span class="ctl">R5</span> opens <a href="probability.html">Probability</a>.</td><td><span class="led" style="--c:#ff6a14"></span>Orange while held</td></tr>
+              <tr><td><span class="ctl">R6</span> Duplicate</td><td>Hold, tap a source pad, then tap one or more destination pads.</td><td><span class="led" style="--c:#1e9cff"></span>Blue while held</td></tr>
+              <tr><td><span class="ctl">R7</span> Record</td><td>Record on/off. While playing, note pads write into the sequence. In <a href="scene.html">Scene mode</a>, hold it and tap a pad to capture a scene. <strong><span class="ctl">SHIFT</span> + <span class="ctl">R6</span> and <span class="ctl">R7</span> belong to the APC itself</strong>, which uses them for its own Drum and Note pad modes and never passes them on — if the grid turns into a piano, that is what happened; press them again to come back.</td><td><span class="led" style="--c:#ff2b2b"></span>Red when on</td></tr>
+              <tr><td><span class="ctl">R8</span> Play</td><td>Play/stop. The playhead runs white, and <strong>red while Record is on</strong>. Playback always starts from step 1. Pressed in <a href="song.html">Song mode</a> it plays the song, section by section. <span class="ctl">SHIFT</span> + <span class="ctl">R8</span> opens the <a href="song.html">Song</a>.</td><td><span class="led" style="--c:#36d65f"></span>Green when playing</td></tr>
+              <tr><td><span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Select a track on the current track page and go to Note mode, from any mode. In <a href="global.html">Global settings</a> they only move the selection, so each track’s routing can be set in turn.</td><td>Track colour; the selected track is brightest</td></tr>
+              <tr><td><span class="ctl">SHIFT</span></td><td>Modifier in Note, Pattern and Global settings mode: <span class="ctl">SHIFT</span> + <span class="ctl">B</span> changes the track page. <span class="ctl">SHIFT</span> + <span class="ctl">R</span> opens the settings modes, the same ones in every mode.</td><td>White while held</td></tr>
+              <tr><td><span class="ctl">FADERS</span> 1–8</td><td>One below each track button. Each sends a <a href="#cc">MIDI CC</a> on its track’s channel and port. Fader 1 sets the picked value in <a href="global.html">Global settings</a> instead, and then sends nothing.</td><td>No LED</td></tr>
+              <tr><td><span class="ctl">MASTER</span></td><td>Fader below <span class="ctl">SHIFT</span>. Sends a <a href="#cc">CC</a> on the selected track’s channel once one is assigned; it has none by default.</td><td>No LED</td></tr>
+              <tr><td><span class="ctl">MIXER</span></td><td>To the right of the grid, like an Akai MIDI Mix: 8 strips of three knobs (K1–K3), a <span class="ctl">MUTE</span> button, <span class="ctl">A2</span> and a fader <span class="ctl">F1</span>, then a column with a button beside each knob row (<span class="ctl">M1</span>–<span class="ctl">M3</span>) and <span class="ctl">SOLO</span> beside the mute row — held it turns the mute buttons into solo buttons, tapped on its own it drops every solo, above the mixer’s master fader. Strip n is track n of the current track page. The knobs and faders send <a href="#cc">MIDI CCs</a>. <span class="ctl">A2</span> is the page row: <span class="ctl">A2</span> <em>n</em> picks page <em>n</em> of whatever the open mode pages over — steps, projects, presets, or track pages elsewhere — green for the page you are on, brighter blue for a page holding something, so page position is always visible. In <a href="pattern.html">Pattern mode</a> it mirrors the pads' own bottom row and splits with it: <span class="ctl">A2</span> 1–4 the track pages, <span class="ctl">A2</span> 5–8 the pattern pages. <span class="ctl">M1</span>–<span class="ctl">M3</span> have no function yet. An <strong>Akai MIDI Mix</strong> is this panel in hardware and is picked up automatically: MUTE is the mute row, REC ARM is <span class="ctl">A2</span>, SOLO is the mixer’s <span class="ctl">SHIFT</span>, and BANK LEFT/RIGHT move the track page.</td><td>See <span class="ctl">MUTE</span>; <span class="ctl">A2</span> in the track colour and the side buttons white, each while held</td></tr>
+              <tr><td><span class="ctl">MUTE</span> (mixer)</td><td>Mutes or unmutes the strip’s track: its steps stop at once and any notes it is holding are released. <span class="ctl">SHIFT</span> (the mixer’s, beside the row) + <span class="ctl">MUTE</span> <strong>solos</strong> the track instead; several tracks can be soloed, and only they are heard. Notes you play by hand still sound, and mutes are not saved with the project.</td><td>White = soloed, track colour = heard, half-lit = silenced by another solo, darkest = muted</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>While a page gesture is held, the buttons it uses stop doing their usual job and show the pages instead. <span class="ctl">R8</span> won’t stop playback while <span class="ctl">SHIFT</span> is held in Pattern mode, for example.</p>
+      </section>
+
+<section id="cc">
+        <h2>MIDI CC from the faders and knobs</h2>
+        <p class="section-intro">Every fader and knob can send a MIDI CC, on the channel and port of the track it belongs to: the strip’s track on the current track page, or the selected track for the two master faders.</p>
+        <ul>
+          <li><strong>Moving a control sends it.</strong> The positions a surface reports when it starts are only recorded, so nothing is sent until you move something.</li>
+          <li><strong>A CC is sent only when its value changes</strong>, so a slow move sends at most 128 messages over the whole travel.</li>
+          <li><strong>Defaults:</strong> the mixer’s faders send Volume (CC 7), its knob rows Cutoff (74), Resonance (71) and Pan (10, centred), and the faders under the pads send Expression (CC 11). The two master faders send nothing.</li>
+          <li><strong>Fader 1 in <a href="global.html">Global settings</a> sets the tempo</strong> and sends no CC while it is doing that.</li>
+        </ul>
+        <h3>The config file</h3>
+        <p>Assignments are read from a text file, <code>controls.conf</code>. Without one the defaults above apply. The same file also says <strong>which MIDI device the ports go out of</strong>, so a rig is described in one place.</p>
+        <p><strong>Where it is read from.</strong> The <em>config</em> directory, <code>/mnt/usb1/config</code> unless you say otherwise — the USB stick in a built rig. Projects go beside it in <code>/mnt/usb1/data</code>. The two are separate so a rig's settings can sit in <code>/etc</code>, beside your dotfiles or on read-only media while projects churn somewhere writable.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Given</th><th>Reads</th></tr></thead>
+            <tbody>
+              <tr><td>nothing</td><td><code>/mnt/usb1/config/controls.conf</code>, quietly falling back to the defaults if it isn't there</td></tr>
+              <tr><td><code>--config DIR</code></td><td><code>DIR/controls.conf</code>, and <code>DIR/instruments.conf</code> with it</td></tr>
+              <tr><td><code>--controls FILE</code></td><td>exactly that file, whatever the directories say</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Naming a place and finding nothing there is reported as an error, since you asked for it; a rig that names no place and has no file has simply never made one.</p>
+        <pre><code>midiout     = MIDI4x4     # which interface P1..P8 go out of
+p3          = Digitone MIDI 1   # or give one port a device of its own
+mixfaderrow = 7           # all eight mixer faders: Volume
+knobrow3    = 10, center  # the third knob row: Pan, centred
+knob3.1     = 91          # just strip 1's third knob: reverb send
+fader2      = 11          # a fader under the pads: Expression
+master      = off         # sends nothing</code></pre>
+        <p><strong>Where the ports go.</strong> With nothing said, the first MIDI interface found is wired up in order, which is right for most rigs. <code>midiout</code> names the interface when there is more than one. <code>p1</code>–<code>p8</code> go further and give a port a device port of its own — the way to put a USB synth on a port by itself. <strong>Write the name a <a href="#listing-ports">port listing</a> prints</strong>, copied as it stands:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Line</th><th>Wires that port to</th></tr></thead>
+            <tbody>
+              <tr><td><code>p3 = MIDI4x4 Midi Out 2</code></td><td>that port, named as the listing prints it</td></tr>
+              <tr><td><code>p3 = Digitone</code></td><td>that device, its first input</td></tr>
+              <tr><td><code>p3 = MIDI4x4:2</code></td><td>its second input, counting the inputs it offers</td></tr>
+              <tr><td><code>p3 = Digitone:MIDI 1</code></td><td>the input whose name contains that, on that device</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Everything matches on part of the name and ignores case, so <code>digitone</code> finds “Elektron Digitone”. The first form is the one to reach for: it is a line off the screen, and it needs no counting. <strong>The two with a colon are for when a port's own name isn't enough</strong> — a cheap interface that calls its sockets <code>MIDI 1</code> and <code>MIDI 2</code> with no maker's name in them, where <code>Digitone:MIDI 1</code> says which device's MIDI 1 you meant.</p>
+        <p>Once any <code>p</code> line is there, those ports are wired to exactly what they name and the rest are left alone for <code>aconnect</code> — the <a href="global.html#devices">devices page</a> shows which found something.</p>
+        <h4 id="listing-ports">Finding the names</h4>
+        <p><code>aconnect -o</code> lists everything you can send MIDI to. The quoted name after <code>client</code> is what <code>midiout</code> and the <code>p</code> lines match, and the indented lines under it are that device's inputs:</p>
+<pre><code>$ aconnect -o
+client 14: 'Midi Through' [type=kernel]
+    0 'Midi Through Port-0'
+client 32: 'MIDI Mix' [type=kernel,card=4]
+    0 'MIDI Mix MIDI 1 '
+client 36: 'APC mini mk2' [type=kernel,card=5]
+    0 'APC mini mk2 Control'
+    1 'APC mini mk2 Notes'
+client 40: 'MIDI4x4' [type=kernel,card=6]      &lt;- the name to match
+    0 'MIDI4x4 Midi Out 1'                     &lt;- its 1st input
+    1 'MIDI4x4 Midi Out 2'                     &lt;- its 2nd
+    2 'MIDI4x4 Midi Out 3'
+    3 'MIDI4x4 Midi Out 4'</code></pre>
+        <p><strong>Copy the quoted name.</strong> Everything between the quotes is what to write, and nothing else on the line matters:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Line in the listing</th><th>Write</th></tr></thead>
+            <tbody>
+              <tr><td><code>0 'MIDI4x4 Midi Out 1'</code></td><td><code>p1 = MIDI4x4 Midi Out 1</code></td></tr>
+              <tr><td><code>1 'MIDI4x4 Midi Out 2'</code></td><td><code>p2 = MIDI4x4 Midi Out 2</code></td></tr>
+              <tr><td><code>client 40: 'MIDI4x4'</code>, all four inputs in order</td><td><code>midiout = MIDI4x4</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout"><p><strong>The numbers on the left are not part of it.</strong> <code>0 1 2 3</code> are ALSA's own port numbers: they count from zero and shift as gear is plugged in, so nothing in the config refers to them. The <code>:2</code> in <code>MIDI4x4:2</code> is a different thing again — <em>the second input this device offers</em>, counted down the indented lines. You only need that form when the port names themselves don't tell two devices apart.</p></div>
+        <p><code>aconnect -l</code> shows the same list with what is wired to what, including the sequencer's own <code>GroovixBox</code> ports while it is running — the way to check a patch from outside the instrument. <code>amidi -l</code> lists the hardware instead, by card, which is useful when a device is plugged in but no ALSA client appeared for it.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Control</th></tr></thead>
+            <tbody>
+              <tr><td><code>fader1</code>–<code>fader8</code>, <code>faderrow</code></td><td>The faders under the pads; <code>faderrow</code> sets all eight</td></tr>
+              <tr><td><code>master</code></td><td>The fader below <span class="ctl">SHIFT</span></td></tr>
+              <tr><td><code>mixfader1</code>–<code>mixfader8</code>, <code>mixfaderrow</code></td><td>The mixer’s strip faders</td></tr>
+              <tr><td><code>mixmaster</code></td><td>The mixer’s master fader</td></tr>
+              <tr><td><code>knob1.1</code>–<code>knob3.8</code></td><td>One mixer knob, <code>knob&lt;row&gt;.&lt;strip&gt;</code></td></tr>
+              <tr><td><code>knobrow1</code>–<code>knobrow3</code></td><td>A whole knob row, all eight strips</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The value is a CC number 0–127, or <code>off</code>. After it, <code>full</code> (the default) sweeps 0–127 across the travel and <code>center</code> holds CC 64 in a small detent in the middle, for pan-like controls. <code>#</code> or <code>;</code> starts a comment. A bad line is reported with its line number, and the lines before it still apply.</p>
+      </section>
+
+<section id="leds">
+        <h2>LED colours</h2>
+        <h3>Slots and pages</h3>
+        <p>Project, pattern and preset pads, and the page maps on the buttons, share one colour code.</p>
+        <ul class="swatch-grid">
+          <li><span class="led" style="--c:#36d65f"></span>Selected / shown</li>
+          <li><span class="led" style="--c:#2c55cc"></span>Has data</li>
+          <li><span class="led" style="--c:#4b4d55"></span>Empty</li>
+          <li><span class="led" style="--c:#2e3037"></span>Off: doesn’t exist</li>
+        </ul>
+        <p>While <span class="ctl">R6</span> Duplicate is held, the picked source pad turns <span class="led" style="--c:#f3f4f6"></span>white. <strong>Red belongs to markers rather than to tracks</strong>: the pattern's last step in Note mode, the Record button, and the playhead while recording. No track is red, so none of those can be mistaken for one.</p>
+        <h3>Track colours</h3>
+        <p>Tracks use eight colours, repeated on every track page: tracks 9–16 use the same colours as 1–8.</p>
+        <ul class="swatch-grid">
+          <li><span class="led" style="--c:#ffbd6c"></span>B1 peach</li>
+          <li><span class="led" style="--c:#ff8a1f"></span>B2 orange</li>
+          <li><span class="led" style="--c:#ffe01a"></span>B3 yellow</li>
+          <li><span class="led" style="--c:#44e050"></span>B4 green</li>
+          <li><span class="led" style="--c:#14d6c6"></span>B5 cyan</li>
+          <li><span class="led" style="--c:#3b6cff"></span>B6 blue</li>
+          <li><span class="led" style="--c:#a55cff"></span>B7 purple</li>
+          <li><span class="led" style="--c:#ff4fb0"></span>B8 pink</li>
+        </ul>
+      </section>
+
+      <!-- ===================================================== Modes -->
+      <section id="modes">
+        <h2>Modes</h2>
+        <p class="section-intro">Each mode has its own page, with the buttons and pads it uses.</p>
+        <ul class="mode-grid">
+          <li><a class="mode-card" href="note.html"><span class="ctl">R3</span><strong> Note</strong><span class="blurb">Steps and the scale keyboard, chords, keyboard octave.</span></a></li>
+          <li><a class="mode-card" href="scale.html"><span class="ctl">SHIFT</span> + <span class="ctl">R3</span><strong> Scale</strong><span class="blurb">Root note and scale for the Note mode keyboard.</span></a></li>
+          <li><a class="mode-card" href="params.html"><span class="ctl">R4</span><strong> Step parameters</strong><span class="blurb">Per-step velocity and gate, 16 levels each.</span></a></li>
+          <li><a class="mode-card" href="probability.html"><span class="ctl">SHIFT</span> + <span class="ctl">R5</span><strong> Probability</strong><span class="blurb">The chance each step plays, 6% to 100%.</span></a></li>
+          <li><a class="mode-card" href="pattern.html"><span class="ctl">R2</span><strong> Pattern</strong><span class="blurb">Which pattern each track plays, and pattern/track pages.</span></a></li>
+          <li><a class="mode-card" href="scene.html"><span class="ctl">SHIFT</span> + <span class="ctl">R2</span><strong> Scenes</strong><span class="blurb">Which tracks are silent in each section, on 32 pads.</span></a></li>
+          <li><a class="mode-card" href="song.html"><span class="ctl">SHIFT</span> + <span class="ctl">R8</span><strong> Song</strong><span class="blurb">The scenes in the order they play, four bars a step.</span></a></li>
+          <li><a class="mode-card" href="project.html"><span class="ctl">R1</span><strong> Project</strong><span class="blurb">Open, save and page through project slots.</span></a></li>
+          <li><a class="mode-card" href="preset.html"><span class="ctl">SHIFT</span> + <span class="ctl">R4</span><strong> Preset</strong><span class="blurb">Choose the sound preset for the selected track.</span></a></li>
+          <li><a class="mode-card" href="global.html"><span class="ctl">SHIFT</span> + <span class="ctl">R1</span><strong> Global settings</strong><span class="blurb">The tempo, and each track’s MIDI channel.</span></a></li>
+        </ul>
+      </section>
+
+<section id="editing">
+        <h2>Clear, Duplicate, Record, Play</h2>
+        <h3><span class="ctl">R5</span> Clear</h3>
+        <p>Hold it and tap pads. What gets cleared depends on the mode: a step in Note mode, a pattern in Pattern mode, a project in Project mode. Preset mode has nothing to clear — a preset is a number, not something the sequencer keeps.</p>
+        <h3><span class="ctl">R6</span> Duplicate</h3>
+        <ol>
+          <li>Hold <span class="ctl">R6</span>.</li>
+          <li>Tap the source pad; it turns white.</li>
+          <li>Tap one or more destination pads. You can change page in between.</li>
+          <li>Release <span class="ctl">R6</span>.</li>
+        </ol>
+        <p>Copying an empty slot onto a full one empties it.</p>
+        <h3><span class="ctl">R7</span> Record</h3>
+        <p>Turns recording on or off, whether or not the sequencer is playing. It only has an effect while playing, when pressing note pads in Note mode — or playing a <a href="note.html#midi-in">MIDI keyboard</a> — writes notes into the selected track. <strong>While it is on the playhead runs red instead of white</strong>, so the grid itself shows that it is listening. See <a href="note.html#record-feedback">what recording looks like</a>.</p>
+        <h3><span class="ctl">R8</span> Play</h3>
+        <p>Starts playback from step 1, or stops it. Stopping releases every sounding note and resets the playhead.</p>
+      </section>
+
+<section id="pages">
+        <h2>Pages</h2>
+        <p class="section-intro">The grid shows 8 or 64 of something at a time; pages reach the rest. In Pattern mode the bottom row does both: <span class="ctl">B1</span>–<span class="ctl">B4</span> page the tracks it shows and <span class="ctl">B5</span>–<span class="ctl">B8</span> the patterns. They need no modifier and ignore <span class="ctl">SHIFT</span>, so the pages stay reachable while it is held for the mutes, and <span class="ctl">SHIFT</span> + <span class="ctl">R</span> means the same there as anywhere else.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Gesture</th><th>Where</th><th>Changes</th></tr></thead>
+            <tbody>
+              <tr><td><span class="ctl">B1</span>–<span class="ctl">B4</span></td><td>Pattern</td><td>Track page: which tracks the columns show. <span class="ctl">SHIFT</span> makes no difference here.</td></tr>
+              <tr><td><span class="ctl">B5</span>–<span class="ctl">B8</span></td><td>Pattern</td><td>Pattern page: which patterns the rows show, <span class="ctl">SHIFT</span> or not.</td></tr>
+              <tr><td><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span></td><td>Note, Global settings</td><td>Track page: which tracks <span class="ctl">B1</span>–<span class="ctl">B8</span> select.</td></tr>
+              <tr><td>Hold <span class="ctl">R3</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Note</td><td>Step page: which 32 steps the top four rows show. The playing page blinks.</td></tr>
+              <tr><td>Hold <span class="ctl">R4</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Any mode</td><td>Step page, opening Step parameters.</td></tr>
+              <tr><td>Hold <span class="ctl">R1</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Any mode</td><td>Project page, opening Project mode.</td></tr>
+              <tr><td>Hold <span class="ctl">R4</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Preset</td><td>Preset page. <span class="ctl">SHIFT</span> + <span class="ctl">B</span> does the same there.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li><strong>Flipping the track page keeps your position.</strong> If track 4 is selected and you press <span class="ctl">SHIFT</span> + <span class="ctl">B2</span>, track 12 becomes selected.</li>
+          <li><strong>To see which page you’re on, hold the gesture’s button</strong> — <span class="ctl">SHIFT</span> in Note mode, or <span class="ctl">R1</span> / <span class="ctl">R4</span> — and the buttons show the page map. Pattern mode shows it all the time, and so does the mixer’s <span class="ctl">A2</span> row in any mode.</li>
+          <li>A Duplicate source stays picked when you change page, so you can copy between pages. In Note mode, flipping the track page drops it.</li>
+        </ul>
+      </section>
+
+<section id="simulator">
+        <h2>Simulator</h2>
+        <p class="section-intro">The simulator draws the device in a window. Every button has a key, and the mouse presses pads and moves faders.</p>
+        <p>All keys, combinations and mouse actions are on the <a href="shortcuts.html">Keyboard shortcuts</a> page, with the device button each key presses.</p>
+        <h3>Status line</h3>
+        <p>The line above the pads shows what the device has no display for:</p>
+<pre><code>PRJ 3.08  NOTE     TRK 12  PAT 10  PRE 1.01  STEP 05/32  120 BPM  PLAY REC</code></pre>
+        <p>Open project, mode, selected track, the pattern and preset it uses, the playhead position on that track, tempo, and transport state.</p>
+        <h3>MIDI</h3>
+        <p>The sequencer's output is eight ALSA sequencer ports named <strong>P1</strong>–<strong>P8</strong>, one per <a href="global.html#midi-channel">MIDI port</a>, under the client <code>GroovixBox</code>. Every port also carries <strong>MIDI clock</strong>, 24 per quarter note, with Start when playback begins and Stop when it ends, so external gear follows the tempo. <strong>They are wired up at startup</strong>: the sequencer looks for a MIDI interface and connects P1 to its first socket, P2 to the second, and so on, which puts a 4×4 interface on P1–P4. It only ever picks a real interface — never the kernel's loopback, never one of its own control surfaces, and it prefers the device with the most inputs, so a 4×4 wins over a keyboard that happens to be plugged in first — and it leaves the ports alone if something has already patched them, so a patch made by hand with <code>aconnect</code> or a patchbay survives. <a href="global.html#devices">Global settings</a> shows which ports found something, and its refresh pad looks again for anything plugged in since. To see the same thing from outside, <code>aconnect -l</code> lists every port and what it is wired to; <a href="#listing-ports">finding the names</a> has more. An APC mini mk2 is picked up automatically as the control surface, on its own client <code>GroovixBox Surface</code>.</p>
+        <h3>Only one at a time</h3>
+        <p>A second simulator refuses to start while one is already running: both would answer every press of the same APC and MIDI Mix, and both would write to the same projects.</p>
+      </section>
+
+<section id="how-to">
+        <h2>How to…</h2>
+        <h3>Give steps different notes</h3>
+        <ol>
+          <li>In Note mode, hold a step pad.</li>
+          <li>Tap a note pad on the keyboard. Repeat with other steps.</li>
+        </ol>
+        <p>In the simulator, right-click each key to latch it down, then left-click the step. Right-click the keys again to let go. The same trick works for any combination that needs more than one pad at once.</p>
+        <h3>Work on tracks 9–16</h3>
+        <ol>
+          <li>In Note mode, hold <span class="ctl">SHIFT</span> and press <span class="ctl">B2</span> (<kbd>Shift</kbd> + <kbd>2</kbd>).</li>
+          <li>Release <span class="ctl">SHIFT</span>. <span class="ctl">B1</span>–<span class="ctl">B8</span> now select tracks 9–16.</li>
+        </ol>
+        <h3>Copy a pattern to another track</h3>
+        <ol>
+          <li>Press <span class="ctl">R2</span> for Pattern mode.</li>
+          <li>Hold <span class="ctl">R6</span>, tap the source pattern, then tap the destination in the other track’s column.</li>
+          <li>Release <span class="ctl">R6</span>, then tap the destination to make that track play it.</li>
+        </ol>
+        <h3>Save the current project as a new copy</h3>
+        <ol>
+          <li>Press <span class="ctl">R1</span>. The open project is green.</li>
+          <li>Hold <span class="ctl">R6</span>, tap the green slot, then tap an empty slot. Hold <span class="ctl">R1</span> + a <span class="ctl">B</span> button in between to use another page.</li>
+          <li>Release <span class="ctl">R6</span> and tap the new slot to continue working in the copy.</li>
+        </ol>
+        <h3>Give each track its own MIDI channel</h3>
+        <ol>
+          <li>Hold <span class="ctl">SHIFT</span> and press <span class="ctl">R1</span>, then tap pad 2 of the top row.</li>
+          <li>Tap a channel on rows 3–4 for the selected track.</li>
+          <li>Press the next track’s <span class="ctl">B</span> button — you stay in the mode — and tap its channel. Repeat along the row.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> moves on to tracks 9–16 and beyond.</li>
+        </ol>
+        <h3>Choose a preset for track 5</h3>
+        <ol>
+          <li>Press <span class="ctl">B5</span>, then <span class="ctl">SHIFT</span> + <span class="ctl">R4</span>.</li>
+          <li>Tap a pad, or hold <span class="ctl">SHIFT</span> (or <span class="ctl">R4</span>) and press a <span class="ctl">B</span> button to change page first.</li>
+        </ol>
+      </section>
+
+<section id="reference">
+        <h2>Reference</h2>
+        <h3>Capacity</h3>
+        <p>The simulator uses 4 pages of tracks and 4 of patterns, which is why Pattern mode’s bottom row divides in half: <span class="ctl">B1</span>–<span class="ctl">B4</span> for the tracks, <span class="ctl">B5</span>–<span class="ctl">B8</span> for the patterns. Builds for the Teensy use smaller limits, set when the firmware is built.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>Simulator</th><th>MCU default</th></tr></thead>
+            <tbody>
+              <tr><td>Tracks</td><td>32 (4 pages)</td><td>16 (2 pages)</td></tr>
+              <tr><td>Patterns per track</td><td>32 (4 pages)</td><td>16 (2 pages)</td></tr>
+              <tr><td>Steps per pattern</td><td>up to 256 (8 pages)</td><td>up to 64 (2 pages)</td></tr>
+              <tr><td>New pattern length</td><td>32 (one page)</td><td>32 (one page)</td></tr>
+              <tr><td>Notes per step</td><td>4 (a chord)</td><td>4 (a chord)</td></tr>
+              <tr><td>Keyboard start octave</td><td>0–8 (C0–C8), default 2</td><td>0–8, default 2</td></tr>
+              <tr><td>Projects</td><td>512 (8 pages × 64)</td><td>512</td></tr>
+              <tr><td>Presets</td><td>512 (8 pages × 64)</td><td>512</td></tr>
+              <tr><td>Tempo</td><td>20–300 BPM (default 120), 16th-note steps</td><td>20–300 BPM</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>MIDI output</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Event</th><th>Message</th></tr></thead>
+            <tbody>
+              <tr><td>Channel</td><td>Set per track in <a href="global.html#midi-channel">Global settings</a>. By default track 1 → channel 1 … track 16 → channel 16, and track 17 wraps to channel 1</td></tr>
+              <tr><td>Step plays</td><td>Note On with the step’s note and velocity (8–127, default 100), if its probability roll passes; Note Off after its gate (default one step), or on stop</td></tr>
+              <tr><td>Note pad held</td><td>Note On while held, Note Off on release</td></tr>
+              <tr><td>Preset chosen</td><td>Bank Select MSB (CC 0) = preset ÷ 128 and LSB (CC 32) = 0, then Program Change = preset mod 128 (zero-based slot number). Both halves of the bank go out every time, so the bank never depends on what the synth was last sent.</td></tr>
+              <tr><td>Project opened</td><td>Bank Select + Program Change for every track</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Default track notes</h3>
+        <p>General MIDI drum notes, repeated from track 17 on.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Track</th><th>Sound</th><th>Note</th><th>Track</th><th>Sound</th><th>Note</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Kick</td><td>36</td><td>9</td><td>Side stick</td><td>37</td></tr>
+              <tr><td>2</td><td>Snare</td><td>38</td><td>10</td><td>Electric snare</td><td>40</td></tr>
+              <tr><td>3</td><td>Closed hat</td><td>42</td><td>11</td><td>Low floor tom</td><td>41</td></tr>
+              <tr><td>4</td><td>Open hat</td><td>46</td><td>12</td><td>High floor tom</td><td>43</td></tr>
+              <tr><td>5</td><td>Clap</td><td>39</td><td>13</td><td>Low-mid tom</td><td>47</td></tr>
+              <tr><td>6</td><td>Low tom</td><td>45</td><td>14</td><td>Hi-mid tom</td><td>48</td></tr>
+              <tr><td>7</td><td>Crash</td><td>49</td><td>15</td><td>High tom</td><td>50</td></tr>
+              <tr><td>8</td><td>Ride</td><td>51</td><td>16</td><td>Cowbell</td><td>56</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Saving</h3>
+        <ul>
+          <li>The open project is saved when you open another project and when the simulator quits.</li>
+          <li>On start, the last open project opens again.</li>
+          <li>Files in the data folder: <code>project_NN.gxb</code>, <code>preset_NN.gxb</code> and <code>session.gxb</code> (which project was open).</li>
+          <li><strong>A save can't corrupt what was there.</strong> Every write goes to a temporary file and is renamed over the old one only once it is complete, so a power cut during a save leaves the previous version intact.</li>
+          <li id="trash"><strong>Clearing doesn't delete the file.</strong> <span class="ctl">R5</span> + a project or preset pad moves it into <code>trash/&lt;date&gt;_&lt;time&gt;/</code> inside the data folder — <code>trash/2026-09-22_23-32-31/project_07.gxb</code> — so a mistaken Clear can be undone by copying the file back. Clears in the same second share a folder and never overwrite each other. Copying an empty slot over a full one empties it, and that is kept too. <strong>Nothing empties the trash</strong>, so it is worth a look now and again.</li>
+        </ul>
+      </section>
+
+<section id="limitations">
+        <h2>Current limitations</h2>
+        <p class="section-intro">What the simulator build doesn’t do yet.</p>
+        <ul>
+          <li><strong>Rolls and arpeggios are even.</strong> A <a href="params.html#ratchet">ratchet</a> repeats a step up to eight times at equal spacing, and the <a href="global.html#arp">arpeggiator</a> plays a chord at one rate; neither can accent, swing or vary within itself.</li>
+          <li><strong>Swing is one setting for the whole project</strong>, in <a href="global.html">Global settings</a>, not per track or per pattern. Per-step <a href="probability.html">micro-timing</a> is what moves a single hit.</li>
+          <li><strong>MIDI in is notes, the transport and the clock.</strong> A keyboard plays and records into the selected track, Start and Stop work, and the box can <a href="global.html#clock">follow an outside clock</a>. What still doesn't come in: CC, and any way to send what arrives to more than the selected track.</li>
+          <li><strong>No Song Position Pointer, in or out.</strong> Playback always starts at step 1, so Continue is treated as Start when following, and gear following us starts from its own beginning.</li>
+          <li><strong>No Song Position Pointer.</strong> Gear following the clock starts from its own beginning, since playback always starts at step 1.</li>
+          <li><strong>A preset is only a number.</strong> Preset mode sends Bank Select and Program Change, which is what external gear wants, but the sequencer keeps nothing of its own under a preset — there is no patch to save until there is a sound engine with parameters to put in one.</li>
+          <li><strong>Chords are capped at 4 notes per step.</strong> It is one constant in the engine, but raising it grows every project file.</li>
+          <li><strong>The faders have no mixing function of their own.</strong> They send CC, which a synth may map to level; the sequencer itself has no volume.</li>
+          <li><strong>Part of the mixer has no function yet.</strong> The mute row mutes and solos tracks, the A2 row picks pages and the knobs and faders send <a href="#cc">MIDI CCs</a>, but M1–M3 have nothing on them.</li>
+          <li><strong>CC is send-only.</strong> Nothing reads CC in; the last pad of <a href="global.html">Global settings</a> sends every position out again.</li>
+          <li><strong>Mutes are not saved.</strong> They belong to the session, so opening another project clears them.</li>
+          <li><strong>No undo.</strong> Clear acts immediately, including on projects — though on a project or preset the file is <a href="#trash">moved to the trash folder</a> rather than deleted, so it can be fetched back by hand. Clearing a step or a pattern is gone for good.</li>
+          <li><strong>Page position is only shown while holding</strong> <span class="ctl">SHIFT</span>, <span class="ctl">R1</span> or <span class="ctl">R4</span>.</li>
+          <li><strong>Projects only partly move to smaller builds.</strong> A project with more tracks than the build opens with its first tracks (32 in the simulator, 16 in the MCU default) and drops the rest when it next saves. A project with more patterns or steps than the build still won’t open.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    var overviewSteps = [0, 4, 8, 10, 12, 16, 20, 24, 28];
+    g.surface("fig-overview", {
+      names: true,
+      faders: [0.8, 0.65, 0.8, 0.5, 0.8, 0.8, 0.3, 0.8, 0.9],
+      pad: function (i) {
+        if (i < 32) {
+          if (i === 6) return { c: g.dim(g.C.white, 0.45), lit: true };
+          return overviewSteps.indexOf(i) >= 0 ? { c: g.TRACK[0], lit: true } : { c: g.dim(g.TRACK[0], 0.12) };
+        }
+        return g.noteForPad(i) % 12 === 0 ? { c: g.dim(g.TRACK[0], 0.35) } : { c: "#4b4d55" };
+      },
+      right: g.functionButtons(2, true, false),
+      bottom: g.trackButtons(0)
+    });
+  })();
+</script>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Song – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox song mode: arrange scenes into a song, four bars a step.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Song <span class="ctl">SHIFT</span> + <span class="ctl">R8</span></h2>
+        <p class="section-intro">The <a href="scene.html">scenes</a> in the order they play, and the transport follows it: press <span class="ctl">R8</span> here and the box plays the arrangement. Every step lasts four bars, so a longer section is the same scene in several steps.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-song"></div></div>
+          <figcaption>A song six steps long: intro, drop, drop, verse, drop, drop. Each step carries its scene’s colour and says which scene it plays; the white step is where the song is. Above, the scenes to choose from — green is the one sounding.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Top four rows: the 32 scenes</strong>, as in <a href="scene.html">Scene mode</a> — grey empty, blue holds a scene, green sounding. This is the palette to build from.</li>
+          <li><strong>Bottom four rows: the 32 song steps.</strong> A filled step takes its scene’s colour: scenes 1–8 get the eight track colours, and the later banks the same colours dimmed. An empty step is nearly dark.</li>
+          <li><strong>Hold a song step and tap a scene</strong> to put that scene there. While the step is held, the scene it already plays lights up in the palette, so you can see what is in it before changing it.</li>
+          <li><strong><span class="ctl">R8</span> (Play) pressed here plays the song.</strong> It starts at the step the marker is on, each step holds its scene for four bars, empty steps are skipped, and it loops back to the beginning at the end. The step playing is bright white; press <span class="ctl">R8</span> again to stop.</li>
+          <li><strong>Tap a song step</strong> to go there. While the song is playing it jumps, and that section starts its four bars from the jump; while stopped it just marks the place and plays its scene.</li>
+          <li><strong>Tapping a scene takes over.</strong> The song stops moving on — the music keeps playing, and the marker dims to show it is only where you left off. Press <span class="ctl">R8</span> twice (stop, play) to hand it back.</li>
+          <li><strong><span class="ctl">R5</span> (Clear) + a step</strong> empties it, leaving a hole the song will skip. <strong><span class="ctl">R6</span> (Duplicate) + step + step</strong> repeats a section, which is how a chorus gets its second half.</li>
+          <li><strong>Tapping a scene on its own launches it on the next bar</strong>, blinking until it lands, exactly as in <a href="scene.html">Scene mode</a>, so the palette stays live while you work. Tapping a song step, on the other hand, goes there at once: that is navigating, not performing.</li>
+          <li>A scene has to hold something before it can go in the song: capture it in <a href="scene.html">Scene mode</a> first.</li>
+          <li>The song is saved with the project. It opens on <span class="ctl">SHIFT</span> + <span class="ctl">R8</span> — shift-play plays the song — because the APC keeps <span class="ctl">SHIFT</span> + <span class="ctl">R6</span> and <span class="ctl">R7</span> for its own pad modes.</li>
+        </ul>
+        <h3>Writing one</h3>
+        <ol>
+          <li>Build your sections in <a href="scene.html">Scene mode</a> — intro, verse, drop.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">R8</span> for the song.</li>
+          <li>Hold the first step, tap the intro scene. Hold the next, tap the verse. Keep going.</li>
+          <li>For a sixteen-bar section, put the same scene in four steps in a row — or fill one and use <span class="ctl">R6</span> to repeat it.</li>
+          <li>Tap any step to hear the song from there, and press <span class="ctl">R8</span> to let it play itself.</li>
+        </ol>
+        <h3>Not yet</h3>
+        <ul>
+          <li><strong>Every step is four bars</strong>, and a bar is 16 steps. Per-step lengths can come later without disturbing a song written now.</li>
+          <li><strong>The song loops rather than ending.</strong> When it runs out of filled steps it goes back to the first one, so it never leaves silence.</li>
+          <li><strong>Playing from elsewhere ignores the song.</strong> <span class="ctl">R8</span> outside this mode is the plain transport — a loop of whatever each track has selected.</li>
+          <li>A scene carries which tracks are silent <em>and</em> which pattern each one plays, so a song step is a real section. What it doesn't carry yet is the tempo or the key.</li>
+        </ul>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("song");
+    var used = [0, 1, 2], sounding = 1;
+    var plan = [0, 1, 1, 2, 1, 1], position = 1;
+    g.surface("fig-song", {
+      pad: function (i) {
+        var row = Math.floor(i / 8);
+        if (row < 4) {
+          if (i === sounding) return { c: g.C.green, lit: true, t: String(i + 1) };
+          if (used.indexOf(i) >= 0) return { c: g.C.blue, lit: true, t: String(i + 1) };
+          return { c: g.C.grey, t: String(i + 1) };
+        }
+        var step = i - 32;
+        if (step >= plan.length) return { c: g.dim(g.C.white, 0.06) };
+        if (step === position) return { c: g.C.white, lit: true, t: "S" + (plan[step] + 1) };
+        return { c: g.TRACK[plan[step]], lit: true, t: "S" + (plan[step] + 1) };
+      },
+      right: function (i) {
+        var spec = g.functionButtons(-1, false, false)(i);
+        if (i === 7) spec = { c: g.dim(g.C.play, 0.3) };  // R8 opens it, with Shift
+        return spec;
+      },
+      bottom: g.trackButtons(0)
+    });
+  })();
+</script>
+</body>
+</html>

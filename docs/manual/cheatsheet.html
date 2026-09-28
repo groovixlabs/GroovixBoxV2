@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cheat sheet – GroovixBox Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+
+    --bg: #eef0f3;
+    --surface: #ffffff;
+    --surface-2: #f7f8fa;
+    --ink: #13161b;
+    --ink-soft: #4d545d;
+    --ink-faint: #797f88;
+    --rule: #d7dbe1;
+    --rule-soft: #e6e9ed;
+
+    /* The pad panel is the instrument itself, so it stays dark in both themes. */
+    --panel: #0c0d10;
+    --panel-rule: #23262d;
+    --pad-off: #22252c;
+
+    /* The device's own LED code. Every colour on this page means what it means there. */
+    --led-green: #36d65f;
+    --led-blue: #1e9cff;
+    --led-red: #ff2b2b;
+    --led-orange: #ff6a14;
+    --led-white: #f3f4f6;
+    --led-grey: #585b63;
+    --led-violet: #a03cff;
+    --led-amber: #ff9600;
+
+    --t1: #ffbd6c; --t2: #ff8200; --t3: #ffe100; --t4: #32e63c;
+    --t5: #00d7c8; --t6: #2864ff; --t7: #a046ff; --t8: #ff3caa;
+
+    --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0d0e11;
+      --surface: #15171c;
+      --surface-2: #1b1e24;
+      --ink: #eaecf0;
+      --ink-soft: #a3aab4;
+      --ink-faint: #7b828c;
+      --rule: #272b32;
+      --rule-soft: #1f232a;
+      --panel: #08090b;
+      --panel-rule: #2a2e36;
+      --pad-off: #23262d;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0d0e11;
+    --surface: #15171c;
+    --surface-2: #1b1e24;
+    --ink: #eaecf0;
+    --ink-soft: #a3aab4;
+    --ink-faint: #7b828c;
+    --rule: #272b32;
+    --rule-soft: #1f232a;
+    --panel: #08090b;
+    --panel-rule: #2a2e36;
+    --pad-off: #23262d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 14px/1.5 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-block: 28px 56px;
+    padding-inline: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  /* ---- masthead ---------------------------------------------------- */
+
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px 28px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .masthead h1 {
+    font: 700 clamp(1.7rem, 5vw, 2.4rem)/1 var(--font-display);
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .masthead h1 span { color: var(--ink-faint); font-weight: 500; }
+  .masthead p {
+    margin: 0;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    flex: 1 1 22ch;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font: 500 0.76rem/1.3 var(--font-mono);
+    color: var(--ink-soft);
+  }
+  .legend li { display: flex; align-items: center; gap: 6px; }
+  .legend li::before {
+    content: "";
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    background: var(--t, var(--led-grey));
+    box-shadow: 0 0 0 1px var(--rule);
+  }
+
+  /* ---- section frame ----------------------------------------------- */
+
+  section { display: flex; flex-direction: column; gap: 14px; }
+
+  h2 {
+    font: 600 0.8rem/1 var(--font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* ---- keys and chips ---------------------------------------------- */
+
+  kbd, .chip {
+    font: 600 0.74rem/1 var(--font-mono);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border-radius: 4px;
+    padding: 4px 6px 3px;
+    display: inline-block;
+  }
+  kbd {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+  }
+  .chip {
+    background: var(--ink);
+    color: var(--surface);
+    padding: 5px 8px 4px;
+  }
+
+  /* ---- the eight buttons ------------------------------------------- */
+
+  .buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
+  }
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--led, var(--rule));
+    border-radius: 7px;
+    padding: 11px 13px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .btn-top { display: flex; align-items: baseline; gap: 8px; }
+  .btn-top b {
+    font: 600 0.9rem/1 var(--font-mono);
+    color: var(--ink);
+  }
+  .btn-top span {
+    font: 600 0.95rem/1 var(--font-display);
+    letter-spacing: 0.01em;
+  }
+  .btn p { margin: 0; font-size: 0.83rem; color: var(--ink-soft); }
+  .btn .shifted {
+    font-size: 0.8rem;
+    color: var(--ink);
+    padding-top: 5px;
+    border-top: 1px dashed var(--rule-soft);
+  }
+  .btn .shifted b { font: 600 0.76rem/1 var(--font-mono); }
+
+  /* ---- mode cards --------------------------------------------------- */
+
+  .modes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .mode {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    padding: 13px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .mode > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .mode h3 {
+    margin: 0;
+    font: 600 1.05rem/1.1 var(--font-display);
+    letter-spacing: 0.01em;
+  }
+
+  /* the 8×8 grid, drawn as eight rows of eight pads */
+  .map { display: flex; gap: 12px; align-items: flex-start; }
+  .dev {
+    flex: 0 0 116px;
+    background: var(--panel);
+    border: 1px solid var(--panel-rule);
+    border-radius: 7px;
+    padding: 6px;
+    display: grid;
+    gap: 3px;
+  }
+  .dev i {
+    display: block;
+    height: 10px;
+    background-image: linear-gradient(90deg, var(--t, var(--pad-off)) 0 calc(100% - 3px), transparent calc(100% - 3px));
+    background-size: 12.5% 100%;
+    border-radius: 1px;
+  }
+  .dev i.half { opacity: 0.45; }
+
+  .bands {
+    flex: 1 1 auto;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    min-width: 0;
+  }
+  .bands li { display: flex; gap: 7px; align-items: baseline; }
+  .bands li::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 9px; height: 9px;
+    margin-top: 1px;
+    border-radius: 2px;
+    background: var(--t, var(--pad-off));
+    transform: translateY(1px);
+  }
+  .bands b {
+    font: 500 0.72rem/1.4 var(--font-mono);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+  }
+
+  .gest {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+  .gest li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    color: var(--ink-soft);
+    line-height: 1.45;
+  }
+  .gest li > span:first-child {
+    flex: 0 0 auto;
+    font: 500 0.74rem/1.5 var(--font-mono);
+    color: var(--ink);
+    min-width: 5.4em;
+  }
+  .gest li > span:last-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .gest em {
+    font-style: normal;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ---- plain tables -------------------------------------------------- */
+
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px 8px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: baseline;
+  }
+  th {
+    font: 600 0.72rem/1 var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+  td:first-child { white-space: nowrap; font-family: var(--font-mono); font-size: 0.78rem; }
+  td { color: var(--ink-soft); }
+  td em { font-style: normal; color: var(--ink); }
+
+  /* ---- two-up panels -------------------------------------------------- */
+
+  .duo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    padding: 14px 15px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .panel h3 {
+    margin: 0;
+    font: 600 0.98rem/1.1 var(--font-display);
+  }
+
+  /* ---- track colour strip --------------------------------------------- */
+
+  .tracks {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .tracks li {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font: 500 0.68rem/1.2 var(--font-mono);
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  .tracks span {
+    height: 24px;
+    border-radius: 4px;
+    background: var(--t);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+
+  .capacity {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font: 400 0.8rem/1.5 var(--font-mono);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .capacity b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 14px;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    justify-content: space-between;
+  }
+  footer a { color: var(--ink-soft); }
+
+  @media (max-width: 560px) {
+    .map { flex-direction: column; }
+    .dev { flex: 0 0 auto; width: 100%; max-width: 200px; }
+    .tracks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .gest li { flex-direction: column; gap: 1px; }
+    .gest li > span:first-child { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <h1>GroovixBox <span>cheat sheet</span></h1>
+    <p>Every mode, the buttons that open it, and what the 8&nbsp;×&nbsp;8 grid does once you are there.</p>
+    <ul class="legend">
+      <li style="--t: var(--led-green)">selected · playing</li>
+      <li style="--t: var(--led-blue)">holds something</li>
+      <li style="--t: var(--led-grey)">empty</li>
+      <li style="--t: var(--led-red)">marker · record</li>
+      <li style="--t: var(--led-white)">held · playhead</li>
+    </ul>
+  </header>
+
+  <!-- ============================ buttons ============================ -->
+  <section>
+    <h2>The eight buttons · R1–R8</h2>
+    <div class="buttons">
+
+      <div class="btn" style="--led: var(--led-white)">
+        <div class="btn-top"><b>R1</b><span>Project</span></div>
+        <p>Opens Project mode. Hold it and press <kbd>B1</kbd>–<kbd>B8</kbd> to jump to project page 1–8, from any mode.</p>
+        <p class="shifted"><b>SHIFT + R1</b> → Global settings</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-white)">
+        <div class="btn-top"><b>R2</b><span>Pattern</span></div>
+        <p>Opens Pattern mode, and returns to it from Scenes.</p>
+        <p class="shifted"><b>SHIFT + R2</b> → Scenes, from any mode, Pattern included</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-white)">
+        <div class="btn-top"><b>R3</b><span>Note</span></div>
+        <p>Opens Note mode, and returns from Scale. Hold it and press <kbd>B1</kbd>–<kbd>B8</kbd> for another page of 32 steps.</p>
+        <p class="shifted"><b>SHIFT + R3</b> → Scale mode</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-white)">
+        <div class="btn-top"><b>R4</b><span>Params</span></div>
+        <p>Opens Step parameters for the selected track. Hold it and press <kbd>B1</kbd>–<kbd>B8</kbd> for another page of steps.</p>
+        <p class="shifted"><b>SHIFT + R4</b> → Preset mode, where holding R4 picks the preset page instead</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-orange)">
+        <div class="btn-top"><b>R5</b><span>Clear</span></div>
+        <p>Hold and tap a pad to clear that step, pattern, project, scene or song step. Orange while held. There is no undo.</p>
+        <p class="shifted"><b>SHIFT + R5</b> → Probability</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-blue)">
+        <div class="btn-top"><b>R6</b><span>Duplicate</span></div>
+        <p>Hold, tap the source pad (it turns white), then tap one or more destinations. You can change page in between.</p>
+        <p class="shifted"><b>SHIFT + R6</b> → nothing: the APC keeps it for its own pad mode</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-red)">
+        <div class="btn-top"><b>R7</b><span>Record</span></div>
+        <p>Record on or off. While playing, note pads and a MIDI keyboard write into the selected track and the playhead runs red.</p>
+        <p class="shifted"><b>SHIFT + R7</b> → nothing, for the same reason as R6</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-green)">
+        <div class="btn-top"><b>R8</b><span>Play</span></div>
+        <p>Play or stop. Playback always starts from step 1; stopping releases every sounding note.</p>
+        <p class="shifted"><b>SHIFT + R8</b> → the Song. Pressed in Song mode, R8 plays the arrangement.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================= modes ============================= -->
+  <section>
+    <h2>Modes · what the pads do</h2>
+    <div class="modes">
+
+      <!-- Note -->
+      <article class="mode">
+        <header><h3>Note</h3><span class="chip">R3</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--t5)"></i>
+            <i style="--t: var(--t5)"></i>
+            <i style="--t: var(--t5)"></i>
+            <i style="--t: var(--t5)"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-green)"><b>1–4</b> 32 steps of the selected track</li>
+            <li style="--t: var(--t5)"><b>5–8</b> the keyboard, rising from the root at bottom left</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>tap step</span><span>Switches an empty step on. Tapping never switches one <em>off</em> — R5 + step does.</span></li>
+          <li><span>hold + keys</span><span>Hold a step and tap keys to give it that chord, up to 4 notes. Or hold keys and tap steps.</span></li>
+          <li><span>SHIFT + step</span><span>Makes it the pattern's last step. It turns red and the steps after it go dark.</span></li>
+          <li><span>SHIFT + key</span><span>The leftmost or rightmost key moves that track's keyboard an octave.</span></li>
+          <li><span>hold R3 + B</span><span>Another page of 32 steps; the playing page blinks while R3 is held.</span></li>
+        </ul>
+      </article>
+
+      <!-- Piano roll -->
+      <article class="mode">
+        <header><h3>Piano roll</h3><span class="chip">Scale row 8, pad 1</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--led-red)" class="half"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--t6)"><b>all</b> 8 steps across, 8 notes of the track's scale up</li>
+            <li style="--t: var(--led-red)"><b>row 8</b> SHIFT + a pad here sets the last step</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>tap pad</span><span>Adds that note to the step, or takes it out. Hold to hear it without changing anything.</span></li>
+          <li><span>SHIFT + B5/B6</span><span>Scrolls the notes up or down by 4.</span></li>
+          <li><span>SHIFT + B7/B8</span><span>Scrolls the steps left or right by 4.</span></li>
+          <li><span>note</span><span>One of three ways to use the grid — it replaces chords, and pairs with Drums or Own&nbsp;scale.</span></li>
+        </ul>
+      </article>
+
+      <!-- Scale -->
+      <article class="mode">
+        <header><h3>Scale</h3><span class="chip">SHIFT + R3</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-white)" class="half"></i>
+            <i></i>
+            <i></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--led-violet)"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-white)"><b>1–2</b> the root note: black keys above white</li>
+            <li style="--t: var(--t6)"><b>5–7</b> the 24 scales, Major first, in reading order</li>
+            <li style="--t: var(--led-violet)"><b>8</b> what the keyboard is</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>row 8, 1</span><span>PIANO ROLL — sits alone at the left end, because it changes the grid rather than the keys.</span></li>
+          <li><span>row 8, 5–6</span><span>TRIAD and 7TH: one key then plays a whole chord, built from the scale.</span></li>
+          <li><span>row 8, 7–8</span><span>DRUMS (two 4×4 blocks) and OWN SCALE (this track in another key).</span></li>
+          <li><span>note</span><span>Root and scale belong to the project. Chords, Drums and the roll replace each other.</span></li>
+        </ul>
+      </article>
+
+      <!-- Step parameters -->
+      <article class="mode">
+        <header><h3>Step parameters</h3><span class="chip">R4</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--t3)"></i>
+            <i style="--t: var(--t3)"></i>
+            <i style="--t: var(--t4)"></i>
+            <i style="--t: var(--t4)"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-green)"><b>1–4</b> the steps; brightness is velocity</li>
+            <li style="--t: var(--t3)"><b>5–6</b> velocity, 16 levels from 8 to 127</li>
+            <li style="--t: var(--t4)"><b>7–8</b> gate, one ramp of 16 lengths</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>tap step</span><span>Selects it. Hold several to edit them together. Steps never switch on or off here.</span></li>
+          <li><span>gate ramp</span><span>1–5 a sixth … five sixths · 6 one step · 7–11 two to six · 12–16 8, 10, 12, 14, 16 steps.</span></li>
+          <li><span>SHIFT + 7–8</span><span>The same two rows become ratchets: pad <em>n</em> fires the step <em>n</em>+1 times, evenly.</span></li>
+          <li><span>R5 + step</span><span>Puts velocity, gate and ratchet back.</span></li>
+        </ul>
+      </article>
+
+      <!-- Probability -->
+      <article class="mode">
+        <header><h3>Probability</h3><span class="chip">SHIFT + R5</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--t8)"></i>
+            <i style="--t: var(--t8)"></i>
+            <i style="--t: var(--t1)"></i>
+            <i style="--t: var(--t1)"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-green)"><b>1–4</b> the steps; brightness is the chance</li>
+            <li style="--t: var(--t8)"><b>5–6</b> 6% … 94%, and 100% on the last pad</li>
+            <li style="--t: var(--t1)"><b>7–8</b> micro-timing, in ticks of a 24th of a step</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>straight</span><span>The 9th pad of the lane — the first of row 8. Left is early, right is late.</span></li>
+          <li><span>the rungs</span><span>±1 to ±4 is feel · ±6 and ±8 · ±10, ±12 is half a step, for flams.</span></li>
+          <li><span>triplets</span><span>A beat is 96 ticks, so every triplet position sits exactly 8 ticks off a step: use ±8.</span></li>
+          <li><span>R5 + step</span><span>Back to 100%. The grid itself never moves — only when the notes play.</span></li>
+        </ul>
+      </article>
+
+      <!-- Pattern -->
+      <article class="mode">
+        <header><h3>Pattern</h3><span class="chip">R2</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-blue)"></i>
+            <i style="--t: var(--led-blue)"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-green)"><b>cols</b> the 8 tracks of the track page</li>
+            <li style="--t: var(--led-blue)"><b>rows</b> the 8 patterns of the pattern page</li>
+            <li style="--t: var(--led-green)"><b>green</b> one per column: the pattern that track plays</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>tap pad</span><span>That track plays that pattern at once, keeping the playhead. It selects the track too.</span></li>
+          <li><span>B1–B4</span><span>Page the tracks. <em>B5–B8</em> page the patterns. No SHIFT here, and SHIFT changes nothing.</span></li>
+          <li><span>SHIFT + row 8</span><span>The bottom pad row becomes the mutes. A muted track's whole column dims.</span></li>
+          <li><span>R6</span><span>Copies a pattern, also to another track or page.</span></li>
+        </ul>
+      </article>
+
+      <!-- Scenes -->
+      <article class="mode">
+        <header><h3>Scenes</h3><span class="chip">SHIFT + R2</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-blue)"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i style="--t: var(--t2)"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-blue)"><b>1–4</b> 32 scenes: grey empty, blue held, green playing</li>
+            <li style="--t: var(--t2)"><b>8</b> the 8 tracks of the track page — tap to mute</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>tap scene</span><span>Launches it at the top of the next bar. It blinks until it lands; tap again to change your mind.</span></li>
+          <li><span>R7 + pad</span><span>Captures what you are hearing into that pad. The scene pads turn red while R7 is held.</span></li>
+          <li><span>holds</span><span>Which tracks are silent, and which pattern each track plays. Saved with the project.</span></li>
+          <li><span>R2</span><span>Returns to Pattern mode. Mutes stay put as you flip between the two.</span></li>
+        </ul>
+      </article>
+
+      <!-- Song -->
+      <article class="mode">
+        <header><h3>Song</h3><span class="chip">SHIFT + R8</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-blue)"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--t7)"></i>
+            <i style="--t: var(--t7)"></i>
+            <i style="--t: var(--t7)"></i>
+            <i style="--t: var(--t7)"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-blue)"><b>1–4</b> the 32 scenes again — the palette to build from</li>
+            <li style="--t: var(--t7)"><b>5–8</b> the 32 song steps, four bars each, in its scene's colour</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>hold + scene</span><span>Hold a song step and tap a scene to put it there. The step's current scene lights while you hold.</span></li>
+          <li><span>R8</span><span>Plays the song from the marker. Empty steps are skipped and it loops at the end.</span></li>
+          <li><span>tap step</span><span>Goes there at once. Tapping a <em>scene</em> takes over and the song stops advancing.</span></li>
+          <li><span>note</span><span>A scene has to hold something before it can go in the song.</span></li>
+        </ul>
+      </article>
+
+      <!-- Project -->
+      <article class="mode">
+        <header><h3>Project</h3><span class="chip">R1</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-blue)"></i>
+            <i style="--t: var(--led-blue)"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-blue)"><b>all</b> 64 slots of a page, 8 pages, 512 projects</li>
+            <li style="--t: var(--led-green)"><b>green</b> the open project — slots read page.slot, so 3.08</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>tap slot</span><span>Opens that project, saving the open one first. An empty slot starts a new project there.</span></li>
+          <li><span>pages</span><span><em>SHIFT + B1–B8</em>, or hold <em>R1 + B1–B8</em> from any other mode to open straight onto a page.</span></li>
+          <li><span>R5 + slot</span><span>Clears it. The file is not deleted — it moves to <em>trash/&lt;date&gt;_&lt;time&gt;/</em> in the data folder.</span></li>
+          <li><span>R6</span><span>Copies a project, across pages too. Copying the open one includes unsaved changes.</span></li>
+        </ul>
+      </article>
+
+      <!-- Preset -->
+      <article class="mode">
+        <header><h3>Preset</h3><span class="chip">SHIFT + R4</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-green)"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-grey)" class="half"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-grey)"><b>all</b> 64 patches a page, 8 pages, 512 in all</li>
+            <li style="--t: var(--led-green)"><b>green</b> the one in use — a preset is a number, so no pad is full or empty</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>tap pad</span><span>Sends Bank Select — CC 0 then CC 32 — and a Program Change to the selected track's gear.</span></li>
+          <li><span>order</span><span>Pick the track with <em>B1–B8</em> first, then SHIFT + R4. A tap of R4 here goes on to Step parameters.</span></li>
+          <li><span>pages</span><span>Hold <em>SHIFT</em> or <em>R4</em> and press B1–B8.</span></li>
+          <li><span>note</span><span>R5 and R6 do nothing here. A patch lives in the synth, not in the sequencer.</span></li>
+        </ul>
+      </article>
+
+      <!-- Global settings -->
+      <article class="mode">
+        <header><h3>Global settings</h3><span class="chip">SHIFT + R1</span></header>
+        <div class="map">
+          <div class="dev" aria-hidden="true">
+            <i style="--t: var(--led-green)"></i>
+            <i></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--t6)"></i>
+            <i style="--t: var(--led-white)" class="half"></i>
+          </div>
+          <ul class="bands">
+            <li style="--t: var(--led-green)"><b>1</b> pick a setting: 1 tempo · 2 MIDI · 3 swing · 4 devices · 5 arp</li>
+            <li style="--t: var(--t6)"><b>3–7</b> the picked setting's value</li>
+            <li style="--t: var(--led-white)"><b>8</b> pad 5 +1 · pad 6 −1 · pad 8 sends every CC again</li>
+          </ul>
+        </div>
+        <ul class="gest">
+          <li><span>fader 1</span><span>Sets the picked value and sends no CC while it does. Nothing is picked until you tap the top row.</span></li>
+          <li><span>MIDI</span><span>Rows 3–4 channels 1–16 · row 5 ports P1–P8 · rows 6–7 instruments I1–I16. A track uses one or the other.</span></li>
+          <li><span>devices</span><span>Row 3 the gear · row 5 the ports that found something · row 7 INT / AUTO / EXT · row 8 pad 1 REFRESH.</span></li>
+          <li><span>arp</span><span>Row 3 the mode · row 5 the rate, down to 1/64T · row 7 how many octaves.</span></li>
+          <li><span>B1–B8</span><span>The one mode where they only move the selection, so you can set each track in turn.</span></li>
+        </ul>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============================ paging ============================ -->
+  <section>
+    <h2>Paging · reaching the rest</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Gesture</th><th>Where</th><th>Changes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>SHIFT + B1–B4</td><td>Note, Scenes, Global</td><td>Track page — which tracks B1–B8 select. Your position is kept: track 4 becomes track 12.</td></tr>
+          <tr><td>B1–B4 / B5–B8</td><td>Pattern</td><td>Track page / pattern page. They need no modifier and ignore SHIFT, so pages stay reachable while it is held for the mutes.</td></tr>
+          <tr><td>hold R3 + B1–B8</td><td>Note</td><td>Step page, 32 steps each. The page the playhead is on blinks.</td></tr>
+          <tr><td>hold R4 + B1–B8</td><td>any mode</td><td>Step page, opening Step parameters.</td></tr>
+          <tr><td>hold R1 + B1–B8</td><td>any mode</td><td>Project page, opening Project mode.</td></tr>
+          <tr><td>hold R4 or SHIFT + B</td><td>Preset</td><td>Preset page.</td></tr>
+          <tr><td>mixer A2 1–8</td><td>any mode</td><td>The same pages, and it shows them without anything held: green is the page you are on, brighter blue a page holding something.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== mixer + tracks + limits ==================== -->
+  <section>
+    <h2>The mixer, the tracks, the limits</h2>
+    <div class="duo">
+
+      <div class="panel">
+        <h3>Mixer panel</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--ink-soft)">Eight strips to the right of the grid. Strip <em>n</em> is track <em>n</em> of the current track page. An Akai MIDI Mix is this panel in hardware and is picked up on its own.</p>
+        <ul class="gest">
+          <li><span>K1–K3</span><span>Knob rows: Cutoff (74), Resonance (71) and Pan (10, centred) by default.</span></li>
+          <li><span>fader</span><span>Volume (CC 7), on the strip's track channel and port.</span></li>
+          <li><span>MUTE</span><span>Mutes the track at once. <em>Mixer SHIFT + MUTE</em> solos instead; several tracks can be soloed.</span></li>
+          <li><span>A2</span><span>The page row — REC ARM on a MIDI Mix. In Pattern mode: A2 1–4 tracks, A2 5–8 patterns.</span></li>
+          <li><span>M1–M3</span><span>Nothing yet.</span></li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h3>Track colours</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--ink-soft)">Eight colours, repeated on every track page: tracks 9–16 look like 1–8. No track is red, so the markers that are — the last step, Record, the recording playhead — can never be mistaken for one.</p>
+        <ul class="tracks">
+          <li><span style="--t: var(--t1)"></span>1 peach</li>
+          <li><span style="--t: var(--t2)"></span>2 orange</li>
+          <li><span style="--t: var(--t3)"></span>3 yellow</li>
+          <li><span style="--t: var(--t4)"></span>4 green</li>
+          <li><span style="--t: var(--t5)"></span>5 cyan</li>
+          <li><span style="--t: var(--t6)"></span>6 blue</li>
+          <li><span style="--t: var(--t7)"></span>7 purple</li>
+          <li><span style="--t: var(--t8)"></span>8 pink</li>
+        </ul>
+        <ul class="capacity">
+          <li><b>32</b> tracks</li>
+          <li><b>32</b> patterns each</li>
+          <li><b>256</b> steps</li>
+          <li><b>4</b> notes a step</li>
+          <li><b>32</b> scenes</li>
+          <li><b>512</b> projects</li>
+          <li><b>512</b> presets</li>
+          <li><b>20–300</b> BPM</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <span>A bar is 16 steps. A step is 24 ticks; a beat is 4 steps, 96 ticks.</span>
+    <span>Clearing a project or preset moves the file to the trash folder — everything else is gone for good.</span>
+  </footer>
+
+</div>
+
+</body>
+</html>

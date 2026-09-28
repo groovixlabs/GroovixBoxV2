@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Probability – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox probability mode: the chance each step plays, and per-step micro-timing.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Probability <span class="ctl">SHIFT</span> + <span class="ctl">R5</span></h2>
+        <p class="section-intro">How likely each step is to play every time the pattern comes round, and how far off the grid it plays. The steps stay on top; probability and micro-timing are the two lanes below them.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-probability"></div></div>
+          <figcaption>Step 3 is selected and set to 75%, the 12th pad of the upper lane. Below it, micro-timing: the lane lights from the straight pad — the first of the bottom row — out to three ticks late. The steps glow brighter the more likely they are to play.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Tap a step</strong> to select it; <strong>hold several</strong> to set them together.</li>
+          <li><strong>Rows 5–6:</strong> 16 levels in sixteenths, left to right along row 5 and then row 6: 6%, 13%, 19% … 94%, and 100% (always) on the last pad. A chord plays whole or not at all.</li>
+          <li>Use it for ghost notes and fills that keep a loop from repeating exactly the same way.</li>
+          <li><strong>Hold <span class="ctl">R5</span></strong> and tap a step to put it back to 100%, or press <span class="ctl">B1</span>–<span class="ctl">B8</span> for another page of steps. <span class="ctl">R6</span> + step + step copies a step’s probability.</li>
+          <li><strong>Rows 7–8: micro-timing.</strong> How far off the grid the step plays, in ticks — a tick is a 24th of a step. Straight is the 9th pad, the first of row 8, and the lane lights from there out to the value: left for early, right for late. <strong>The pads are rungs, not a count</strong>, close together near the grid and further apart towards the ends, because a tick either way is a feel and twelve is a different placement:
+            <div class="table-wrap"><table>
+              <thead><tr><th>Early</th><th></th><th>Late</th></tr></thead>
+              <tbody>
+                <tr><td>−1, −2, −3, −4</td><td>a hair behind — drag and swing feel</td><td>+1, +2, +3, +4</td></tr>
+                <tr><td>−6, −8</td><td>−8 and +8 are the <strong>triplet rungs</strong>: see below</td><td>+6, +8</td></tr>
+                <tr><td>−10, −12</td><td>half a step — flams and in-between hits</td><td>+12</td></tr>
+              </tbody>
+            </table></div></li>
+          <li id="triplets"><strong>Triplets.</strong> A beat is 96 ticks and the grid sits at 0, 24, 48 and 72, so every 8th- and 16th-note triplet position in the beat is exactly 8 ticks from a step. That is what the ±8 rungs are for: an 8th-note triplet is step 2 at +8 and step 4 at −8, and 16th triplets fill in at step 2 ±8 and step 4 ±8. For triplets <em>inside</em> one step, a <a href="params.html#ratchet">ratchet</a> of 3 or 6 divides it evenly instead, and the <a href="global.html#arp">arpeggiator</a> has 1/8T, 1/16T and 1/32T rates.</li>
+          <li><strong>The grid doesn't move.</strong> A nudged step still belongs to its place: the playhead, the bar and the song count it where it sits, only the notes play early or late. Use it for a snare that drags or a hat that pushes.</li>
+          <li>For a groove across the whole pattern rather than one step, use <a href="global.html">swing</a>; the two add up. Swing delays every second step — the “e” and the “a” — so a hit on the offbeat 8th (steps 3, 7, 11, 15) is left where it is.</li>
+          <li><span class="ctl">R3</span> returns to Note mode.</li>
+        </ul>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("probability");
+    // Step 3 selected at 75% and nudged 3 ticks late; steps glow by probability.
+    var PROBABILITY = "#aa50ff", NUDGE = "#ff3c8c";
+    var CHANCES = { 0: 100, 2: 75, 4: 100, 6: 25, 8: 100, 11: 50, 12: 100, 16: 100, 19: 13, 20: 100, 24: 100, 27: 50, 28: 100 };
+    g.surface("fig-probability", {
+      pad: function (i) {
+        var row = Math.floor(i / 8), col = i % 8;
+        if (row < 4) {
+          if (i === 2) return { c: g.C.green, lit: true };
+          if (CHANCES[i] !== undefined) return { c: g.dim(g.TRACK[0], 0.16 + CHANCES[i] / 100 * 0.84), lit: true };
+          return { c: g.dim(g.TRACK[0], 0.12) };
+        }
+        var lanePad = (row % 2) * 8 + col;
+        if (row > 5) {
+          // Micro-timing: straight is lane pad 8, and this step is 3 ticks late.
+          var value = 11, straight = 8;
+          if (lanePad === value) return { c: NUDGE, lit: true };
+          if (lanePad >= straight && lanePad < value) return { c: g.dim(NUDGE, 0.35) };
+          if (lanePad === straight) return { c: g.dim(NUDGE, 0.18) };
+          return { c: g.dim(NUDGE, 0.05) };
+        }
+        if (lanePad === 11) return { c: PROBABILITY, lit: true };
+        return { c: g.dim(PROBABILITY, lanePad < 11 ? 0.35 : 0.05) };
+      },
+      right: function (i) {
+        var spec = g.functionButtons(-1, false, false)(i);
+        if (i === 4) spec = { c: "#ff6a14" };
+        return spec;
+      },
+      bottom: g.trackButtons(0)
+    });
+  })();
+</script>
+</body>
+</html>

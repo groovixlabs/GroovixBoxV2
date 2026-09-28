@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scale mode – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox Scale mode: pick the root note and scale for the Note mode keyboard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Scale mode <span class="ctl">SHIFT</span> + <span class="ctl">R3</span></h2>
+        <p class="section-intro">Choose the key the note keyboard plays in. <span class="ctl">R3</span> returns to Note mode.</p>
+        <div class="explorer">
+          <figure>
+            <h4>Scale mode <span class="where">tap any pad — the keyboard below follows</span></h4>
+            <div class="device-frame"><div class="device" id="explore-scale"></div></div>
+          </figure>
+          <figure>
+            <h4>Note mode <span class="where readout" id="explore-title">C MAJOR</span></h4>
+            <div class="device-frame"><div class="device" id="explore-keys"></div></div>
+            <figcaption id="explore-caption"></figcaption>
+          </figure>
+        </div>
+        <p>The top device is Scale mode, with the pads labelled as the simulator labels them. The one below is what <a href="note.html">Note mode</a>’s keyboard becomes: <strong>the note each pad plays, printed on it</strong>, from the root in the track’s octave (2 by default, so C2 = MIDI 36) at bottom left, rising one scale note per pad to the right and then upwards. Roots are tinted in the track colour. Tap a key there to see what it writes.</p>
+
+        <ul>
+          <li><strong>Top two rows pick the root note.</strong> A piano from C to C, black keys above white keys. The keys glow lightly and the selected root is green. Either C pad selects C.</li>
+          <li><strong>Bottom four rows pick the scale</strong>, in reading order starting with Major. The selected scale is green, the rest dim blue.</li>
+          <li>The root and scale belong to the project and are saved with it. They set the keyboard of every track that follows the song’s key.</li>
+          <li>Picking a scale also lines the keyboard up: rows of a 7-note scale each hold one octave, so the same note can sit on two pads and both light up together.</li>
+          <li>Steps that already hold notes outside the new scale keep playing them; they are just no longer on the keyboard.</li>
+          <li><strong>Bottom row, last two pads: the selected track’s keyboard.</strong> Pad 7 is <strong>Drums</strong> and pad 8 is <strong>Own scale</strong>. In use, Own scale lights in the track’s colour and Drums in amber, and the other stays dim; picking one replaces the other, and tapping the lit pad again goes back to the song’s key. Each track keeps its own setting, saved with the project.</li>
+          <li><strong>Own scale</strong> lets a track play in a different scale from the song, say a lead on minor pentatonic over a bass on natural minor. Each time you turn it on it starts as a copy of the song’s key, so nothing changes until you pick. While it’s on, the piano and scale list change <em>only this track</em>: its root and scale light in the track’s colour, and the song’s key stays as a faint green hint so you can see both. Turning it off drops the track’s scale, and the track follows the song again.</li>
+          <li>For a keyboard with every note, turn on Own scale and pick <strong>Chromatic</strong>; pick root C to start on C.</li>
+          <li><strong>Drums</strong> turns the keyboard into two 4×4 blocks of drum pads, like a drum machine. See <a href="note.html">Note mode</a>.</li>
+          <li id="chords"><strong>Bottom row, pads 5 and 6: TRIAD and 7TH.</strong> With one of them lit, a single key of the <a href="note.html#chords">Note mode</a> keyboard plays a whole chord — three or four notes of the scale, stacked in thirds from the key you pressed — so the chord always belongs to the key. They light violet, one at a time; picking one replaces the other, and tapping the lit one goes back to one key, one note. Per track, saved with the project. <span class="ctl">SHIFT</span> + a key still plays the single note. <strong>Chords, Drums and Piano roll are three ways to use the same grid, so picking any one drops the other two</strong> — a drum track has no scale to build a chord from, and the roll has no keyboard to play one on. Own scale is not in that group: a chord is built from whatever scale the track uses, so the two go together.</li>
+          <li><strong>Bottom row, pad 1: Piano roll.</strong> It sits alone at the left end of the row, with dark pads between it and the four on the right: those four say what the <em>keys</em> play, while this one puts a different grid on screen altogether. Note mode then shows the selected track as a piano roll, steps across and notes of its scale up the grid. The pad lights white when on; tap it again for the steps and keyboard. It works together with Drums or Own scale — its rows then follow that keyboard — but not with chords, which need a keyboard to play from. Each track keeps its own setting. See <a href="note.html#piano-roll">Note mode</a>.</li>
+          <li><strong>Learning the pads:</strong> the simulator prints on each pad what it picks: the note names on the piano, the scale names (long ones broken over two lines, such as MIXO-/LYDIAN), and PIANO ROLL at one end of the bottom row, TRIAD, 7TH, DRUMS and OWN SCALE at the other.</li>
+        </ul>
+
+        <h3 id="drums">Drum pads</h3>
+        <p>With <strong>DRUMS</strong> on, the track has no scale at all: the keyboard becomes <strong>two 4×4 blocks of consecutive semitones</strong>, laid out like a drum machine’s pads. Each block rises left to right and then bottom to top, so the bottom-left pad is the lowest note — C2, a kick in General MIDI. The left block is C2–D#3 (MIDI 36–51), the right E3–G4 (52–67), and the left is brighter so the two read apart. Tap DRUMS above to see it.</p>
+        <ul>
+          <li><strong>The root tint and the octave rows are gone</strong>, because there is no root: every pad is just the next note up. Nothing on the grid is out of key, because the track is not in one.</li>
+          <li>The left block is a GM kit in order: kick, side stick, snare and clap along the bottom, then the hats and toms, with the cymbals at the top. The <a href="index.html#reference">default note of each track</a> is a GM drum sound too.</li>
+          <li>A drum track ignores the song’s key and its own scale: picking a root or a scale while DRUMS is on changes what the track would play if you turned DRUMS off again, and nothing else.</li>
+          <li><span class="ctl">SHIFT</span> + the leftmost or rightmost pad still moves both blocks an octave.</li>
+        </ul>
+
+        <h3 id="chord-detail">One key, one chord</h3>
+        <p>With <strong>TRIAD</strong> or <strong>7TH</strong> lit, one key plays three or four notes instead of one: the key’s own note, and the rest taken from the same scale two steps at a time. Turn one on above and tap a key — the whole chord lights, every second pad, which is what “stacked in thirds” looks like on this keyboard.</p>
+        <ul>
+          <li><strong>Nothing decides the chord but the scale</strong>, so it is always in key and its quality follows the degree you played. In C major the keys give C major, D minor, E minor, F major, G major, A minor and B diminished; in C minor the same keys give C minor, D diminished, E♭ major, F minor, G minor, A♭ major and B♭ major. In a five-note scale the same rule gives wider chords. Tap through them above.</li>
+          <li>A seventh is four notes, <strong>exactly what a step holds</strong>, so a seventh fills a step and a second key held with it adds nothing.</li>
+          <li><strong>It works wherever a key does:</strong> press one to hear the chord, hold a step and press a key to write it onto that step, press the same key again on the held step to lift it back out, or play it in while <span class="ctl">R7</span> Record is on.</li>
+          <li><strong><span class="ctl">SHIFT</span> + a key plays that one note</strong>, for a line inside a chord track. The outer two columns still move the octave.</li>
+          <li>The keyboard carries a hint of the track colour while chords are on, so you can see the track is in chords before you play one.</li>
+          <li>Per track and saved with the project, and <strong>exclusive with Drums and the piano roll</strong> — a drum track has no scale to build a chord from, and the roll has no keyboard to play one on. Try it above: turning one on turns the others off. Own scale is not in that group, since the chord is built from whatever scale the track uses.</li>
+        </ul>
+      
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  // The scale explorer: the top device is Scale mode, the one below is the keyboard it makes.
+  // The scale table and the layout rules are the ones the engine uses, from core/engine/Scale.cpp
+  // and NoteMode::noteForPad, so what is drawn here is what the device does.
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("scale");
+
+    var SCALES = [
+      { name: "MAJOR", label: "MAJOR", steps: [0, 2, 4, 5, 7, 9, 11] },
+      { name: "MINOR", label: "MINOR", steps: [0, 2, 3, 5, 7, 8, 10] },
+      { name: "DORIAN", label: "DORIAN", steps: [0, 2, 3, 5, 7, 9, 10] },
+      { name: "PHRYGIAN", label: "PHRY-\nGIAN", steps: [0, 1, 3, 5, 7, 8, 10] },
+      { name: "LYDIAN", label: "LYDIAN", steps: [0, 2, 4, 6, 7, 9, 11] },
+      { name: "MIXOLYDIAN", label: "MIXO-\nLYDIAN", steps: [0, 2, 4, 5, 7, 9, 10] },
+      { name: "LOCRIAN", label: "LOCRIAN", steps: [0, 1, 3, 5, 6, 8, 10] },
+      { name: "HARM MINOR", label: "HARM\nMINOR", steps: [0, 2, 3, 5, 7, 8, 11] },
+      { name: "MEL MINOR", label: "MELODIC\nMINOR", steps: [0, 2, 3, 5, 7, 9, 11] },
+      { name: "MAJ PENTA", label: "MAJOR\nPENTA", steps: [0, 2, 4, 7, 9] },
+      { name: "MIN PENTA", label: "MINOR\nPENTA", steps: [0, 3, 5, 7, 10] },
+      { name: "BLUES", label: "BLUES", steps: [0, 3, 5, 6, 7, 10] },
+      { name: "WHOLE TONE", label: "WHOLE\nTONE", steps: [0, 2, 4, 6, 8, 10] },
+      { name: "DIMINISHED", label: "DIMIN-\nISHED", steps: [0, 2, 3, 5, 6, 8, 9, 11] },
+      { name: "PHRYG DOM", label: "PHRYG\nDOM", steps: [0, 1, 4, 5, 7, 8, 10] },
+      { name: "HUNGARIAN", label: "HUNGA-\nRIAN", steps: [0, 2, 3, 6, 7, 8, 11] },
+      { name: "DBL HARMONIC", label: "DOUBLE\nHARM", steps: [0, 1, 4, 5, 7, 8, 11] },
+      { name: "LYDIAN DOM", label: "LYDIAN\nDOM", steps: [0, 2, 4, 6, 7, 9, 10] },
+      { name: "ALTERED", label: "ALTERED", steps: [0, 1, 3, 4, 6, 8, 10] },
+      { name: "NEAPOLITAN", label: "NEAPO-\nLITAN", steps: [0, 1, 3, 5, 7, 8, 11] },
+      { name: "BEBOP DOM", label: "BEBOP\nDOM", steps: [0, 2, 4, 5, 7, 9, 10, 11] },
+      { name: "HIRAJOSHI", label: "HIRA-\nJOSHI", steps: [0, 2, 3, 7, 8] },
+      { name: "IN SEN", label: "IN SEN", steps: [0, 1, 5, 7, 10] },
+      { name: "CHROMATIC", label: "CHRO-\nMATIC", steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11] }
+    ];
+    SCALES[23].steps = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];  // chromatic, all twelve
+
+    var ROOT_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    var BLACK_KEYS = [-1, 1, 3, -1, 6, 8, 10, -1];
+    var WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11, 0];
+    var FIRST_SCALE_PAD = 32, OCTAVE_BASE = 36;   // C2, the keyboard's default octave
+    var ROLL_PAD = 56, TRIAD_PAD = 60, SEVENTH_PAD = 61, DRUM_PAD = 62, OWN_PAD = 63;
+    var CHORD = { off: 0, triad: 3, seventh: 4 };
+    var VIOLET = "#a03cff", AMBER = "#ff9600", TRACK = g.TRACK[0];
+
+    // The song has a key, and a track can have one of its own: picks go to whichever is in
+    // use, and an own scale starts as a copy of the song's, as it does on the device.
+    var state = { songRoot: 0, songScale: 0, trackRoot: 0, trackScale: 0,
+                  chord: CHORD.off, drums: false, roll: false, own: false, key: -1 };
+    function root() { return state.own ? state.trackRoot : state.songRoot; }
+    function scaleIndex() { return state.own ? state.trackScale : state.songScale; }
+
+    // ---- the keyboard, as NoteMode builds it ----
+    function drumNote(pad) {
+      var rowFromBottom = 7 - Math.floor(pad / 8), col = pad % 8;
+      return OCTAVE_BASE + Math.floor(col / 4) * 16 + rowFromBottom * 4 + (col % 4);
+    }
+    function keyNote(pad) {
+      var steps = SCALES[scaleIndex()].steps, perOctave = steps.length;
+      var rowStep = Math.min(perOctave, 8);
+      var rowFromBottom = 7 - Math.floor(pad / 8), col = pad % 8;
+      var degree = rowFromBottom * rowStep + col;
+      var note = OCTAVE_BASE + root() + 12 * Math.floor(degree / perOctave) +
+                 steps[degree % perOctave];
+      return note > 127 ? -1 : note;
+    }
+    // The chord a key plays: its degree and the rest of the scale, two steps at a time.
+    function chordFor(pad) {
+      var steps = SCALES[scaleIndex()].steps, perOctave = steps.length;
+      var rowStep = Math.min(perOctave, 8);
+      var degree = (7 - Math.floor(pad / 8)) * rowStep + (pad % 8);
+      var notes = [], size = state.chord || 1;
+      for (var n = 0; n < size; n++) {
+        var d = degree + 2 * n;
+        var note = OCTAVE_BASE + root() + 12 * Math.floor(d / perOctave) + steps[d % perOctave];
+        if (note > 127) break;
+        notes.push(note);
+      }
+      return notes;
+    }
+    // A name for the chord where one fits; the exotic scales often make shapes without one.
+    function chordName(notes) {
+      if (notes.length < 3) return "";
+      var third = (notes[1] - notes[0] + 120) % 12, fifth = (notes[2] - notes[0] + 120) % 12;
+      var quality = third === 4 && fifth === 7 ? "major"
+                  : third === 3 && fifth === 7 ? "minor"
+                  : third === 3 && fifth === 6 ? "diminished"
+                  : third === 4 && fifth === 8 ? "augmented" : "";
+      if (!quality || notes.length === 3) return quality;
+      var seventh = (notes[3] - notes[0] + 120) % 12;
+      if (quality === "major") return seventh === 11 ? "major 7th" : seventh === 10 ? "dominant 7th" : "";
+      if (quality === "minor") return seventh === 10 ? "minor 7th" : seventh === 11 ? "minor major 7th" : "";
+      if (quality === "diminished") return seventh === 10 ? "half-diminished" : seventh === 9 ? "diminished 7th" : "";
+      return "";
+    }
+
+    // ---- Scale mode, the device you pick on ----
+    function scalePad(pad) {
+      var row = Math.floor(pad / 8), col = pad % 8;
+      // The song's key is green; while a track has its own, that lights in the track colour
+      // and the song's stays as a faint green hint, so both can be seen.
+      var songColor = state.own ? g.dim(g.C.green, 0.35) : g.C.green;
+      if (row < 2) {
+        var note = row === 0 ? BLACK_KEYS[col] : WHITE_KEYS[col];
+        if (note < 0) return { c: g.OFF };
+        var c = g.dim(g.C.white, row === 0 ? 0.18 : 0.28), lit = false;
+        if (note === state.songRoot) { c = songColor; lit = !state.own; }
+        if (state.own && note === state.trackRoot) { c = TRACK; lit = true; }
+        return { c: c, lit: lit, t: ROOT_NAMES[note], label: "root " + ROOT_NAMES[note] };
+      }
+      var scale = pad - FIRST_SCALE_PAD;
+      if (scale >= 0 && scale < SCALES.length) {
+        var sc = g.C.blue, scLit = false;
+        if (scale === state.songScale) { sc = songColor; scLit = !state.own; }
+        if (state.own && scale === state.trackScale) { sc = TRACK; scLit = true; }
+        return { c: sc, lit: scLit, t: SCALES[scale].label, label: SCALES[scale].name };
+      }
+      if (pad === ROLL_PAD) {
+        return { c: state.roll ? g.C.white : g.dim(g.C.white, 0.3), lit: state.roll,
+                 t: "PIANO\nROLL", label: "piano roll" };
+      }
+      if (pad === TRIAD_PAD || pad === SEVENTH_PAD) {
+        var shape = pad === TRIAD_PAD ? CHORD.triad : CHORD.seventh;
+        var onChord = state.chord === shape;
+        return { c: onChord ? VIOLET : g.dim(VIOLET, 0.3), lit: onChord,
+                 t: pad === TRIAD_PAD ? "TRIAD" : "7TH",
+                 label: pad === TRIAD_PAD ? "triad" : "seventh" };
+      }
+      if (pad === DRUM_PAD) {
+        return { c: state.drums ? AMBER : g.dim(AMBER, 0.3), lit: state.drums, t: "DRUMS",
+                 label: "drum pads" };
+      }
+      if (pad === OWN_PAD) {
+        return { c: state.own ? TRACK : g.dim(TRACK, 0.3), lit: state.own, t: "OWN\nSCALE",
+                 label: "own scale" };
+      }
+      return { c: g.OFF };
+    }
+
+    function tapScale(pad) {
+      var row = Math.floor(pad / 8), col = pad % 8;
+      if (row < 2) {
+        var note = row === 0 ? BLACK_KEYS[col] : WHITE_KEYS[col];
+        if (note >= 0) { if (state.own) state.trackRoot = note; else state.songRoot = note; }
+      } else if (pad - FIRST_SCALE_PAD >= 0 && pad - FIRST_SCALE_PAD < SCALES.length) {
+        var picked = pad - FIRST_SCALE_PAD;
+        if (state.own) state.trackScale = picked; else state.songScale = picked;
+      } else if (pad === ROLL_PAD) {
+        state.roll = !state.roll;
+        if (state.roll) state.chord = CHORD.off;   // the roll has no keyboard to play a chord on
+      } else if (pad === TRIAD_PAD || pad === SEVENTH_PAD) {
+        var shape = pad === TRIAD_PAD ? CHORD.triad : CHORD.seventh;
+        state.chord = state.chord === shape ? CHORD.off : shape;
+        if (state.chord) { state.drums = false; state.roll = false; }
+      } else if (pad === DRUM_PAD) {
+        state.drums = !state.drums;
+        if (state.drums) { state.chord = CHORD.off; state.roll = false; }
+      } else if (pad === OWN_PAD) {
+        state.own = !state.own;
+        if (state.own) {  // an own scale starts as a copy of the song's key
+          state.trackRoot = state.songRoot;
+          state.trackScale = state.songScale;
+        }
+      } else {
+        return;
+      }
+      state.key = -1;
+      render();
+    }
+
+    // ---- Note mode, the keyboard it makes ----
+    function keyboardPad(pad) {
+      if (state.drums) {
+        var note = drumNote(pad), left = pad % 8 < 4;
+        return { c: g.dim(TRACK, left ? 0.42 : 0.16), t: g.noteName(note),
+                 label: g.noteName(note) };
+      }
+      if (state.roll) {
+        // The roll's rows are 8 notes of the scale from the root, lowest at the bottom;
+        // every column is a step of the pattern, so a row is all one note.
+        var steps = SCALES[scaleIndex()].steps;
+        var degree = 7 - Math.floor(pad / 8);
+        var rollNote = OCTAVE_BASE + root() + 12 * Math.floor(degree / steps.length) +
+                       steps[degree % steps.length];
+        if (rollNote > 127) return { c: g.OFF };
+        var rootRow = rollNote % 12 === (OCTAVE_BASE + root()) % 12;
+        return { c: rootRow ? g.dim(TRACK, 0.3) : g.dim(g.C.white, 0.08),
+                 t: g.noteName(rollNote), label: g.noteName(rollNote) };
+      }
+      var n = keyNote(pad);
+      if (n < 0) return { c: g.OFF };
+      var sounding = state.key >= 0 && chordFor(state.key).indexOf(n) >= 0;
+      if (sounding) return { c: g.C.green, lit: true, t: g.noteName(n), label: g.noteName(n) };
+      var isRoot = n % 12 === (OCTAVE_BASE + root()) % 12;
+      if (isRoot) return { c: g.dim(TRACK, 0.35), t: g.noteName(n), label: g.noteName(n) };
+      // A chord track's keys carry a hint of the track colour, as they do on the device.
+      return { c: state.chord ? g.dim(TRACK, 0.14) : g.C.grey, t: g.noteName(n),
+               label: g.noteName(n) };
+    }
+
+    function tapKey(pad) {
+      if (state.drums || state.roll) return;
+      state.key = state.key === pad ? -1 : pad;
+      render();
+    }
+
+    // ---- what the pictures add up to, in words ----
+    function caption() {
+      var scale = SCALES[scaleIndex()], perOctave = scale.steps.length;
+      var rootName = ROOT_NAMES[root()];
+      var notes = scale.steps.map(function (st) { return ROOT_NAMES[(root() + st) % 12]; });
+      if (state.drums) {
+        return "Drum pads: two 4\u00d74 blocks of consecutive notes, " +
+               g.noteName(drumNote(56)) + "\u2013" + g.noteName(drumNote(35)) + " on the left and " +
+               g.noteName(drumNote(60)) + "\u2013" + g.noteName(drumNote(39)) + " on the right. " +
+               "No scale, so no root and nothing out of key.";
+      }
+      if (state.roll) {
+        return "Piano roll: each row is one note of " + rootName + " " + scale.name +
+               ", lowest at the bottom, and each column is a step. Tap a pad on the device to " +
+               "add that note to that step. The root rows are tinted.";
+      }
+      var rows = perOctave === 7
+        ? "Each row is one octave, with the octave root on the eighth pad and again at the start of the row above."
+        : perOctave < 7
+          ? "A row holds one octave and the first " + (8 - perOctave) + " notes of the next, so those repeat at the start of the row above."
+          : perOctave === 8
+            ? "Eight notes fill a row exactly, so every row is one octave with nothing repeated."
+            : "Rows carry on where the last one ended, eight semitones at a time, which puts the roots on a diagonal.";
+      var text = notes.join(" ") + " \u2014 " + perOctave + " notes. " + rows +
+                 " The keyboard runs " + g.noteName(keyNote(56)) + " to " + g.noteName(keyNote(39)) + ".";
+      if (state.chord) {
+        text += " " + (state.chord === CHORD.triad ? "TRIAD" : "7TH") + ": one key plays " +
+                state.chord + " notes of the scale, stacked in thirds.";
+      }
+      if (state.key >= 0) {
+        var chord = chordFor(state.key);
+        var name = state.chord ? chordName(chord) : "";
+        var where = ["bottom row", "second row", "third row", "top row"][7 - Math.floor(state.key / 8)];
+        text += " Key " + (state.key % 8 + 1) + " of the " + where + " plays " +
+                chord.map(g.noteName).join(" ") + (name ? " \u2014 " + name : "") + ".";
+      } else if (state.chord) {
+        text += " Tap a key to see its chord.";
+      }
+      return text;
+    }
+
+    function render() {
+      g.surface("explore-scale", {
+        pad: scalePad,
+        onPad: tapScale,
+        right: g.functionButtons(2, false, false),  // R3 lights: scale mode sits behind NOTE
+        bottom: g.trackButtons(0)
+      });
+      g.surface("explore-keys", {
+        rows: state.roll ? 8 : 4,
+        padsOnly: true,
+        pad: keyboardPad,
+        onPad: tapKey
+      });
+      var title = state.drums ? "DRUM PADS"
+                : ROOT_NAMES[root()] + " " + SCALES[scaleIndex()].name +
+                  (state.own ? " \u00b7 own scale" : "") +
+                  (state.roll ? " \u00b7 piano roll" : "") +
+                  (state.chord ? " \u00b7 " + (state.chord === CHORD.triad ? "triad" : "7th") : "");
+      document.getElementById("explore-title").textContent = title;
+      document.getElementById("explore-caption").textContent = caption();
+    }
+
+    render();
+  })();
+</script>
+</body>
+</html>

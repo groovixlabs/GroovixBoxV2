@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Global settings – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox Global settings mode: the tempo, the swing, and where each track plays.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Global settings <span class="ctl">SHIFT</span> + <span class="ctl">R1</span></h2>
+        <p class="section-intro">The tempo and the swing, and where each track plays: its MIDI channel and port, or an internal instrument. The top row picks a setting; the pads below show it and change it.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-global"></div></div>
+          <figcaption>Tempo picked (pad 1, green) at 120 BPM: a narrow 1, then a 2 in amber and a 0 in white. The two dim pads on the bottom row step it up and down by 1. Fader 1 sits at the matching position.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Tap a pad in the top row</strong> to pick a setting. It lights green and its value appears in the pads below. Pad 1 is the tempo, pad 2 <a href="#midi-channel">where the selected track plays</a>, pad 3 the <a href="#swing">swing</a>, pad 4 the <a href="#devices">devices</a> and pad 5 the <a href="#arp">arpeggiator</a>; the rest of the row is kept for settings to come.</li>
+          <li><strong>Move fader 1</strong> to change the value quickly. The display follows as you move it.</li>
+          <li><strong>Tap the up or down pad</strong> for exact values: on the bottom row, pad 5 is up (+1) and pad 6 is down (−1). They light while a setting is picked, turn white while pressed, and dim when the value can’t go further that way.</li>
+          <li>Nothing is picked the first time you open the mode, so fader 1 does nothing until you tap a pad. After that the setting stays picked when you come back.</li>
+          <li><strong>The last pad of the bottom row sends every fader and knob's CC again</strong>, at the value it last reported, so gear that has moved on — after loading a project, say — comes back into line. Controls nothing has been heard from are skipped, so an untouched knob never slams a synth to zero. A MIDI Mix's own SEND ALL button does the same for its 33 controls.</li>
+          <li><span class="ctl">R1</span> goes to Project mode.</li>
+        </ul>
+        <h3 id="tempo">Tempo</h3>
+        <ul>
+          <li>20 to 300 BPM, in 16th-note steps. The tempo belongs to the project and is saved with it, like the scale.</li>
+          <li>Fader 1 covers the whole range from bottom to top. The tempo changes only when the fader moves, so opening the mode never changes it, but the first move jumps it to wherever the fader is.</li>
+          <li><strong>Reading the display:</strong> three digits 3 pads wide don’t fit in 8 columns, so the hundreds digit (1, 2 or 3) is 2 pads wide. The digits touch, so they alternate white, amber, white to keep them apart. Below 100 BPM the first two columns stay dark.</li>
+          <li>Up and down step 1 BPM per tap and stop at 300 and 20 BPM. Holding a pad doesn’t repeat, so use fader 1 for big changes.</li>
+          <li>In the simulator, dragging fader 1 moves about 2–3 BPM per pixel; the up and down pads, or the mouse wheel with <kbd>Ctrl</kbd> held, set exact values.</li>
+          <li>The simulator prints what the pads do on them: TEMPO, MIDI CH, SWING and DEVICES on the top row, +1 and −1 on the up and down pads, the channel numbers 1–16, P1–P8 on the port row, and PADS, MIXER, INT/AUTO/EXT and REFRESH on the devices page.</li>
+        </ul>
+        <h3 id="swing">Swing</h3>
+        <ul>
+          <li><strong>50 to 75.</strong> 50 is straight; at 75 every second step plays half a step late, a hard shuffle. It reads on the same display as the tempo, fader 1 sweeps it and the up and down pads step it by 1.</li>
+          <li>Swing holds back the second step of each pair — the “and” of each beat — and leaves the first where it is. It applies to every track at once, which is what makes them groove together.</li>
+          <li><strong>The grid doesn’t move.</strong> Steps keep their places on the pads; only when their notes play changes. The playhead, the bar and the song count them where they sit.</li>
+          <li>For one hit that drags or pushes rather than a groove across the pattern, use per-step <a href="probability.html">micro-timing</a>. The two add up.</li>
+          <li>Swing belongs to the project and is saved with it.</li>
+        </ul>
+        <h3 id="arp">Arpeggiator <span class="ctl">PAD 5</span></h3>
+        <p>A step holding a chord plays its notes <strong>one at a time instead of together</strong>. It belongs to the selected track, so a whole part arpeggiates without touching a single step — and it pairs with <a href="scale.html#chords">one key, one chord</a>, where one key press fills a step with a triad or a seventh in the first place.</p>
+        <ul>
+          <li><strong>Row 3 — the mode.</strong> OFF, UP, DOWN, UP-DOWN, DOWN-UP, AS PLAYED and RANDOM. Up and down climb the chord in pitch order; up-down and down-up turn round without playing the end notes twice; as played follows the order the step's notes were written in, which differs from up only when a chord was built out of order. The one in use lights in the track's colour.</li>
+          <li><strong>Row 5 — the rate</strong>, as note values against a step of a sixteenth: 1/8, 1/8T, 1/16, 1/16T, 1/32, 1/32T, 1/64, 1/64T. All of them divide the 24 ticks of a step exactly, so the triplets are true triplets rather than something rounded.</li>
+          <li><strong>Row 7 — how many octaves</strong> it climbs, 1 to 4. Two octaves on a C–E–G gives C E G C E G an octave up, then round again.</li>
+          <li><strong>The step's <a href="params.html">gate</a> says how long the run lasts.</strong> A one-step gate at 1/64 is four notes; lengthen the gate and the run carries on over the steps after it. That is the whole length control — there isn't a second one to keep in step with it.</li>
+          <li>While the arp is off, the rate and octave rows dim further: they have nothing to say.</li>
+          <li><strong>A step's <a href="params.html#ratchet">ratchet</a> is ignored while the arp is on.</strong> Both spread one step out in time, and two of them at once is a muddle rather than a feature.</li>
+          <li>Per track and saved with the project. <span class="ctl">B1</span>–<span class="ctl">B8</span> move to another track without leaving the page, so a rig is set up track after track.</li>
+        </ul>
+
+        <h3 id="devices">Devices <span class="ctl">PAD 4</span></h3>
+        <p>What is plugged in, without leaving the instrument — and the one setting that belongs to the rig rather than to the music.</p>
+        <ul>
+          <li><strong>Row 3 — the gear.</strong> Pad 1 is the pad grid (an APC mini mk2), pad 2 the mixer panel (an Akai MIDI Mix) and pad 3 the <a href="note.html#midi-in">keyboard</a> being listened to. Lit white means it is here and answering; nearly dark means nothing is on it.</li>
+          <li><strong>Row 5 — the MIDI ports <span class="ctl">P1</span>–<span class="ctl">P8</span></strong>, the same row the routing page puts them on, so a port is in the same place on both. Green means that port reaches something; dark means its messages go nowhere. A 4×4 interface lights <strong>P1–P4</strong> and leaves P5–P8 dark — the count tells you what was found.</li>
+          <li id="clock"><strong>Row 7 — where the beat comes from.</strong> Three pads: <strong>INT</strong>, <strong>AUTO</strong> and <strong>EXT</strong>.
+            <div class="table-wrap"><table>
+              <thead><tr><th>Pad</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><strong>INT</strong></td><td>we drive, and send MIDI clock out. Nothing coming in is listened to.</td></tr>
+                <tr><td><strong>AUTO</strong></td><td>follow an incoming clock while there is one, and play on our own when there isn’t. The default.</td></tr>
+                <tr><td><strong>EXT</strong></td><td>only ever follow. With no clock arriving, <span class="ctl">R8</span> waits instead of playing.</td></tr>
+              </tbody>
+            </table></div>
+            <strong>The lit pad goes green while an outside clock is really driving and white while our own is</strong>, so on AUTO one pad tells you which of the two it has settled on. Auto gives up half a second after the clock stops — four clocks even at 20 BPM — and carries on by itself.</li>
+          <li><strong>While following, the tempo isn’t yours.</strong> The <a href="#tempo">tempo page</a> shows the tempo measured from the clock coming in, and its fader and <span class="ctl">+1</span>/<span class="ctl">−1</span> pads dim and do nothing rather than fight the master. The project keeps its own tempo untouched for when you go back to INT.</li>
+          <li><strong>We keep sending clock while following</strong>, one out for each one in, so gear downstream of us still follows the same master.</li>
+          <li><strong>Start and Stop</strong> from outside drive the transport whatever the source. <strong>Continue</strong> restarts from step 1 like Start — there is no song position to resume from yet.</li>
+          <li>The clock source belongs to the instrument, not the project: it is not saved with one, so carrying a project between rigs never re-slaves anything.</li>
+          <li id="reconnect"><strong>The surfaces come back by themselves.</strong> Unplug the pad grid, the mixer or the keyboard and plug it back in, and it is picked up again without your touching anything. Nothing polls for this: the MIDI system has an announcement of its own for gear appearing and disappearing, and the instrument listens to that, so the expensive part — looking at what is actually there — only happens the moment something changes.</li>
+          <li><strong>The output ports wait to be asked.</strong> If <span class="ctl">P1</span>–<span class="ctl">P8</span> lose what they were wired to, the pads go dark and <strong>REFRESH lights up bright</strong> to offer the rewire — it doesn’t do it. Repatching in the middle of a take is your call, not the instrument’s, so it waits for the pad.</li>
+          <li><strong>Bottom row, pad 1 — REFRESH.</strong> Looks again: picks up a surface plugged in since the start, and wires the ports to an interface that has appeared. Dim is nothing to do; bright means something has come or gone that the ports could use. Nothing scans on a timer, because a scan walks every client of the MIDI system and that is not something to do behind the playhead’s back.</li>
+          <li><strong>A port coming back is hushed first.</strong> When something is unplugged mid-note, its note-off has nowhere to go and the synth can be left holding the note. There is no fixing that at the moment it happens — the cable is out — so on the way back, refreshing sends All Sound Off and All Notes Off on every channel of a port that has just reconnected.</li>
+          <li>Ports are wired at startup by themselves, so this page is usually confirmation rather than work. A port already patched by hand is left alone — refreshing never pulls out a patch you made.</li>
+          <li>Which device each port goes to is set in the config file. <code>aconnect -o</code> lists the devices you can send to and the names to use; see <a href="index.html#listing-ports">finding the names</a>.</li>
+        </ul>
+
+        <h3 id="midi-channel">MIDI channel, port and instrument</h3>
+        <ul>
+          <li>Pad 2 sets which MIDI channel the <strong>selected track</strong> plays on. Rows 3 and 4 are channels 1–8 and 9–16. The track’s channel lights in the track’s colour, and its <span class="ctl">B</span> button stays lit so you can see whose channel it is.</li>
+          <li>Tap a channel to move the track there. Notes the track is playing are released on the old channel first, and its preset is sent again on the new one.</li>
+          <li><strong>To set another track, press its <span class="ctl">B</span> button.</strong> This is the one mode where <span class="ctl">B1</span>–<span class="ctl">B8</span> don’t jump to Note mode: they only move the selection, so you can work along the tracks setting each one’s channel, port or instrument in turn. <strong><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span></strong> changes the track page, so all 32 tracks are reachable without leaving.</li>
+          <li>New tracks play on channels 1–16 in order, and tracks 17–32 on channels 1–16 again. Channels are saved with the project, so two tracks can share one synth, or a drum track can sit on channel 10.</li>
+          <li><strong>The MIDI clock goes out of every port</strong>, 24 per quarter note, with Start when you press play and Stop when you stop, so a drum machine or a synth's arpeggiator on any port runs in time. Gear that follows its own clock ignores it.</li>
+          <li><strong>Row 5 picks the MIDI port</strong>, <strong>P1</strong> to <strong>P8</strong>: which MIDI output the track plays out of. With 8 ports of 16 channels the sequencer addresses 128 instruments, so tracks on the same channel can still drive different gear.</li>
+          <li>Each page of 8 tracks starts on its own port: tracks 1–8 on P1, tracks 9–16 on P2, tracks 17–24 on P3 and tracks 25–32 on P4. Change any track’s port here; the setting belongs to the track and is saved with the project.</li>
+          <li>Moving a track to another port works like changing its channel: notes it is playing are released on the old port first, and its preset is sent again on the new one.</li>
+          <li>Which hardware or software output each port reaches is up to the device the sequencer runs on. On Linux each port is an ALSA sequencer port of its own, <strong>P1</strong> to <strong>P8</strong>, so they can be patched anywhere with <code>aconnect</code> or a patchbay: a 4×4 USB interface takes P1–P4, one to each socket, and nothing reaches your gear until they are wired up.</li>
+          <li><strong>Rows 6 and 7 pick an internal instrument</strong>, <strong>I1</strong> to <strong>I16</strong>: the track plays on the sequencer’s own sound engine instead of going out of a MIDI port.</li>
+          <li><strong>A track uses a port or an instrument, never both.</strong> Whichever it is on lights in the track colour and the other row dims further, so one look tells you where the track goes. Tapping the instrument it is already on sends it back to its MIDI port, and tapping any port does the same.</li>
+          <li>Moving a track between a port and an instrument works like a channel change: its sounding notes are released first, and its preset is sent again at the new destination.</li>
+          <li><strong>The instruments aren’t built yet.</strong> A track on I1–I16 makes no sound until a sound engine is attached; its steps still play, and everything is saved with the project, so patterns written now will play when the instruments arrive.</li>
+        </ul>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("global");
+    // Rows of the 3x5 font's 2 and 0 (octal digits, one per row), and the narrow 1.
+    var TWO = "71747", ZERO = "75557", NARROW_ONE = [1, 3, 1, 1, 1];
+    var AMBER = "#ff8c00";
+    g.surface("fig-global", {
+      pad: function (i) {
+        var row = Math.floor(i / 8), col = i % 8;
+        if (row === 0) return col === 0 ? { c: g.C.green, lit: true } : { c: g.OFF };
+        if (row === 7) return col === 4 || col === 5 ? { c: g.dim(g.C.white, 0.3), lit: true } : { c: g.OFF };
+        if (row < 2) return { c: g.OFF };
+        var r = row - 2;
+        if (col < 2) return (NARROW_ONE[r] >> (1 - col)) & 1 ? { c: g.C.white, lit: true } : { c: g.OFF };
+        var tens = col < 5, first = tens ? 2 : 5;
+        var bits = parseInt((tens ? TWO : ZERO)[r], 8);
+        if (!((bits >> (2 - (col - first))) & 1)) return { c: g.OFF };
+        return { c: tens ? AMBER : g.C.white, lit: true };
+      },
+      right: g.functionButtons(0, false, false),
+      bottom: g.trackButtons(0),
+      faders: [0.357, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+    });
+  })();
+</script>
+</body>
+</html>

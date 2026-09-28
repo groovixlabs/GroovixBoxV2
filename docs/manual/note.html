@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Note mode – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox Note mode: steps, the scale keyboard, chords and keyboard octave.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Note mode <span class="ctl">R3</span></h2>
+        <p class="section-intro">Program the selected track. The top four rows are its 32 steps; the bottom four rows are a chromatic keyboard.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-note"></div></div>
+          <figcaption>Step 7 is held (green), so its note, E2, lights green on the keyboard. Steps 1, 5, 9… are on. The tinted keys are the scale root: C2, C3 and C4 in the default C Chromatic.</figcaption>
+        </figure>
+        <h3>Steps</h3>
+        <ul>
+          <li><strong>Tap an empty step</strong> to switch it on. <strong>Press or hold a lit step</strong> to see its notes: it stays on. Tapping never switches a step off — to remove one, hold <span class="ctl">R5</span> and tap it, as on Novation’s Circuit Tracks.</li>
+          <li>A newly switched-on step plays the <strong>last note you assigned</strong> on that track. At first that is the track’s default drum note.</li>
+          <li><strong>Hold note keys and press a step</strong> to give that step the chord you are holding, up to 4 notes. Or <strong>hold steps and tap note keys</strong>: a key adds its note to the step, or takes it out if the step already has it. Taking out its last note empties the step.</li>
+          <li><strong>Holding a step lights every note of its chord</strong> on the keyboard in green. While playing, the notes of the step under the playhead light in the track colour.</li>
+          <li><span class="ctl">R5</span> + step clears it. <span class="ctl">R6</span> + step + step copies a step within the track.</li>
+          <li><strong>Hold <span class="ctl">R3</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> to show another page of 32 steps. While <span class="ctl">R3</span> is held the track buttons show the pages, and the page the playhead is on blinks.</li>
+          <li><strong><span class="ctl">SHIFT</span> + a step</strong> makes it the pattern's last step. It lights <span class="led" style="--c:#ff3b3b"></span>red and the steps after it go dark. Patterns run up to 8 pages, 256 steps.</li>
+        </ul>
+        <h3>Keyboard</h3>
+        <ul>
+          <li>The keyboard holds the notes of the song’s <a href="scale.html">scale</a>, or the track’s own scale, starting on its root in the track's octave (2 by default) at bottom-left and rising one scale note per pad, left to right and row by row upwards. Every row starts on the root, so a 7-note scale fills a row with one octave: the octave root sits on the eighth pad and again at the start of the row above. Chromatic keeps 8 semitones per row instead, which puts its roots on a diagonal, and runs from <strong>C2 (MIDI 36)</strong> to <strong>G4 (MIDI 67)</strong>.</li>
+          <li><strong>A track can have its own scale.</strong> Turn it on with the bottom-right pad in <a href="scale.html">Scale mode</a>, then pick the track’s root and scale there; the other tracks stay in the song’s key. For every note from C, pick Chromatic with root C.</li>
+          <li><strong>Drum tracks show drum pads.</strong> Turn it on with the second-to-last pad of the bottom row in <a href="scale.html">Scale mode</a>. The keyboard becomes two 4×4 blocks, like a drum machine’s pads. Each block plays consecutive notes, rising left to right and then bottom to top: the left block starts on C in the track’s octave (C2–D#3 by default, kick at bottom-left) and the right block carries on (E3–G4). The left block is brighter so the two read apart. Shift + the leftmost or rightmost pad still moves both blocks an octave.</li>
+          <li>Root notes are tinted in the track colour so you can find the octaves. Pads past MIDI note 127 stay dark.</li>
+          <li><strong><span class="ctl">SHIFT</span> + the leftmost or rightmost key</strong> moves the whole keyboard down or up an octave, and plays no note. Each track keeps its own octave, so a bass track can sit low and a lead high, and it is saved with the project.</li>
+          <li id="midi-in"><strong>A MIDI keyboard plays the selected track.</strong> Plug one in and its notes sound on that track's channel and port, at the velocity you played — and with <span class="ctl">R7</span> Record on and playback running they are written at the playhead, exactly as the pads are. It follows the <em>track</em>, not the mode, so you can play while looking at the patterns or the song. <strong>A key you hold lights the pad that plays the same note</strong>, so what your hands are doing shows on the grid; rows repeat the root, so one note can light two pads. Its <strong>Start and Stop</strong> keys drive the sequencer too, so your hands needn't leave it. The keyboard is found at startup, and again from the <a href="global.html#devices">devices page</a>; name one in the config with <code>midiin</code> when there is more than one thing to listen to.</li>
+          <li id="chords"><strong>One key, one chord.</strong> Turn on <strong>TRIAD</strong> or <strong>7TH</strong> in <a href="scale.html#chords">Scale mode</a> and every key plays three or four notes instead of one: its own note, and the rest of the scale stacked in thirds above it. The chord is built from the scale, so it is always in key — in a minor scale the first key gives a minor chord and the fifth a major one, with nothing to set up. It works everywhere a key does: press one to hear the chord, hold a step and press a key to write the chord onto it (pressing the same key again lifts it out), or play it in while recording. A seventh is four notes, which is exactly what a step holds, so a second key held with it adds only what fits. <strong><span class="ctl">SHIFT</span> + a key plays that one note</strong>, for a line inside a chord track, and the keys carry a hint of the track colour so you can see the track is in chords before you play one. Chords, <strong>Drums</strong> and the <strong>piano roll</strong> are three ways to use the same grid, so turning one on turns the others off: a drum track has no scale to build a chord from, and the roll has no keyboard to play one on. A track’s own scale does go with chords — they are built from the scale the track uses.</li>
+          <li>Pressing a note pad plays that note for as long as you hold it.</li>
+          <li>With <span class="ctl">R7</span> Record on and playback running, the note is also written into the step nearest to when you pressed it. In the second half of a step it goes to the next step.</li>
+          <li id="record-feedback"><strong>The grid says when it is listening.</strong> The playhead runs <span class="led" style="--c:#f3f4f6"></span>white normally and <span class="led" style="--c:#ff3b3b"></span>red while <span class="ctl">R7</span> Record is on, so you can see that what you play is being written, and which step it will land on, without looking away from your hands. Red is never a track colour, so there is nothing for it to be confused with.</li>
+          <li><strong>How hard you hit the pad is kept.</strong> The APC's pads are velocity sensitive, so a part played in arrives with its accents: the hit sets the step's velocity, which you can see and change afterwards in <a href="params.html">Step parameters</a>. Velocity belongs to the step rather than to each note, so the last hit into a step speaks for its whole chord. The simulator's mouse cannot tell how hard, so a step written with it keeps the velocity it had.</li>
+        </ul>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-record"></div></div>
+          <figcaption>Recording: <span class="ctl">R7</span> and <span class="ctl">R8</span> are lit, the playhead is red on step 11, and the two keys held on the MIDI keyboard — E2 and G2 — light white. A chromatic row steps 8 semitones, so the same two notes an octave up light two rows higher.</figcaption>
+        </figure>
+        <h3 id="piano-roll">Piano roll</h3>
+        <p>A track can show its notes as a piano roll instead: turn it on with the first pad of the bottom row in <a href="scale.html">Scale mode</a>, on its own at the left end. The whole grid then edits one stretch of the pattern. Columns are 8 steps; rows are 8 notes of the track’s scale, lowest at the bottom, starting on the root in the track’s octave.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-roll"></div></div>
+          <figcaption>C major from C2 at the bottom to C3 at the top, steps 1–8. Step 1 holds a C–E–G chord and step 7 a G–C chord; step 8 is the last step, a faint red column. The root rows are tinted.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Tap a pad</strong> to add that note to the step; tap it again to take it out. <strong>Hold a pad</strong> to hear its note without changing the step. A step holds up to 4 notes and switches off when its last note goes.</li>
+          <li><strong><span class="ctl">SHIFT</span> + <span class="ctl">B5</span> / <span class="ctl">B6</span></strong> scroll the notes up or down, and <strong><span class="ctl">SHIFT</span> + <span class="ctl">B7</span> / <span class="ctl">B8</span></strong> the steps left or right, 4 at a time so half of what you saw stays on screen. While <span class="ctl">SHIFT</span> is held those buttons light where there’s further to go, and <span class="ctl">B1</span>–<span class="ctl">B4</span> still change the track page.</li>
+          <li><strong><span class="ctl">SHIFT</span> + a pad on the bottom row</strong> makes its step the pattern’s last. Steps past the end are dark.</li>
+          <li><strong>Hold <span class="ctl">R3</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> to jump to a step page. <span class="ctl">R5</span> + pad clears a step and <span class="ctl">R6</span> + pad + pad copies one.</li>
+          <li>The rows follow the track’s keyboard: the song’s scale, its own scale, or every note from C on a drum track. Each track remembers where you scrolled.</li>
+        </ul>
+        <h3>Tracks</h3>
+        <p><span class="ctl">B1</span>–<span class="ctl">B8</span> select tracks on the current track page. <span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> changes the track page (4 pages, tracks 1–32). See <a href="index.html#pages">Pages</a>.</p>
+      
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("note");
+    var noteSteps = [0, 4, 8, 12, 16, 20, 24, 28];
+    g.surface("fig-note", {
+      pad: function (i) {
+        if (i < 32) {
+          if (i === 6) return { c: g.C.green, lit: true, t: String(i + 1) };
+          return noteSteps.indexOf(i) >= 0
+            ? { c: g.TRACK[0], lit: true, t: String(i + 1) }
+            : { c: g.dim(g.TRACK[0], 0.12), t: String(i + 1) };
+        }
+        var n = g.noteForPad(i);
+        if (n === 40) return { c: g.C.green, lit: true, t: g.noteName(n) };
+        return { c: n % 12 === 0 ? g.dim(g.TRACK[0], 0.35) : "#4b4d55", t: g.noteName(n) };
+      },
+      right: g.functionButtons(2, false, false),
+      bottom: g.trackButtons(0)
+    });
+
+    // Recording: red playhead on step 11, two held keys white on both octaves of the keyboard.
+    var recSteps = [0, 4, 8, 12, 16, 20, 24, 28];
+    var held = [40, 43, 52, 55];  // E2, G2 and the same notes an octave up
+    g.surface("fig-record", {
+      pad: function (i) {
+        if (i < 32) {
+          if (i === 10) return { c: "#ff3b3b", lit: true };
+          return recSteps.indexOf(i) >= 0 ? { c: g.TRACK[0], lit: true }
+                                          : { c: g.dim(g.TRACK[0], 0.12) };
+        }
+        var n = g.noteForPad(i);
+        if (held.indexOf(n) >= 0) return { c: g.C.white, lit: true, t: g.noteName(n) };
+        return { c: n % 12 === 0 ? g.dim(g.TRACK[0], 0.35) : "#4b4d55", t: g.noteName(n) };
+      },
+      right: g.functionButtons(2, true, true),
+      bottom: g.trackButtons(0)
+    });
+
+    // Piano roll: C major from C2 (bottom) to C3 (top), steps 1-8, step 8 the last.
+    var ROLL = { 0: [0, 2, 4], 2: [1], 4: [2], 6: [4, 7] };  // column -> rows from the bottom
+    g.surface("fig-roll", {
+      pad: function (i) {
+        var row = 7 - Math.floor(i / 8), col = i % 8;
+        if ((ROLL[col] || []).indexOf(row) >= 0) return { c: g.TRACK[0], lit: true };
+        if (col === 7) return { c: g.dim("#ff3b3b", 0.22) };
+        if (row === 0 || row === 7) return { c: g.dim(g.TRACK[0], 0.14) };
+        return { c: g.dim(g.C.white, 0.08) };
+      },
+      right: g.functionButtons(2, false, false),
+      bottom: g.trackButtons(0)
+    });
+  })();
+</script>
+</body>
+</html>

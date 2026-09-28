@@ -1,0 +1,28 @@
+
+
+build/
+
+ARCHITECTURE.md
+
+*.pdf
+
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
+

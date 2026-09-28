@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preset mode – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox Preset mode: choose the sound preset for the selected track.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Preset mode <span class="ctl">SHIFT</span> + <span class="ctl">R4</span></h2>
+        <p class="section-intro">Pick the patch the selected track’s gear plays. 8 pages of 64 pads reach the 512 patches that Bank Select and Program Change can address between them.</p>
+        <ul>
+          <li>Select the track first with <span class="ctl">B1</span>–<span class="ctl">B8</span> (which goes to Note mode), then <span class="ctl">SHIFT</span> + <span class="ctl">R4</span>. A tap of <span class="ctl">R4</span> here goes on to the <a href="params.html">step parameters</a>, which is what the button means everywhere else.</li>
+          <li><strong>Tap a pad</strong> to send that patch number to the track’s gear, on its channel and port: <strong>Bank Select</strong> — MSB (CC 0) = pad ÷ 128 and LSB (CC 32) = 0 — then <strong>Program Change</strong> = pad mod 128 (see <a href="index.html#reference">Reference</a>). The bank is a 14-bit pair that the receiver latches when the Program Change arrives, and it keeps the half it isn’t sent, so both go out together rather than leaving a stale LSB to decide the bank. It is sent again whenever the track’s channel, port or instrument changes, and for every track when a project opens, so your gear comes back on the right patches.</li>
+          <li>Opening Preset mode shows the page of the track’s current preset. <strong>Hold <span class="ctl">SHIFT</span> (or <span class="ctl">R4</span>) and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> to change page.</li>
+          <li>Every pad looks the same but the one in use, which is green: <strong>a preset is a number, not something the sequencer keeps</strong>, so there is nothing for a pad to be full or empty of.</li>
+          <li><span class="ctl">R5</span> and <span class="ctl">R6</span> do nothing here — there is nothing to clear or copy. In every other mode they act on something the sequencer holds; a patch lives in the synth.</li>
+        </ul>
+        <div class="callout"><p><strong>A bank is 128 patches — two pages — and the split is invisible on the pads.</strong> The simulator’s status line spells out the two numbers being sent, as <code>PRE 3.01 B1:0</code>: page 3 pad 1 is bank 1, program 0. Gear that numbers its patches from 1 will show one more.</p></div>
+      
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("preset");
+
+  })();
+</script>
+</body>
+</html>

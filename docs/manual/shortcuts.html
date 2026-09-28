@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard shortcuts – GroovixBox Manual</title>
+<meta name="description" content="Every keyboard and mouse shortcut in the GroovixBox simulator, with the device button each key presses.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Key map: each laptop key sits above the device control it presses, like an overlay sticker. */
+  .keymap { display: grid; gap: 12px; margin: 6px 0 40px; }
+  .km-group {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 14px 16px 16px;
+  }
+  .km-caption {
+    font: 500 0.72rem/1 var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 14px;
+  }
+  .km-keys {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 14px 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: none;
+  }
+  .km-keys.km-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .km-keys li { display: flex; flex-direction: column; align-items: center; gap: 5px; margin: 0; text-align: center; }
+  .km-keys kbd { width: 100%; max-width: 5.2rem; padding-block: 7px 6px; }
+  .km-keys .ctl { border: 1px solid var(--kbd-edge); padding: 4px 7px 3px; }
+  .km-to { color: var(--ink-faint); font: 400 0.7rem/1 var(--font-mono); }
+  .km-name { font-size: 0.74rem; line-height: 1.25; color: var(--ink-soft); }
+  .km-name .led { margin-right: 4px; }
+
+  .page-narrow main { gap: 36px; }
+  .shortcuts td:first-child { width: 40%; white-space: normal; }
+  .where { display: block; font-size: 0.8rem; color: var(--ink-faint); margin-top: 2px; }
+
+  @media (max-width: 620px) {
+    .km-keys { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .km-keys.km-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .shortcuts td:first-child { width: auto; white-space: normal; }
+  }
+</style>
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+    <section id="keymap">
+      <h2>Keyboard shortcuts</h2>
+      <p class="section-intro">Every button on the device has a key in the simulator, and the mouse presses pads. Keys and clicks combine: hold a key while you click, just as you’d hold a button while pressing a pad.</p>
+
+      <div class="keymap">
+        <div class="km-group">
+          <p class="km-caption">Function keys → right-hand buttons</p>
+          <ul class="km-keys">
+            <li><kbd>F1</kbd><span class="km-to">↓</span><span class="ctl">R1</span><span class="km-name">Project</span></li>
+            <li><kbd>F2</kbd><span class="km-to">↓</span><span class="ctl">R2</span><span class="km-name">Pattern</span></li>
+            <li><kbd>F3</kbd><span class="km-to">↓</span><span class="ctl">R3</span><span class="km-name">Note</span></li>
+            <li><kbd>F4</kbd><span class="km-to">↓</span><span class="ctl">R4</span><span class="km-name">Params</span></li>
+            <li><kbd>F5</kbd><span class="km-to">↓</span><span class="ctl">R5</span><span class="km-name"><span class="led" style="--c:#ff6a14"></span>Clear</span></li>
+            <li><kbd>F6</kbd><span class="km-to">↓</span><span class="ctl">R6</span><span class="km-name"><span class="led" style="--c:#1e9cff"></span>Duplicate</span></li>
+            <li><kbd>F7</kbd><span class="km-to">↓</span><span class="ctl">R7</span><span class="km-name"><span class="led" style="--c:#ff2b2b"></span>Record</span></li>
+            <li><kbd>F8</kbd><span class="km-to">↓</span><span class="ctl">R8</span><span class="km-name"><span class="led" style="--c:#36d65f"></span>Play</span></li>
+          </ul>
+        </div>
+
+        <div class="km-group">
+          <p class="km-caption">Number row → track buttons</p>
+          <ul class="km-keys">
+            <li><kbd>1</kbd><span class="km-to">↓</span><span class="ctl">B1</span><span class="km-name">Track 1</span></li>
+            <li><kbd>2</kbd><span class="km-to">↓</span><span class="ctl">B2</span><span class="km-name">Track 2</span></li>
+            <li><kbd>3</kbd><span class="km-to">↓</span><span class="ctl">B3</span><span class="km-name">Track 3</span></li>
+            <li><kbd>4</kbd><span class="km-to">↓</span><span class="ctl">B4</span><span class="km-name">Track 4</span></li>
+            <li><kbd>5</kbd><span class="km-to">↓</span><span class="ctl">B5</span><span class="km-name">Track 5</span></li>
+            <li><kbd>6</kbd><span class="km-to">↓</span><span class="ctl">B6</span><span class="km-name">Track 6</span></li>
+            <li><kbd>7</kbd><span class="km-to">↓</span><span class="ctl">B7</span><span class="km-name">Track 7</span></li>
+            <li><kbd>8</kbd><span class="km-to">↓</span><span class="ctl">B8</span><span class="km-name">Track 8</span></li>
+          </ul>
+        </div>
+
+        <div class="km-group">
+          <p class="km-caption">Other keys</p>
+          <ul class="km-keys km-three">
+            <li><kbd>Space</kbd><span class="km-to">↓</span><span class="ctl">R8</span><span class="km-name">Play, same as F8</span></li>
+            <li><kbd>Shift</kbd><span class="km-to">↓</span><span class="ctl">SHIFT</span><span class="km-name">Left or right Shift</span></li>
+            <li><kbd>Esc</kbd><span class="km-to">↓</span><span class="ctl">QUIT</span><span class="km-name">Saves the project</span></li>
+          </ul>
+        </div>
+      </div>
+      <p>Track keys use the top number row, not the keypad. They select tracks on the current track page, so after <kbd>Shift</kbd> + <kbd>2</kbd> the <kbd>1</kbd> key picks track 9. Everywhere but <a href="global.html">Global settings</a> and <a href="pattern.html">Pattern mode</a> they also go to Note mode; in Global settings they only move the selection, and in Pattern mode they page the grid instead — <kbd>1</kbd>–<kbd>4</kbd> the tracks, <kbd>5</kbd>–<kbd>8</kbd> the patterns, with or without <kbd>Shift</kbd>. Elsewhere <kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>4</kbd> changes the track page.</p>
+      <p>While <kbd>Shift</kbd> is held, the simulator relabels the buttons with their Shift functions for the current mode — GLOBAL, SCENE, SCALE, PARAMS, PROB and SONG on the right, track pages below, and the scroll buttons on a piano roll track — and draws the labels brighter. In Pattern mode the bottom buttons are labelled with their pages (<strong>T1-8</strong>–<strong>T25-32</strong>, then <strong>PAT 1-8</strong>–<strong>PAT 25-32</strong>) with no Shift at all.</p>
+      <p>Holding a button that turns B1–B8 into page buttons relabels them too: <strong>PG1</strong>–<strong>PG8</strong> while Shift is held in Project or Preset mode (or R1 in Project mode, R4 in Preset mode), and the steps each page shows (<strong>S1-32</strong>, <strong>S33-64</strong>, …) while R3 is held in Note mode, R4 in Step params or R5 in Probability mode.</p>
+      <p>To help you learn the settings modes, the simulator also prints on the pads what they do: note names, scale names and the keyboard pads in Scale mode, and the settings, +1/−1, channel numbers and the device names in Global settings. The APC mini has no display, so its pads stay plain.</p>
+    </section>
+
+    <section id="shift">
+      <h3>Shift layers</h3>
+      <div class="table-wrap">
+        <table class="shortcuts">
+          <thead><tr><th>Keys</th><th>Does</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Shift</kbd> + <kbd>F1</kbd></td><td>Opens <a href="global.html">Global settings</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F2</kbd></td><td>Opens <a href="scene.html">Scenes</a> — from Pattern mode too</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F3</kbd></td><td>Opens <a href="scale.html">Scale mode</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F4</kbd></td><td>Opens <a href="params.html">Step parameters</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F5</kbd></td><td>Opens <a href="probability.html">Probability</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F8</kbd></td><td>Opens the <a href="song.html">Song</a> — shift-play plays the song</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F6</kbd> / <kbd>F7</kbd></td><td>Nothing here, and nothing on the APC either: its firmware keeps those two for its own Drum and Note pad modes and never sends them</td></tr>
+            <tr><td><kbd>5</kbd>–<kbd>8</kbd></td><td>Pattern page 1–4 (patterns 1–8 … 25–32); <kbd>1</kbd>–<kbd>4</kbd> are the track pages. <kbd>Shift</kbd> changes neither<span class="where">Pattern mode</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>4</kbd></td><td>Track page 1–4 (tracks 1–8 … 25–32); the selected track keeps its position<span class="where">Note and Global settings mode</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>5</kbd> / <kbd>6</kbd></td><td>Scrolls the piano roll’s notes up / down by 4<span class="where">Note mode, on a piano roll track</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>7</kbd> / <kbd>8</kbd></td><td>Scrolls the piano roll’s steps left / right by 4<span class="where">Note mode, on a piano roll track</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="hold">
+      <h3>Hold a button, press a track key</h3>
+      <div class="table-wrap">
+        <table class="shortcuts">
+          <thead><tr><th>Keys</th><th>Does</th></tr></thead>
+          <tbody>
+            <tr><td>Hold <kbd>F1</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Opens <a href="project.html">Project mode</a> on page 1–8<span class="where">From any mode</span></td></tr>
+            <tr><td>Hold <kbd>F3</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Step page 1–8 (32 steps each); the playing page blinks while <kbd>F3</kbd> is held<span class="where">Note mode</span></td></tr>
+            <tr><td>Hold <kbd>F4</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Opens <a href="preset.html">Preset mode</a> on page 1–8<span class="where">In Step parameters: step page 1–8 instead</span></td></tr>
+            <tr><td>Hold <kbd>F5</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Step page 1–8<span class="where">Probability mode</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="click">
+      <h3>Hold and click</h3>
+      <div class="table-wrap">
+        <table class="shortcuts">
+          <thead><tr><th>Keys</th><th>Does</th></tr></thead>
+          <tbody>
+            <tr><td>Hold <kbd>F5</kbd> + click</td><td>Clears the clicked step, pattern or project. There is no undo. Preset mode has nothing to clear.</td></tr>
+            <tr><td>Hold <kbd>F6</kbd> + click, click</td><td>Duplicates from the first click to each click after it; you can change page in between</td></tr>
+            <tr><td><kbd>Shift</kbd> + click a step</td><td>Makes it the pattern’s last step (it turns red)<span class="where">Note mode</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + click a bottom-row pad</td><td>Makes its step the pattern’s last step<span class="where">Note mode, on a piano roll track</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + click the leftmost or rightmost key</td><td>Moves the track’s keyboard down or up an octave<span class="where">Note mode</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + click any other key</td><td>Plays that key’s single note on a track whose keyboard is in <a href="scale.html#chords">chords</a><span class="where">Note mode</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="mouse">
+      <h3>Mouse and faders</h3>
+      <div class="table-wrap">
+        <table class="shortcuts">
+          <thead><tr><th>Action</th><th>Does</th></tr></thead>
+          <tbody>
+            <tr><td>Click</td><td>Presses a pad or button for as long as the mouse button is down</td></tr>
+            <tr><td>Right-click</td><td>Latches a pad or button down until you right-click it again. Use it for anything needing several pads at once: latch the keys of a chord, then click a step.</td></tr>
+            <tr><td>Drag a fader</td><td>Moves it; clicking anywhere along the slot jumps the cap there</td></tr>
+            <tr><td>Drag a mixer knob</td><td>Turns it: dragging up raises it, and about 160 pixels covers the whole range. The knob doesn’t jump when you grab it.</td></tr>
+            <tr><td>Mouse wheel over a fader or knob</td><td>Nudges it by a thirty-second of its travel</td></tr>
+            <tr><td><kbd>Ctrl</kbd> + mouse wheel</td><td>Fine steps, a 256th of the travel: about 1 BPM when fader 1 sets the tempo in <a href="global.html">Global settings</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p><strong>If keys do nothing,</strong> click the window once to give it focus. On many laptops <kbd>F1</kbd>–<kbd>F8</kbd> change volume or brightness unless you hold <kbd>Fn</kbd> or turn on Fn-lock.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  window.GxManual.renderTopNav("shortcuts");
+</script>
+</body>
+</html>

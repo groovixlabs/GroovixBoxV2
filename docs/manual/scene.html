@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenes – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox scene mode: capture which tracks play as a song section — intro, verse, drop — and bring it back with one pad.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Scenes <span class="ctl">SHIFT</span> + <span class="ctl">R2</span></h2>
+        <p class="section-intro">A scene is a song section — intro, verse, drop — remembered as what is playing: which tracks are silent, and which pattern each of the others plays. Build it, capture it to a pad, and bring it back with one tap.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-scene"></div></div>
+          <figcaption>Scene 1 is playing (green) and scenes 2 and 5 hold something (blue). On the mute row, tracks 2 and 5 are dark: this scene silences them.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Top four rows: 32 scenes.</strong> Grey is empty, blue holds a scene, green is the one playing — the same colours as project and preset slots.</li>
+          <li><strong>Bottom row: the eight tracks of the current track page.</strong> Tap to mute or unmute; the track’s colour means it plays, dark means it is silent. <span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> moves along the track pages, as everywhere else.</li>
+          <li><strong>Tap a scene</strong> to launch it <strong>at the top of the next bar</strong>, so the change lands in time with the music however loosely you tap. The pad blinks green while it waits. A bar is 16 steps, four beats.</li>
+          <li><strong>Tap the blinking scene again to change your mind</strong>, or tap another to replace it. Stopping forgets what was waiting, and while playback is stopped a tap launches at once — there is no bar to wait for.</li>
+          <li><strong>Hold <span class="ctl">R7</span> (Record) and tap a pad</strong> to capture what you are hearing into it. The scene pads turn red while <span class="ctl">R7</span> is held, so it is clear that tapping writes instead of launching. Capturing over a scene replaces it.</li>
+          <li><strong><span class="ctl">R5</span> (Clear) + a pad</strong> erases a scene. <strong><span class="ctl">R6</span> (Duplicate) + pad + pad</strong> copies one, which is the quick way to make a variation.</li>
+          <li><strong>Tapping a scene while the <a href="song.html">song</a> is playing takes over from it.</strong> The song stops moving on to its next section and leaves you performing; stop and play again in Song mode to hand it back.</li>
+          <li><strong>A scene launch drops any solo.</strong> Solo is for listening to one track; leaving it up would hide the scene you just launched.</li>
+          <li><strong>Getting here and back:</strong> <span class="ctl">SHIFT</span> + <span class="ctl">R2</span> from any mode, Pattern mode included, and <span class="ctl">R2</span> returns to Pattern mode. Pattern mode pages its grid on the bottom row instead of on <span class="ctl">SHIFT</span>, so this one gesture reaches scenes from everywhere.</li>
+          <li><span class="ctl">R7</span> on its own still starts and stops recording — it only captures when a pad is tapped while it is held.</li>
+        </ul>
+        <h3>Writing a set</h3>
+        <ol>
+          <li>Mute tracks on the bottom row until the section sounds right.</li>
+          <li>Hold <span class="ctl">R7</span> and tap an empty pad. It turns blue: that is your intro.</li>
+          <li>Unmute the drums, hold <span class="ctl">R7</span>, tap the next pad. That is the drop.</li>
+          <li>Perform by tapping pads. To fix a scene, launch it, change the mutes and capture over it again.</li>
+        </ol>
+        <h3>What a scene holds</h3>
+        <ul>
+          <li><strong>Which tracks are silent</strong>, for all 32 tracks, and <strong>which pattern each track plays</strong>. Launching a scene puts the tracks back on those patterns, so a section changes the music and not only the mix.</li>
+          <li>To change what a scene plays, launch it, pick other patterns in <a href="pattern.html">Pattern mode</a>, then capture over it. Auditioning patterns without capturing leaves the scene as it was — the next launch brings it back.</li>
+          <li>Scenes are saved with the project. The mutes themselves are not: they belong to the session, and opening a project starts with everything playing until you launch a scene.</li>
+          <li><strong>The bar is fixed at 16 steps</strong> for now; it will become a <a href="global.html">Global setting</a>, so other time signatures can have their own.</li>
+          <li>The numbers on the pads are the scenes themselves: the <a href="song.html">song</a> is a list of them, so a scene keeps its number as the song grows.</li>
+        </ul>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("scene");
+    var PLAYING = 0, STORED = [1, 4], MUTED = [1, 4];
+    g.surface("fig-scene", {
+      pad: function (i) {
+        var row = Math.floor(i / 8), col = i % 8;
+        if (row < 4) {
+          if (i === PLAYING) return { c: g.C.green, lit: true, t: String(i + 1) };
+          if (STORED.indexOf(i) >= 0) return { c: g.C.blue, lit: true, t: String(i + 1) };
+          return { c: g.C.grey, t: String(i + 1) };
+        }
+        if (row < 7) return { c: g.OFF };
+        return MUTED.indexOf(col) >= 0 ? { c: g.dim(g.TRACK[col], 0.2) }
+                                       : { c: g.TRACK[col], lit: true };
+      },
+      right: function (i) {
+        var spec = g.functionButtons(-1, false, false)(i);
+        if (i === 1) spec = { c: g.C.white };  // R2 is lit in scene mode
+        return spec;
+      },
+      bottom: g.trackButtons(0)
+    });
+  })();
+</script>
+</body>
+</html>

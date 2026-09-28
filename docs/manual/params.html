@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Step parameters – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox step parameters mode: per-step velocity, gate and ratchets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Step parameters <span class="ctl">R4</span></h2>
+        <p class="section-intro">How hard each step hits, how long its notes last, and how many times it fires. The steps stay on top; velocity and gate each get two rows of 16 pads below them.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-params"></div></div>
+          <figcaption>Step 6 is selected. The steps glow brighter the harder they hit. Velocity (rows 5–6) is on its 11th pad, 88; the gate (rows 7–8) is on its third pad, half a step.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Tap a step</strong> to select it (green); tapping another moves the selection. <strong>Hold several steps</strong> to edit them together. Tapping here never switches a step on or off — that stays in Note mode.</li>
+          <li><strong>Rows 5–6 — velocity:</strong> 16 levels, left to right along row 5 and then row 6, from 8 up to 127. The lane shows the value as a bar, and the steps above show their velocity as brightness, so the accents of a whole page show at a glance.</li>
+          <li><strong>Rows 7–8 — gate:</strong> how long the step’s notes sound, as one ramp of 16 lengths from shortest to longest, a pad each. <strong>One tap is that length</strong>, like every other lane — nothing is hidden behind a second tap, and the bar shows how long the note is without your having to count.
+            <div class="table-wrap"><table>
+              <thead><tr><th>Pads</th><th>Gate</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>1–5</td><td>a sixth of a step … five sixths</td><td>stabs and staccato; a sixth is about 21 ms at 120 BPM</td></tr>
+                <tr><td>6</td><td>one step</td><td>what a new step has</td></tr>
+                <tr><td>7–11</td><td>2, 3, 4, 5, 6 steps</td><td>the note rings on over the steps after it</td></tr>
+                <tr><td>12–16</td><td>8, 10, 12, 14, 16 steps</td><td>pads and drones; the last pad is a full bar</td></tr>
+              </tbody>
+            </table></div>
+            The resolution sits where the ear is: sixths inside the step, where the difference between a stab and a blip is obvious, and every other step at the top, where 13 and 14 sound the same.</li>
+          <li>If a long note is still sounding when the same pitch plays again, it stops first.</li>
+          <li><span class="ctl">R5</span> + step resets its velocity, gate and ratchet; <span class="ctl">R6</span> + step + step copies all three to another step.</li>
+          <li id="ratchet"><strong>Hold <span class="ctl">SHIFT</span> and rows 7–8 become the ratchets</strong>, the same rows the gate uses: pad <em>n</em> makes the step fire <em>n</em> + 1 times, spread evenly across its own length. Two is 32nd notes, four is 64ths and eight is a roll — the pads past eight stay dark. Each hit lasts its own gate or the space to the next one, whichever is shorter, so a long gate rolls instead of blurring, and a short one gives a stutter of stabs. The probability is rolled once, so a ratcheted step plays whole or not at all, and the whole thing moves with the step's micro-timing. <span class="ctl">R5</span> + step puts velocity, gate <em>and</em> the ratchet back.</li>
+          <li><strong>Hold <span class="ctl">R4</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> for another page of steps. Tapping <span class="ctl">R4</span> on its own stays here — this is its mode. <span class="ctl">SHIFT</span> + <span class="ctl">R4</span> opens Preset mode; <span class="ctl">R3</span> returns to Note mode.</li>
+          <li>Probability has its own mode, <a href="probability.html"><span class="ctl">SHIFT</span> + <span class="ctl">R5</span></a>.</li>
+        </ul>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("params");
+    // Step 6 selected; velocity as step brightness and on its 11th pad; gate on its third pad.
+    var VELOCITY = "#ff7800", GATE = "#00c8ff";
+    var VELOCITIES = { 0: 127, 2: 48, 4: 100, 8: 127, 10: 48, 12: 100, 16: 127, 20: 100, 24: 127, 28: 64 };
+    g.surface("fig-params", {
+      pad: function (i) {
+        var row = Math.floor(i / 8), col = i % 8;
+        if (row < 4) {
+          if (i === 5) return { c: g.C.green, lit: true };
+          if (VELOCITIES[i] !== undefined) {
+            return { c: g.dim(g.TRACK[0], 0.16 + VELOCITIES[i] / 127 * 0.84), lit: true };
+          }
+          return { c: g.dim(g.TRACK[0], 0.12) };
+        }
+        var lanePad = (row % 2) * 8 + col;  // each lane reads along its first row, then its second
+        if (row < 6) {
+          if (lanePad === 10) return { c: VELOCITY, lit: true };
+          return { c: g.dim(VELOCITY, lanePad < 10 ? 0.35 : 0.05) };
+        }
+        if (lanePad < 2) return { c: g.dim(GATE, 0.35) };
+        if (lanePad === 2) return { c: GATE, lit: true };
+        return { c: g.dim(GATE, 0.05) };
+      },
+      right: g.functionButtons(3, false, false),
+      bottom: g.trackButtons(0)
+    });
+  })();
+</script>
+</body>
+</html>

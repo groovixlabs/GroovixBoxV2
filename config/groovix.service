@@ -1,0 +1,35 @@
+# GroovixBox as an appliance: the instrument starts with the box and stops with it.
+#
+#   sudo cp config/groovix.service /etc/systemd/system/
+#   sudo systemctl enable --now groovix
+#
+# Edit User= and the paths for your machine. Projects go to /mnt/usb1/data and controls.conf is
+# read from /mnt/usb1/config without being asked; RequiresMountsFor= below keeps the unit from
+# starting before the stick is there. The service waits for the sound card so the USB MIDI
+# devices are there to be found; if one is plugged in later, the REFRESH pad on the devices
+# page of Global settings picks it up without a restart.
+
+[Unit]
+Description=GroovixBox sequencer
+After=sound.target
+Wants=sound.target
+# The rig's storage. Without this the instrument can start before the stick is mounted and
+# quietly keep its projects in the user's home instead.
+RequiresMountsFor=/mnt/usb1
+
+[Service]
+Type=simple
+User=pi
+ExecStart=/home/pi/groovix/build/groovix
+# The clock asks for real-time scheduling and carries on at normal priority if refused; this
+# is what lets it have it.
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+# SIGTERM is a clean stop: it saves the open project and puts the LEDs out.
+KillSignal=SIGTERM
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project mode – GroovixBox Manual</title>
+<meta name="description" content="GroovixBox Project mode: open, save and page through project slots.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="page-narrow">
+  <div id="topnav"></div>
+  <main>
+        <h2>Project mode <span class="ctl">R1</span></h2>
+        <p class="section-intro">A project holds every track, pattern, preset choice and the tempo. There are 8 pages of 64 project slots.</p>
+        <figure>
+          <div class="device-frame"><div class="device" id="fig-project"></div></div>
+          <figcaption><span class="ctl">R1</span> held: the pads show page 1, where slot 1 is open (green) and four slots hold projects. The bottom row shows project pages: page 1 is shown and page 3 has projects.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Tap a slot</strong> to open that project. The open project is saved first. Tapping an empty slot starts a new, empty project there.</li>
+          <li>Opening Project mode shows the page that contains the open project.</li>
+          <li><strong>Hold <span class="ctl">SHIFT</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> to go to page 1–8, the same way <span class="ctl">SHIFT</span> + <span class="ctl">B</span> changes the track page in Note and Pattern mode. The buttons are labelled PG1–PG8 in the simulator.</li>
+          <li><strong>Hold <span class="ctl">R1</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> does the same. This also works from any other mode: hold <span class="ctl">R1</span>, press <span class="ctl">B3</span> and Project mode opens on page 3.</li>
+          <li><span class="ctl">R6</span> + source + destination copies a project, also across pages (change page between the two taps). Copying the open project includes unsaved changes.</li>
+          <li><span class="ctl">R5</span> + slot clears that project straight away — there is no undo on the device. Clearing the open project leaves you with an empty one.</li>
+          <li><strong>The file isn't deleted, though.</strong> It is moved into <code>trash/&lt;date&gt;_&lt;time&gt;/</code> inside the data folder, so a mis-tap can be put right by copying the file back into place. Two clears in the same second share a folder and never overwrite one another. See <a href="index.html#trash">Saving</a>.</li>
+          <li>A project with no steps and default settings is not saved: its slot shows as empty.</li>
+        </ul>
+        <p>Slots are written <code>page.slot</code>: <code>3.08</code> is page 3, pad 8.</p>
+      
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+  (function () {
+    var g = window.GxManual;
+    g.renderTopNav("project");
+    var saved = [1, 6, 12, 13];
+    g.surface("fig-project", {
+      pad: function (i) {
+        if (i === 0) return { c: g.C.green, lit: true };
+        return saved.indexOf(i) >= 0 ? { c: g.C.blue, lit: true } : { c: "#4b4d55" };
+      },
+      right: function (i) {
+        var spec = g.functionButtons(0, false, false)(i);
+        if (i === 0) spec.held = true;
+        return spec;
+      },
+      bottom: g.pageMap(0, [2])
+    });
+  })();
+</script>
+</body>
+</html>
