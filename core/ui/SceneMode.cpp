@@ -90,4 +90,36 @@ const char* SceneMode::padLabel(const UiState&, uint8_t pad) const {
   return nullptr;
 }
 
+
+// ---- what the rows are for, for a screen beside the instrument ----
+
+namespace {
+
+const Rgb kLegendSceneColor = {30, 156, 255};
+const Rgb kLegendTrackColor = {255, 130, 0};
+const Rgb kLegendCaptureColor = {255, 43, 43};
+
+const ModeLegend kSceneLegend = {
+    "SHIFT + R2",
+    "Scenes",
+    {
+        {1, 4, kLegendSceneColor, "rows 1-4", "32 scenes - blue held, green playing"},
+        {8, 8, kLegendTrackColor, "row 8", "the 8 tracks of this page - tap to mute"},
+        {0, 0, kLegendCaptureColor, "hold R7 pad", "captures what you are hearing"},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+    },
+    3,
+    {"tap a scene launches it at the top of the next bar", "R2 back to pattern",
+     "R5 + pad erase, R6 + pad + pad copy", NULL},
+    3,
+    {kLegendSceneColor, kLegendSceneColor, kLegendSceneColor, kLegendSceneColor,
+     {}, {}, {}, kLegendTrackColor},
+};
+
+}  // namespace
+
+const ModeLegend* SceneMode::legend(const UiState&) const { return &kSceneLegend; }
+
 }  // namespace gx

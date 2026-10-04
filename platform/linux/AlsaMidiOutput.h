@@ -47,6 +47,12 @@ class AlsaMidiOutput : public MidiOutput {
   // reporting, or an empty string if nothing matched.
   std::string connectPortTo(uint8_t port, const char* spec);
   const std::string& deviceName() const { return deviceName_; }
+  // The device each port is wired to, as ALSA names its client. Empty for a port that was
+  // never wired here - which includes one patched up by hand with aconnect. It is what the
+  // voice lists are matched against, so a port plays the voices of the gear on it.
+  const std::string& portDeviceName(uint8_t port) const;
+  // Forgets what the ports were wired to, before wiring them again.
+  void forgetPortDevices();
   // Our own client on the sequencer, so its comings and goings can be told from a device's.
   int clientId() const { return seq_ ? snd_seq_client_id(seq_) : -1; }
   // Whether anything is listening to that port. Asked of the sequencer rather than remembered,
@@ -71,6 +77,7 @@ class AlsaMidiOutput : public MidiOutput {
   snd_seq_t* seq_;
   int ports_[kNumMidiPorts];  // our source ports, -1 when not created
   std::string deviceName_;
+  std::string portDevice_[kNumMidiPorts];
   uint8_t connected_;  // bit per port connected by connectDevice
   uint32_t dropped_;
 };

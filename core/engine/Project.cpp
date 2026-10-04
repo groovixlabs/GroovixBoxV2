@@ -83,8 +83,10 @@ void initProject(Project& project) {
   }
   for (uint8_t s = 0; s < kNumScenes; ++s) {
     project.scenes[s].used = 0;
-    project.scenes[s].muted = 0;
-    for (uint8_t t = 0; t < kNumTracks; ++t) project.scenes[s].patterns[t] = kNoPattern;
+    for (uint8_t t = 0; t < kNumTracks; ++t) {
+      project.scenes[s].muted[t] = 0;
+      project.scenes[s].patterns[t] = kNoPattern;
+    }
   }
   for (uint8_t s = 0; s < kNumSongSteps; ++s) project.song[s] = kNoScene;
   project.bpm = kDefaultBpm;

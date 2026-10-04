@@ -123,4 +123,36 @@ const char* ArrangementMode::padLabel(const UiState&, uint8_t pad) const {
   return scene == kNoScene ? nullptr : kSongLabels[scene];
 }
 
+
+// ---- what the rows are for, for a screen beside the instrument ----
+
+namespace {
+
+const Rgb kSceneColor = {30, 156, 255};
+const Rgb kStepColor = {160, 70, 255};
+const Rgb kHoldColor = {243, 244, 246};
+
+const ModeLegend kSongLegend = {
+    "SHIFT + R8",
+    "Song",
+    {
+        {1, 4, kSceneColor, "rows 1-4", "the 32 scenes to build from"},
+        {5, 8, kStepColor, "rows 5-8", "the 32 song steps, four bars each"},
+        {0, 0, kHoldColor, "hold step", "then a scene, to put it in that step"},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+    },
+    3,
+    {"R8 here plays the song from the marker", "tap a step goes there at once",
+     "R5 + step empties it, R6 + step + step repeats a section", NULL},
+    3,
+    {kSceneColor, kSceneColor, kSceneColor, kSceneColor,
+     kStepColor, kStepColor, kStepColor, kStepColor},
+};
+
+}  // namespace
+
+const ModeLegend* ArrangementMode::legend(const UiState&) const { return &kSongLegend; }
+
 }  // namespace gx

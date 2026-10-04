@@ -19,25 +19,66 @@
         <div class="fig-pair">
           <figure>
             <div class="device-frame"><div class="device" id="fig-pattern"></div></div>
-            <figcaption>Track 2 plays pattern 3, track 6 plays pattern 2, the others pattern 1. Blue patterns hold steps. The bottom buttons page the grid: <span class="ctl">B1</span>–<span class="ctl">B4</span> the tracks it shows, <span class="ctl">B5</span>–<span class="ctl">B8</span> the patterns.</figcaption>
+            <figcaption>Track 2 plays pattern 3, track 6 plays pattern 2, the others pattern 1. Blue patterns hold steps. The bottom buttons page the columns: <span class="ctl">B1</span>–<span class="ctl">B8</span> are the eight track pages.</figcaption>
           </figure>
           <figure>
             <div class="device-frame"><div class="device" id="fig-pattern-shift"></div></div>
-            <figcaption>With <span class="ctl">SHIFT</span> held the bottom pad row becomes the mutes — tracks 2 and 6 are silent, so their columns are dimmed. The buttons don’t change: the right column keeps the functions it has in every other mode, and the bottom row goes on paging the grid.</figcaption>
+            <figcaption>With <span class="ctl">SHIFT</span> held the top pad row becomes the pattern pages — green is the page on screen, blue a page holding patterns — and the bottom pad row the mutes, so tracks 2 and 6 are silent and their columns are dimmed. The buttons don’t change: the right column keeps the functions it has in every other mode, and the bottom row goes on paging the tracks.</figcaption>
           </figure>
         </div>
         <ul>
           <li><strong>Tap a pad</strong> to make that track play that pattern. It switches immediately, keeping the playhead position.</li>
           <li>Each column has one green pad: the pattern that track plays. A track whose pattern is on another pattern page shows no green.</li>
-          <li><strong>The bottom row pages the grid</strong>, with or without <span class="ctl">SHIFT</span>: <span class="ctl">B1</span>–<span class="ctl">B4</span> show tracks 1–8, 9–16, 17–24 or 25–32 — the columns — and <span class="ctl">B5</span>–<span class="ctl">B8</span> show patterns 1–8, 9–16, 17–24 or 25–32 — the rows. Four of each, so the row divides in half. The pattern page applies to every column. Each button is green for the page on screen, blue for a page holding something, grey for an empty one.</li>
-          <li><strong>The mixer’s <span class="ctl">A2</span> row (REC ARM on a MIDI Mix) mirrors it</strong>, split the same way: <span class="ctl">A2</span> 1–4 the track pages, <span class="ctl">A2</span> 5–8 the pattern pages, lit for the pages on screen. Either row moves both.</li>
+          <li><strong>The bottom row pages the columns</strong>, with or without <span class="ctl">SHIFT</span>: <span class="ctl">B1</span>–<span class="ctl">B8</span> show tracks 1–8, 9–16 and so on to 57–64. Eight pages of eight is every track there is, so the whole row is live. Each button is green for the page on screen, blue for a page holding something, grey for an empty one.</li>
+          <li><strong><span class="ctl">SHIFT</span> + the top pad row pages the rows</strong>: patterns 1–8, 9–16 and so on to 57–64, one press each. While <span class="ctl">SHIFT</span> is held that row <em>is</em> the map, in the same colours, so where you are and where you can go are the same eight pads. The pattern page applies to every column.</li>
+          <li><strong>Pages 5–8 are the <a href="#bank">built-in bank</a></strong> and light <span class="led" style="--c:#964600"></span>amber instead of blue. Tap one and the track plays it at once; <span class="ctl">R6</span> copies it down to pages 1–4 to make it yours; <span class="ctl">R5</span> leaves it alone.</li>
+          <li><strong>The mixer’s <span class="ctl">A2</span> row (REC ARM on a MIDI Mix) mirrors the buttons</strong>: <span class="ctl">A2</span> 1–8 the track pages, lit for the page on screen. It used to be split half tracks and half patterns; the pattern pages have their own row on the pads now, where the page you are on is visible without holding anything.</li>
           <li>Because the pages are there, <span class="ctl">SHIFT</span> here means one thing only — <strong>the bottom pad row is the mutes</strong> — and on the buttons it means the same as in every other mode: <span class="ctl">SHIFT</span> + <span class="ctl">R2</span> opens <a href="scene.html">Scenes</a>, <span class="ctl">SHIFT</span> + <span class="ctl">R1</span> <a href="global.html">Global settings</a>, and so on. The bottom buttons ignore it, so <strong>you can change page with a hand still on the mutes</strong>.</li>
           <li><strong>Tapping a pad also selects its track</strong>, which is how you pick one here now that the buttons are pages: touch the column, then <span class="ctl">R3</span> to open <a href="note.html">Note mode</a> on it.</li>
           <li><strong><span class="ctl">SHIFT</span> + a pad on the bottom row</strong> mutes that column’s track. While <span class="ctl">SHIFT</span> is held the bottom row becomes the mutes — the track’s colour means it plays, dark means it is silent — the same way <span class="ctl">SHIFT</span> turns the buttons into page maps. <strong>A muted track’s whole column dims</strong>, so it is plain why nothing is coming out of it while you try patterns against a <a href="scene.html">scene</a>.</li>
           <li>The mutes belong to the session, not to a mode: they stay as they are while you flip between patterns and <a href="scene.html">scenes</a> with <span class="ctl">SHIFT</span> + <span class="ctl">R2</span> and <span class="ctl">R2</span>, which is what makes auditioning a pattern inside a section work.</li>
           <li><span class="ctl">R5</span> + pad clears a pattern. <span class="ctl">R6</span> + source + destination copies a pattern, also to another track or page.</li>
         </ul>
-      
+
+        <h2 id="bank">The built-in bank</h2>
+        <p>Pattern pages 5 to 8 — patterns 33 to 64 — hold material that ships with the
+        instrument instead of material you made. Switch to one of those pages, tap a pad, and
+        the track plays it straight away: there is nothing to load and nothing to set up.</p>
+        <p><strong>What a track’s bank holds follows its place in its page of eight</strong>,
+        so the roles repeat all the way up to track 64.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Track</th><th>Holds</th><th>The eight it starts with</th></tr></thead>
+            <tbody>
+              <tr><td>1, 9, 17 …</td><td><strong>Drums</strong></td><td>Four Floor, Backbeat, Breakbeat, Half Time, Shuffle, Trap, Two Step, Latin</td></tr>
+              <tr><td>2, 10, 18 …</td><td><strong>Bass</strong></td><td>Roots, Octaves, Offbeat, Walking, Acid, Dub, Driving, Syncopated</td></tr>
+              <tr><td>3, 11, 19 …</td><td><strong>Chords</strong></td><td>Held, Stabs, Offbeat, Progression, Sus 4, Sevenths, Pads, Pumping</td></tr>
+              <tr><td>4, 12, 20 …</td><td><strong>Arp</strong></td><td>Up, Down, Up Down, Octaves, Wide, Thirds, Gallop, Sparse</td></tr>
+              <tr><td>5, 13, 21 …</td><td><strong>Fills</strong></td><td>Snare Roll, Tom Fall, Crash, Build, Stutter, Flam, Drop, Roll Out</td></tr>
+              <tr><td>6–8 of each group</td><td>nothing</td><td>pages 5–8 are empty and yours</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>The drum and fill patterns use the <strong>General MIDI drum map</strong>, and the
+          pitched ones are in <strong>C minor</strong>, so a drum, a bass and a chord pattern
+          picked at random sit together.</li>
+          <li>Eight of each role’s 32 slots are filled. The rest are empty, left for the set to
+          grow into without moving what is already there.</li>
+          <li><strong>The bank is read-only.</strong> <span class="ctl">R5</span> will not empty
+          it, the step pads will not edit it, and its patterns keep the length they ship with.
+          To make one yours, hold <span class="ctl">R6</span>, tap the amber pad, then tap a
+          slot on pages 1–4 — the ordinary pattern copy. Copying <em>into</em> the bank is
+          refused.</li>
+          <li><strong>It costs nothing.</strong> The bank is not part of a project, so no
+          project file carries it: an empty project is still 32 bytes with the whole bank
+          available, and clearing a project leaves the bank alone. A track page’s button lights
+          blue for <em>your</em> work only, so the bank does not make every page look busy.</li>
+          <li><strong>Not done yet:</strong> a factory pattern does not set the track’s preset,
+          so a drum pattern plays notes 36–50 out of whatever channel and port the track
+          already has. Wiring the roles to voices waits on the preset document.</li>
+        </ul>
+
   </main>
 </div>
 <script src="shared.js"></script>
@@ -56,10 +97,8 @@
     g.surface("fig-pattern", {
       pad: patternPad,
       right: g.functionButtons(1, false, false),
-      // The bottom row pages the grid: B1-B4 track pages, B5-B8 pattern pages.
-      bottom: function (i) {
-        return i < 4 ? g.pageMap(0, [1])(i) : g.pageMap(0, [1])(i - 4);
-      }
+      // The bottom row is the track pages, all eight of them.
+      bottom: g.pageMap(0, [1, 3])
     });
     // With Shift held the bottom pad row becomes the mutes; tracks 2 and 6 are silent here.
     var muted = [1, 5];
@@ -67,6 +106,8 @@
       pad: function (i) {
         var track = i % 8, row = Math.floor(i / 8);
         var spec = patternPad(i);
+        // Shift paints the pattern pages over the top row and the mutes over the bottom one.
+        if (row === 0) return g.pageMap(0, [1, 3])(track);
         if (row === 7) {
           return muted.indexOf(track) >= 0 ? { c: g.dim(g.TRACK[track], 0.2) }
                                            : { c: g.TRACK[track], lit: true };
@@ -74,11 +115,9 @@
         if (muted.indexOf(track) >= 0) return { c: g.dim(spec.c, 0.35) };
         return spec;
       },
-      // Shift changes neither row: functions on the right, the pages below.
+      // Shift changes neither row of controls: functions on the right, track pages below.
       right: g.functionButtons(1, false, false),
-      bottom: function (i) {
-        return i < 4 ? g.pageMap(0, [1])(i) : g.pageMap(0, [1])(i - 4);
-      },
+      bottom: g.pageMap(0, [1, 3]),
       shift: g.C.white,
       shiftHeld: true
     });

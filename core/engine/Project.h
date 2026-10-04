@@ -8,7 +8,9 @@ namespace gx {
 
 // Capacity limits are chosen per platform build by defining GX_NUM_TRACKS and
 // GX_NUM_PATTERNS. The defaults keep a project small enough for an MCU without external
-// RAM (about 25 KB); desktop builds raise them to fill the UI's 8 pages (64 each).
+// RAM (about 25 KB); desktop builds raise them to fill the UI's 8 pages (64 each). At 64
+// tracks, 64 patterns and 256 steps a Project is about 11 MB, and the app holds two of them -
+// the open one and a scratch copy - so roughly 22 MB. Fine on a desktop, nowhere near an MCU.
 #ifndef GX_NUM_TRACKS
 #define GX_NUM_TRACKS 16
 #endif
@@ -179,12 +181,10 @@ static const uint8_t kNoScene = 0xFF;
 static const uint8_t kNoPattern = 0xFF;
 
 struct Scene {
-  uint8_t used;    // 0 for an empty pad: a scene that mutes nothing is still a scene
-  uint32_t muted;  // bit per track, 1 = silent
+  uint8_t used;                  // 0 for an empty pad: a scene that mutes nothing is still one
+  uint8_t muted[kNumTracks];     // 1 = that track is silent
   uint8_t patterns[kNumTracks];  // the pattern each track plays, or kNoPattern
 };
-
-static_assert(kNumTracks <= 32, "a scene keeps one bit per track");
 
 // The song: scenes in the order they play. Every step lasts the same number of bars for now,
 // so a longer section is the same scene in several steps; per-step lengths can come later.

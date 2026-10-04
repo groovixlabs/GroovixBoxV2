@@ -1,5 +1,7 @@
 #include "engine/Sequencer.h"
 
+#include "engine/FactoryPatterns.h"
+
 namespace gx {
 
 namespace {
@@ -482,29 +484,48 @@ void Sequencer::selectPattern(uint8_t track, uint8_t pattern) {
 
 bool Sequencer::patternHasData(uint8_t track, uint8_t pattern) const {
   if (track >= kNumTracks || pattern >= kNumPatterns) return false;
-  return !isPatternEmpty(project_.tracks[track].patterns[pattern]);
+  const Pattern* p = patternAt(track, pattern);
+  return p && !isPatternEmpty(*p);
 }
 
 void Sequencer::clearPattern(uint8_t track, uint8_t pattern) {
-  if (track >= kNumTracks || pattern >= kNumPatterns) return;
-  initPattern(project_.tracks[track].patterns[pattern]);
+  Pattern* p = writablePattern(track, pattern);
+  if (!p) return;  // Clear does not empty the bank
+  initPattern(*p);
 }
 
+// Copying out of the bank is how one of its patterns becomes yours: the source may be a
+// factory pattern, the destination may not.
 void Sequencer::copyPattern(uint8_t fromTrack, uint8_t fromPattern, uint8_t toTrack,
                             uint8_t toPattern) {
-  if (fromTrack >= kNumTracks || toTrack >= kNumTracks || fromPattern >= kNumPatterns ||
-      toPattern >= kNumPatterns) {
-    return;
-  }
-  project_.tracks[toTrack].patterns[toPattern] = project_.tracks[fromTrack].patterns[fromPattern];
+  const Pattern* from = patternAt(fromTrack, fromPattern);
+  Pattern* to = writablePattern(toTrack, toPattern);
+  if (!from || !to) return;
+  *to = *from;
 }
 
 // ---- Steps ----
 
+// Any of a track's patterns, from the project or from the built-in bank. Everything that
+// reads a pattern comes through here, so the bank needs no special case anywhere else: a
+// factory pattern plays, draws and copies exactly like one of your own.
+const Pattern* Sequencer::patternAt(uint8_t track, uint8_t pattern) const {
+  if (track >= kNumTracks || pattern >= kNumPatterns) return nullptr;
+  if (isFactoryPattern(pattern)) return factoryPattern(track, pattern);
+  return &project_.tracks[track].patterns[pattern];
+}
+
+// The same, for writing - and null for the bank, which is where read-only is enforced. One
+// place, because every setter below reaches its step through here.
+Pattern* Sequencer::writablePattern(uint8_t track, uint8_t pattern) {
+  if (track >= kNumTracks || pattern >= kNumPatterns) return nullptr;
+  if (isFactoryPattern(pattern)) return nullptr;
+  return &project_.tracks[track].patterns[pattern];
+}
+
 const Pattern* Sequencer::currentPattern(uint8_t track) const {
   if (track >= kNumTracks) return nullptr;
-  const Track& t = project_.tracks[track];
-  return &t.patterns[t.selectedPattern];
+  return patternAt(track, project_.tracks[track].selectedPattern);
 }
 
 const Step* Sequencer::stepAt(uint8_t track, uint16_t step) const {
@@ -513,7 +534,9 @@ const Step* Sequencer::stepAt(uint8_t track, uint16_t step) const {
 }
 
 Step* Sequencer::stepAt(uint8_t track, uint16_t step) {
-  return const_cast<Step*>(static_cast<const Sequencer*>(this)->stepAt(track, step));
+  if (track >= kNumTracks || step >= kMaxSteps) return nullptr;
+  Pattern* pattern = writablePattern(track, project_.tracks[track].selectedPattern);
+  return pattern ? &pattern->steps[step] : nullptr;
 }
 
 uint16_t Sequencer::trackLength(uint8_t track) const {
@@ -523,8 +546,9 @@ uint16_t Sequencer::trackLength(uint8_t track) const {
 
 void Sequencer::setTrackLength(uint8_t track, uint16_t length) {
   if (track >= kNumTracks || length < 1) return;
-  Track& t = project_.tracks[track];
-  t.patterns[t.selectedPattern].length = length > kMaxSteps ? kMaxSteps : length;
+  Pattern* pattern = writablePattern(track, project_.tracks[track].selectedPattern);
+  if (!pattern) return;  // a factory pattern keeps the length it ships with
+  pattern->length = length > kMaxSteps ? kMaxSteps : length;
 }
 
 bool Sequencer::stepActive(uint8_t track, uint16_t step) const {
@@ -917,14 +941,10 @@ bool Sequencer::sceneUsed(uint8_t scene) const {
 
 void Sequencer::captureScene(uint8_t scene) {
   if (scene >= kNumScenes) return;
-  uint32_t muted = 0;
-  for (uint8_t t = 0; t < kNumTracks; ++t) {
-    if (muted_[t]) muted |= 1u << t;
-  }
   project_.scenes[scene].used = 1;
-  project_.scenes[scene].muted = muted;
   // What is playing, not only what is silent: a section is its patterns too.
   for (uint8_t t = 0; t < kNumTracks; ++t) {
+    project_.scenes[scene].muted[t] = muted_[t] ? 1 : 0;
     project_.scenes[scene].patterns[t] = project_.tracks[t].selectedPattern;
   }
   currentScene_ = scene;  // what you just captured is what you are hearing
@@ -948,10 +968,9 @@ void Sequencer::clearSolos() {
 void Sequencer::launchScene(uint8_t scene) {
   if (!sceneUsed(scene)) return;
   pendingScene_ = kNoScene;  // an immediate launch overrides whatever was waiting
-  const uint32_t muted = project_.scenes[scene].muted;
   for (uint8_t t = 0; t < kNumTracks; ++t) {
     setTrackSoloed(t, false);  // a solo would mask the scene and look like a fault
-    setTrackMuted(t, (muted >> t) & 1);
+    setTrackMuted(t, project_.scenes[scene].muted[t] != 0);
     // Scenes from before patterns were remembered leave them alone.
     const uint8_t pattern = project_.scenes[scene].patterns[t];
     if (pattern != kNoPattern) selectPattern(t, pattern);
@@ -962,8 +981,10 @@ void Sequencer::launchScene(uint8_t scene) {
 void Sequencer::clearScene(uint8_t scene) {
   if (scene >= kNumScenes) return;
   project_.scenes[scene].used = 0;
-  project_.scenes[scene].muted = 0;
-  for (uint8_t t = 0; t < kNumTracks; ++t) project_.scenes[scene].patterns[t] = kNoPattern;
+  for (uint8_t t = 0; t < kNumTracks; ++t) {
+    project_.scenes[scene].muted[t] = 0;
+    project_.scenes[scene].patterns[t] = kNoPattern;
+  }
   if (currentScene_ == scene) currentScene_ = kNoScene;
   if (pendingScene_ == scene) pendingScene_ = kNoScene;
 }

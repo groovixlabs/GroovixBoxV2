@@ -19,9 +19,11 @@ extern const char* const kDefaultConfigDir;  // /mnt/usb1/config
 // The rig's two directories, each returned with a trailing slash. A directory named on the
 // command line wins; then $GXBOX_DATA_DIR / $GXBOX_CONFIG_DIR; then the default above.
 //
-// On a machine where the stick isn't mounted - a desktop running the simulator - the default
-// falls back to the per-user directory these used to live in, and says on stderr that it did.
-// Falling back silently is what made the stick look ignored in the first place.
+// On a machine where the stick isn't mounted - a desktop running the simulator - each default
+// falls back to the matching per-user directory, $XDG_DATA_HOME/Groovix/{data,config} or
+// ~/.local/share/Groovix/{data,config}, and says on stderr that it did. The pair stays split
+// there as it is on the stick. Falling back silently is what made the stick look ignored in
+// the first place.
 std::string rigDataDir(const char* named);
 std::string rigConfigDir(const char* named);
 

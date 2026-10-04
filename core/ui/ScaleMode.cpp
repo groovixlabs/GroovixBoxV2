@@ -173,4 +173,36 @@ void ScaleMode::renderPads(const UiState& state, LedFrame& frame) const {
   }
 }
 
+
+// ---- what the rows are for, for a screen beside the instrument ----
+
+namespace {
+
+const Rgb kPianoColor = {243, 244, 246};
+const Rgb kScaleColor = {40, 100, 255};
+const Rgb kLayoutColor = {160, 60, 255};
+
+const ModeLegend kScaleLegend = {
+    "SHIFT + R3",
+    "Scale",
+    {
+        {1, 2, kPianoColor, "rows 1-2", "the root note: black keys above white"},
+        {5, 7, kScaleColor, "rows 5-7", "the 24 scales, Major first"},
+        {8, 8, kLayoutColor, "row 8", "1 roll, 5-6 chords, 7-8 drums and scale"},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+    },
+    3,
+    {"root and scale belong to the project", "own scale lets one track differ",
+     "R3 back to note", NULL},
+    3,
+    {kPianoColor, kPianoColor, {}, {},
+     kScaleColor, kScaleColor, kScaleColor, kLayoutColor},
+};
+
+}  // namespace
+
+const ModeLegend* ScaleMode::legend(const UiState&) const { return &kScaleLegend; }
+
 }  // namespace gx

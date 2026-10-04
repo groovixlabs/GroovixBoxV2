@@ -39,6 +39,7 @@
         <li><a href="tutorial-live.html">&nbsp;&nbsp;3. Patterns and scenes</a></li>
         <li><a href="#controls">Controls</a></li>
         <li><a href="#cc">MIDI CC</a></li>
+        <li><a href="#voices">Voice lists</a></li>
         <li><a href="#leds">LED colours</a></li>
         <li><a href="#modes">Modes</a></li>
         <li><a href="note.html">&nbsp;&nbsp;Note mode</a></li>
@@ -82,15 +83,15 @@
               <tr><td><span class="ctl">PADS</span></td><td>8×8 grid. Steps and notes, patterns, projects or presets, depending on the mode.</td><td>See each mode</td></tr>
               <tr><td><span class="ctl">R1</span> Project</td><td>Opens Project mode. Hold it and press <span class="ctl">B1</span>–<span class="ctl">B8</span> to jump to project page 1–8. <span class="ctl">SHIFT</span> + <span class="ctl">R1</span> opens <a href="global.html">Global settings</a>.</td><td>White when active</td></tr>
               <tr><td><span class="ctl">R2</span> Pattern</td><td>Opens Pattern mode, and returns to it from <a href="scene.html">Scenes</a>. <span class="ctl">SHIFT</span> + <span class="ctl">R2</span> opens Scenes from any mode, Pattern mode included.</td><td>White when active, also in Scene mode</td></tr>
-              <tr><td><span class="ctl">R3</span> Note</td><td>Opens Note mode, and returns to it from Scale mode. Hold it and press <span class="ctl">B1</span>–<span class="ctl">B8</span> for another page of 32 steps. <span class="ctl">SHIFT</span> + <span class="ctl">R3</span> opens Scale mode.</td><td>White when active, also in Scale mode</td></tr>
-              <tr><td><span class="ctl">R4</span> Params</td><td>Opens <a href="params.html">Step parameters</a> for the selected track — per-step velocity and gate, which is the editing you do most. Hold it and press <span class="ctl">B1</span>–<span class="ctl">B8</span> for another page of 32 steps. <span class="ctl">SHIFT</span> + <span class="ctl">R4</span> opens <a href="preset.html">Preset mode</a>, and there holding it picks the preset page instead.</td><td>White when active, also in Preset mode</td></tr>
+              <tr><td><span class="ctl">R3</span> Note</td><td>Opens Note mode, and returns to it from Scale mode. <span class="ctl">SHIFT</span> + the top pad row picks its step page. <span class="ctl">SHIFT</span> + <span class="ctl">R3</span> opens Scale mode.</td><td>White when active, also in Scale mode</td></tr>
+              <tr><td><span class="ctl">R4</span> Params</td><td>Opens <a href="params.html">Step parameters</a> for the selected track — per-step velocity and gate, which is the editing you do most. <span class="ctl">SHIFT</span> + the top pad row picks its step page. <span class="ctl">SHIFT</span> + <span class="ctl">R4</span> opens <a href="preset.html">Preset mode</a>, and there holding it picks the preset page instead.</td><td>White when active, also in Preset mode</td></tr>
               <tr><td><span class="ctl">R5</span> Clear</td><td>Hold and tap a pad to clear that step, pattern or project. <span class="ctl">SHIFT</span> + <span class="ctl">R5</span> opens <a href="probability.html">Probability</a>.</td><td><span class="led" style="--c:#ff6a14"></span>Orange while held</td></tr>
               <tr><td><span class="ctl">R6</span> Duplicate</td><td>Hold, tap a source pad, then tap one or more destination pads.</td><td><span class="led" style="--c:#1e9cff"></span>Blue while held</td></tr>
               <tr><td><span class="ctl">R7</span> Record</td><td>Record on/off. While playing, note pads write into the sequence. In <a href="scene.html">Scene mode</a>, hold it and tap a pad to capture a scene. <strong><span class="ctl">SHIFT</span> + <span class="ctl">R6</span> and <span class="ctl">R7</span> belong to the APC itself</strong>, which uses them for its own Drum and Note pad modes and never passes them on — if the grid turns into a piano, that is what happened; press them again to come back.</td><td><span class="led" style="--c:#ff2b2b"></span>Red when on</td></tr>
               <tr><td><span class="ctl">R8</span> Play</td><td>Play/stop. The playhead runs white, and <strong>red while Record is on</strong>. Playback always starts from step 1. Pressed in <a href="song.html">Song mode</a> it plays the song, section by section. <span class="ctl">SHIFT</span> + <span class="ctl">R8</span> opens the <a href="song.html">Song</a>.</td><td><span class="led" style="--c:#36d65f"></span>Green when playing</td></tr>
               <tr><td><span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Select a track on the current track page and go to Note mode, from any mode. In <a href="global.html">Global settings</a> they only move the selection, so each track’s routing can be set in turn.</td><td>Track colour; the selected track is brightest</td></tr>
               <tr><td><span class="ctl">SHIFT</span></td><td>Modifier in Note, Pattern and Global settings mode: <span class="ctl">SHIFT</span> + <span class="ctl">B</span> changes the track page. <span class="ctl">SHIFT</span> + <span class="ctl">R</span> opens the settings modes, the same ones in every mode.</td><td>White while held</td></tr>
-              <tr><td><span class="ctl">FADERS</span> 1–8</td><td>One below each track button. Each sends a <a href="#cc">MIDI CC</a> on its track’s channel and port. Fader 1 sets the picked value in <a href="global.html">Global settings</a> instead, and then sends nothing.</td><td>No LED</td></tr>
+              <tr><td><span class="ctl">FADERS</span> 1–8</td><td>One below each track button. Each sends a <a href="#cc">MIDI CC</a> on its track’s channel and port, in every mode — the tempo is set with pads, so no fader ever quietly means something else.</td><td>No LED</td></tr>
               <tr><td><span class="ctl">MASTER</span></td><td>Fader below <span class="ctl">SHIFT</span>. Sends a <a href="#cc">CC</a> on the selected track’s channel once one is assigned; it has none by default.</td><td>No LED</td></tr>
               <tr><td><span class="ctl">MIXER</span></td><td>To the right of the grid, like an Akai MIDI Mix: 8 strips of three knobs (K1–K3), a <span class="ctl">MUTE</span> button, <span class="ctl">A2</span> and a fader <span class="ctl">F1</span>, then a column with a button beside each knob row (<span class="ctl">M1</span>–<span class="ctl">M3</span>) and <span class="ctl">SOLO</span> beside the mute row — held it turns the mute buttons into solo buttons, tapped on its own it drops every solo, above the mixer’s master fader. Strip n is track n of the current track page. The knobs and faders send <a href="#cc">MIDI CCs</a>. <span class="ctl">A2</span> is the page row: <span class="ctl">A2</span> <em>n</em> picks page <em>n</em> of whatever the open mode pages over — steps, projects, presets, or track pages elsewhere — green for the page you are on, brighter blue for a page holding something, so page position is always visible. In <a href="pattern.html">Pattern mode</a> it mirrors the pads' own bottom row and splits with it: <span class="ctl">A2</span> 1–4 the track pages, <span class="ctl">A2</span> 5–8 the pattern pages. <span class="ctl">M1</span>–<span class="ctl">M3</span> have no function yet. An <strong>Akai MIDI Mix</strong> is this panel in hardware and is picked up automatically: MUTE is the mute row, REC ARM is <span class="ctl">A2</span>, SOLO is the mixer’s <span class="ctl">SHIFT</span>, and BANK LEFT/RIGHT move the track page.</td><td>See <span class="ctl">MUTE</span>; <span class="ctl">A2</span> in the track colour and the side buttons white, each while held</td></tr>
               <tr><td><span class="ctl">MUTE</span> (mixer)</td><td>Mutes or unmutes the strip’s track: its steps stop at once and any notes it is holding are released. <span class="ctl">SHIFT</span> (the mixer’s, beside the row) + <span class="ctl">MUTE</span> <strong>solos</strong> the track instead; several tracks can be soloed, and only they are heard. Notes you play by hand still sound, and mutes are not saved with the project.</td><td>White = soloed, track colour = heard, half-lit = silenced by another solo, darkest = muted</td></tr>
@@ -107,7 +108,7 @@
           <li><strong>Moving a control sends it.</strong> The positions a surface reports when it starts are only recorded, so nothing is sent until you move something.</li>
           <li><strong>A CC is sent only when its value changes</strong>, so a slow move sends at most 128 messages over the whole travel.</li>
           <li><strong>Defaults:</strong> the mixer’s faders send Volume (CC 7), its knob rows Cutoff (74), Resonance (71) and Pan (10, centred), and the faders under the pads send Expression (CC 11). The two master faders send nothing.</li>
-          <li><strong>Fader 1 in <a href="global.html">Global settings</a> sets the tempo</strong> and sends no CC while it is doing that.</li>
+          <li><strong>The tempo is set with pads, not a fader</strong> — +10 and −10 beside +1 and −1 on the bottom row of <a href="global.html">Global settings</a> — so every fader sends its CC in every mode.</li>
         </ul>
         <h3>The config file</h3>
         <p>Assignments are read from a text file, <code>controls.conf</code>. Without one the defaults above apply. The same file also says <strong>which MIDI device the ports go out of</strong>, so a rig is described in one place.</p>
@@ -188,7 +189,34 @@ client 40: 'MIDI4x4' [type=kernel,card=6]      &lt;- the name to match
         <p>The value is a CC number 0–127, or <code>off</code>. After it, <code>full</code> (the default) sweeps 0–127 across the travel and <code>center</code> holds CC 64 in a small detent in the middle, for pan-like controls. <code>#</code> or <code>;</code> starts a comment. A bad line is reported with its line number, and the lines before it still apply.</p>
       </section>
 
-<section id="leds">
+<section id="voices">
+        <h2>Voice lists</h2>
+        <p class="section-intro">A preset pad sends a <strong>voice</strong>, not a number. Which voice is a row of that device’s own list, read at startup from a CSV — the maker publishes one in its Data List.</p>
+        <p>Two files, in the config directory. <code>voices.conf</code> says which list belongs to which device:</p>
+<pre><code>sx920.device = PSR-SX920            # part of the name, matched as midiout and p1-p8 are
+sx920.file   = voices/psr-sx-920.csv</code></pre>
+        <p>Both are <em>values</em>, so a device name can carry spaces, slashes and punctuation without having to survive being a filename or a config key. The id on the left is yours and only pairs the two lines.</p>
+        <p>The CSV is the maker’s file, pasted in whole. It needs a header row and nothing else: the reader finds MSB, LSB, PC and Name <strong>by name</strong>, in any order, among any other columns, so another maker’s layout needs no configuring.</p>
+<pre><code>MSB#,LSB#,PC#,Name,,,,Type
+104,21,1,CFX ConcertGrand,,,,S.Art
+104,10,1,CFX StageGrand,,,,S.Art</code></pre>
+        <p>Those two rows are why this exists: same bank, same program, different <strong>LSB</strong>. A PSR-SX920’s 1,650 voices put seven grand pianos on one MSB and one PC, told apart by the LSB alone.</p>
+        <ul>
+          <li><strong>Programs count from 1</strong>, the way every printed list prints them. A <code>0</code> in that column refuses the file rather than putting every voice in it one place out.</li>
+          <li><strong>A row that isn’t a voice is skipped</strong> — MSB, LSB and PC must all be numbers — which is how a heading or the copyright line at the foot of a list looks after itself. The count is reported.</li>
+          <li><strong>A bad list is refused whole</strong>, unlike <code>controls.conf</code> where a bad line can be stepped over. A voice list is positional: one dropped row shifts every slot after it and quietly changes what saved projects play.</li>
+          <li><strong>Paths stay inside the config directory.</strong> The file says which list to read, not where on the disk to read from.</li>
+          <li><strong>No list, no problem.</strong> A device nothing is said about plays the built-in General MIDI list: bank 0, 128 programs. There is no other path — every preset, always, is a row of some table.</li>
+        </ul>
+        <p>Which list a port plays from follows <strong>what is on that port</strong>, resolved as the ports are wired, so a REFRESH that moves a synth to another port takes its voices with it. Startup says what each one ended up with, and <code>--midi-log</code> names the voice as it goes out:</p>
+<pre><code>voices: P1 Yamaha PSR-SX920 - 1650 from voices/psr-sx-920.csv (2 rows skipped)
+MIDI P1 ch1  bank MSB (CC  0) 104
+MIDI P1 ch1  bank LSB (CC 32)  21
+MIDI P1 ch1  program   0  bank 104:21  preset 1.01  CFX ConcertGrand</code></pre>
+        <div class="callout"><p><strong>Treat a voice list as part of the rig</strong>, versioned beside <code>controls.conf</code>. Slots are positions in it, so swapping in a revised file with voices inserted changes what every saved project plays.</p></div>
+      </section>
+
+      <section id="leds">
         <h2>LED colours</h2>
         <h3>Slots and pages</h3>
         <p>Project, pattern and preset pads, and the page maps on the buttons, share one colour code.</p>
@@ -200,7 +228,7 @@ client 40: 'MIDI4x4' [type=kernel,card=6]      &lt;- the name to match
         </ul>
         <p>While <span class="ctl">R6</span> Duplicate is held, the picked source pad turns <span class="led" style="--c:#f3f4f6"></span>white. <strong>Red belongs to markers rather than to tracks</strong>: the pattern's last step in Note mode, the Record button, and the playhead while recording. No track is red, so none of those can be mistaken for one.</p>
         <h3>Track colours</h3>
-        <p>Tracks use eight colours, repeated on every track page: tracks 9–16 use the same colours as 1–8.</p>
+        <p>Tracks use eight colours, repeated on every track page: tracks 9–16 use the same colours as 1–8, and so on to 64.</p>
         <ul class="swatch-grid">
           <li><span class="led" style="--c:#ffbd6c"></span>B1 peach</li>
           <li><span class="led" style="--c:#ff8a1f"></span>B2 orange</li>
@@ -256,19 +284,21 @@ client 40: 'MIDI4x4' [type=kernel,card=6]      &lt;- the name to match
           <table>
             <thead><tr><th>Gesture</th><th>Where</th><th>Changes</th></tr></thead>
             <tbody>
-              <tr><td><span class="ctl">B1</span>–<span class="ctl">B4</span></td><td>Pattern</td><td>Track page: which tracks the columns show. <span class="ctl">SHIFT</span> makes no difference here.</td></tr>
-              <tr><td><span class="ctl">B5</span>–<span class="ctl">B8</span></td><td>Pattern</td><td>Pattern page: which patterns the rows show, <span class="ctl">SHIFT</span> or not.</td></tr>
-              <tr><td><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span></td><td>Note, Global settings</td><td>Track page: which tracks <span class="ctl">B1</span>–<span class="ctl">B8</span> select.</td></tr>
-              <tr><td>Hold <span class="ctl">R3</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Note</td><td>Step page: which 32 steps the top four rows show. The playing page blinks.</td></tr>
-              <tr><td>Hold <span class="ctl">R4</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Any mode</td><td>Step page, opening Step parameters.</td></tr>
+              <tr><td><span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Pattern</td><td>Track page: which tracks the columns show, eight pages of eight. <span class="ctl">SHIFT</span> makes no difference here.</td></tr>
+              <tr><td><span class="ctl">SHIFT</span> + the top pad row</td><td>Pattern</td><td>Pattern page: which patterns the rows show, one press. The same eight pads are the map while <span class="ctl">SHIFT</span> is held.</td></tr>
+              <tr><td><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Note, Scale, Step parameters, Probability, Scenes, Global settings</td><td>Track page: which tracks <span class="ctl">B1</span>–<span class="ctl">B8</span> select. Every mode whose pads work on the selected track, so a track past the eighth is reachable without leaving it. Eight pages of eight is all 64 tracks, so the whole row is live.</td></tr>
+              <tr><td><span class="ctl">SHIFT</span> + the top pad row</td><td>Note, Step parameters, Probability</td><td>Step page, one press: pad 1 is page 1, pad 8 page 8. <strong>The same eight pads are the map while <span class="ctl">SHIFT</span> is held</strong> — green for the page on screen, dim blue for one holding steps, grey for empty, the playing page blinking — so there is nothing to hold open. Reaches every page whether the pattern is that long or not; ending a pattern on a later step is how it is lengthened. The playing page also blinks on the mixer's A2 row.</td></tr>
+              <tr><td>Hold <span class="ctl">R3</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Note, on a piano roll track</td><td>Step page. Every pad of the roll is a note, so there is no row to give the pages; it keeps the hold.</td></tr>
+              <tr><td><span class="ctl">SHIFT</span> + the roll’s arrow cluster</td><td>Note, on a piano roll track</td><td>Scrolls the view rather than paging it: left (8,6), down (8,7), right (8,8), up (7,7), 4 at a time. An arrow with nowhere to go is dark.</td></tr>
               <tr><td>Hold <span class="ctl">R1</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Any mode</td><td>Project page, opening Project mode.</td></tr>
               <tr><td>Hold <span class="ctl">R4</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></td><td>Preset</td><td>Preset page. <span class="ctl">SHIFT</span> + <span class="ctl">B</span> does the same there.</td></tr>
+              <tr><td><span class="ctl">SHIFT</span> + bottom pad row</td><td>Preset</td><td>Preset window — which block of 512 voices the 8 pages sit in. Eight windows reach 4096, and the row shows which hold voices. The same row and modifier Pattern mode turns into the mutes.</td></tr>
             </tbody>
           </table>
         </div>
         <ul>
           <li><strong>Flipping the track page keeps your position.</strong> If track 4 is selected and you press <span class="ctl">SHIFT</span> + <span class="ctl">B2</span>, track 12 becomes selected.</li>
-          <li><strong>To see which page you’re on, hold the gesture’s button</strong> — <span class="ctl">SHIFT</span> in Note mode, or <span class="ctl">R1</span> / <span class="ctl">R4</span> — and the buttons show the page map. Pattern mode shows it all the time, and so does the mixer’s <span class="ctl">A2</span> row in any mode.</li>
+          <li><strong>To see which page you’re on, hold the gesture’s modifier</strong> — <span class="ctl">SHIFT</span> in Note, Step parameters and Probability paints the step pages onto the top pad row, and <span class="ctl">R1</span> / <span class="ctl">R4</span> show their page maps on the buttons. Pattern mode shows it all the time, and so does the mixer’s <span class="ctl">A2</span> row in any mode.</li>
           <li>A Duplicate source stays picked when you change page, so you can copy between pages. In Note mode, flipping the track page drops it.</li>
         </ul>
       </section>
@@ -317,7 +347,7 @@ client 40: 'MIDI4x4' [type=kernel,card=6]      &lt;- the name to match
           <li>Hold <span class="ctl">SHIFT</span> and press <span class="ctl">R1</span>, then tap pad 2 of the top row.</li>
           <li>Tap a channel on rows 3–4 for the selected track.</li>
           <li>Press the next track’s <span class="ctl">B</span> button — you stay in the mode — and tap its channel. Repeat along the row.</li>
-          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> moves on to tracks 9–16 and beyond.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span> moves on to tracks 9–16 and beyond, as far as 57–64.</li>
         </ol>
         <h3>Choose a preset for track 5</h3>
         <ol>
@@ -354,7 +384,7 @@ client 40: 'MIDI4x4' [type=kernel,card=6]      &lt;- the name to match
               <tr><td>Channel</td><td>Set per track in <a href="global.html#midi-channel">Global settings</a>. By default track 1 → channel 1 … track 16 → channel 16, and track 17 wraps to channel 1</td></tr>
               <tr><td>Step plays</td><td>Note On with the step’s note and velocity (8–127, default 100), if its probability roll passes; Note Off after its gate (default one step), or on stop</td></tr>
               <tr><td>Note pad held</td><td>Note On while held, Note Off on release</td></tr>
-              <tr><td>Preset chosen</td><td>Bank Select MSB (CC 0) = preset ÷ 128 and LSB (CC 32) = 0, then Program Change = preset mod 128 (zero-based slot number). Both halves of the bank go out every time, so the bank never depends on what the synth was last sent.</td></tr>
+              <tr><td>Preset chosen</td><td>Bank Select MSB (CC 0), then LSB (CC 32), then Program Change — all three read from the voice’s row in the device’s <a href="#voices">voice list</a>. Both halves of the bank go out every time, so the bank never depends on what the synth was last sent.</td></tr>
               <tr><td>Project opened</td><td>Bank Select + Program Change for every track</td></tr>
             </tbody>
           </table>
@@ -395,7 +425,7 @@ client 40: 'MIDI4x4' [type=kernel,card=6]      &lt;- the name to match
           <li><strong>MIDI in is notes, the transport and the clock.</strong> A keyboard plays and records into the selected track, Start and Stop work, and the box can <a href="global.html#clock">follow an outside clock</a>. What still doesn't come in: CC, and any way to send what arrives to more than the selected track.</li>
           <li><strong>No Song Position Pointer, in or out.</strong> Playback always starts at step 1, so Continue is treated as Start when following, and gear following us starts from its own beginning.</li>
           <li><strong>No Song Position Pointer.</strong> Gear following the clock starts from its own beginning, since playback always starts at step 1.</li>
-          <li><strong>A preset is only a number.</strong> Preset mode sends Bank Select and Program Change, which is what external gear wants, but the sequencer keeps nothing of its own under a preset — there is no patch to save until there is a sound engine with parameters to put in one.</li>
+          <li><strong>A preset holds nothing of the sequencer’s own.</strong> It names a voice in the gear and sends Bank Select and Program Change for it, which is what external gear wants, but there is no patch to save until there is a sound engine with parameters to put in one.</li>
           <li><strong>Chords are capped at 4 notes per step.</strong> It is one constant in the engine, but raising it grows every project file.</li>
           <li><strong>The faders have no mixing function of their own.</strong> They send CC, which a synth may map to level; the sequencer itself has no volume.</li>
           <li><strong>Part of the mixer has no function yet.</strong> The mute row mutes and solos tracks, the A2 row picks pages and the knobs and faders send <a href="#cc">MIDI CCs</a>, but M1–M3 have nothing on them.</li>

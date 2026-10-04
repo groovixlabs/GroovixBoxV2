@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "ui/DisplayFrame.h"
 #include "ui/LedFrame.h"
 #include "ui/UiState.h"
 
@@ -24,6 +25,15 @@ class Mode {
   // What a pad does, for surfaces that can print on their pads (the simulator), to help
   // learn a mode. nullptr for no label; most modes have none.
   virtual const char* padLabel(const UiState& /*state*/, uint8_t /*pad*/) const { return nullptr; }
+  // What this mode's rows are for, so a screen beside the instrument can say it while the
+  // sequencer is stopped and you are editing. NULL for a mode with nothing to explain; the
+  // one returned is a static constant, never built per call.
+  virtual const ModeLegend* legend(const UiState& /*state*/) const { return nullptr; }
+  // Values worth spelling out below the legend - the selected step's velocity, the track's
+  // key. Fills at most kMaxDisplayValues and returns how many it wrote.
+  virtual uint8_t displayValues(const UiState& /*state*/, DisplayValue* /*values*/) const {
+    return 0;
+  }
   // Drops held-pad state. Called when leaving the mode or changing track.
   virtual void reset() {}
 

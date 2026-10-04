@@ -61,6 +61,15 @@ bool AlsaMidiOutput::open(const char* clientName) {
   return true;
 }
 
+const std::string& AlsaMidiOutput::portDeviceName(uint8_t port) const {
+  static const std::string kNone;
+  return port < kNumMidiPorts ? portDevice_[port] : kNone;
+}
+
+void AlsaMidiOutput::forgetPortDevices() {
+  for (uint8_t port = 0; port < kNumMidiPorts; ++port) portDevice_[port].clear();
+}
+
 // The device's inputs, in the order it lists them: P1 to the first, P2 to the second...
 uint8_t AlsaMidiOutput::connectTo(int client, const char* name) {
   snd_seq_port_info_t* info = NULL;
@@ -74,6 +83,7 @@ uint8_t AlsaMidiOutput::connectTo(int client, const char* name) {
       continue;
     }
     connected_ = static_cast<uint8_t>(connected_ | (1u << port));
+    if (name) portDevice_[port] = name;
     ++port;
   }
   if (port > 0 && name) deviceName_ = name;
@@ -128,6 +138,7 @@ std::string AlsaMidiOutput::connectHere(uint8_t port, int client, const char* cl
     return std::string();
   }
   connected_ = static_cast<uint8_t>(connected_ | (1u << port));
+  portDevice_[port] = clientName;
   if (deviceName_.empty()) deviceName_ = clientName;
   // ALSA port names usually repeat the device's, so "MIDI4x4 Midi Out 3" needs saying once
   // rather than twice.

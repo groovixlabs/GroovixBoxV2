@@ -24,7 +24,7 @@
           <li><strong>Tap a step</strong> to select it; <strong>hold several</strong> to set them together.</li>
           <li><strong>Rows 5–6:</strong> 16 levels in sixteenths, left to right along row 5 and then row 6: 6%, 13%, 19% … 94%, and 100% (always) on the last pad. A chord plays whole or not at all.</li>
           <li>Use it for ghost notes and fills that keep a loop from repeating exactly the same way.</li>
-          <li><strong>Hold <span class="ctl">R5</span></strong> and tap a step to put it back to 100%, or press <span class="ctl">B1</span>–<span class="ctl">B8</span> for another page of steps. <span class="ctl">R6</span> + step + step copies a step’s probability.</li>
+          <li><strong>Hold <span class="ctl">R5</span></strong> and tap a step to put it back to 100%. <span class="ctl">SHIFT</span> + the top pad row goes straight to a page of steps and shows which one you are on, as in <a href="note.html">Note</a> mode — Clear is no longer a navigation key, which it had no business being. <span class="ctl">R6</span> + step + step copies a step’s probability.</li>
           <li><strong>Rows 7–8: micro-timing.</strong> How far off the grid the step plays, in ticks — a tick is a 24th of a step. Straight is the 9th pad, the first of row 8, and the lane lights from there out to the value: left for early, right for late. <strong>The pads are rungs, not a count</strong>, close together near the grid and further apart towards the ends, because a tick either way is a feel and twelve is a different placement:
             <div class="table-wrap"><table>
               <thead><tr><th>Early</th><th></th><th>Late</th></tr></thead>
@@ -37,6 +37,7 @@
           <li id="triplets"><strong>Triplets.</strong> A beat is 96 ticks and the grid sits at 0, 24, 48 and 72, so every 8th- and 16th-note triplet position in the beat is exactly 8 ticks from a step. That is what the ±8 rungs are for: an 8th-note triplet is step 2 at +8 and step 4 at −8, and 16th triplets fill in at step 2 ±8 and step 4 ±8. For triplets <em>inside</em> one step, a <a href="params.html#ratchet">ratchet</a> of 3 or 6 divides it evenly instead, and the <a href="global.html#arp">arpeggiator</a> has 1/8T, 1/16T and 1/32T rates.</li>
           <li><strong>The grid doesn't move.</strong> A nudged step still belongs to its place: the playhead, the bar and the song count it where it sits, only the notes play early or late. Use it for a snare that drags or a hat that pushes.</li>
           <li>For a groove across the whole pattern rather than one step, use <a href="global.html">swing</a>; the two add up. Swing delays every second step — the “e” and the “a” — so a hit on the offbeat 8th (steps 3, 7, 11, 15) is left where it is.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> changes the track page, so a track past the eighth can be edited without leaving this mode.</li>
           <li><span class="ctl">R3</span> returns to Note mode.</li>
         </ul>
   </main>

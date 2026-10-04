@@ -17,47 +17,62 @@
         <h2>Global settings <span class="ctl">SHIFT</span> + <span class="ctl">R1</span></h2>
         <p class="section-intro">The tempo and the swing, and where each track plays: its MIDI channel and port, or an internal instrument. The top row picks a setting; the pads below show it and change it.</p>
         <figure>
+          <!--
           <div class="device-frame"><div class="device" id="fig-global"></div></div>
-          <figcaption>Tempo picked (pad 1, green) at 120 BPM: a narrow 1, then a 2 in amber and a 0 in white. The two dim pads on the bottom row step it up and down by 1. Fader 1 sits at the matching position.</figcaption>
+          -->
+          <img src="images/global_tempo.png" width="500">
+          <figcaption>Tempo picked (pad 1, green) at 120 BPM: a narrow 1, then a 2 in amber and a 0 in white. The bottom row steps it: +10 and −10 in columns 2 and 3, +1 and −1 in columns 5 and 6.</figcaption>
         </figure>
         <ul>
           <li><strong>Tap a pad in the top row</strong> to pick a setting. It lights green and its value appears in the pads below. Pad 1 is the tempo, pad 2 <a href="#midi-channel">where the selected track plays</a>, pad 3 the <a href="#swing">swing</a>, pad 4 the <a href="#devices">devices</a> and pad 5 the <a href="#arp">arpeggiator</a>; the rest of the row is kept for settings to come.</li>
-          <li><strong>Move fader 1</strong> to change the value quickly. The display follows as you move it.</li>
-          <li><strong>Tap the up or down pad</strong> for exact values: on the bottom row, pad 5 is up (+1) and pad 6 is down (−1). They light while a setting is picked, turn white while pressed, and dim when the value can’t go further that way.</li>
-          <li>Nothing is picked the first time you open the mode, so fader 1 does nothing until you tap a pad. After that the setting stays picked when you come back.</li>
+          <li><strong>Coarse then fine.</strong> On the bottom row, pad 2 is +10 and pad 3 is −10; pad 5 is +1 and pad 6 is −1. Coarse gets you near the tempo you want, fine lands on it.</li>
+          <li>All four light while a setting is picked, turn white while pressed, and dim at the end they cannot move past. A coarse step near an end <strong>lands on the end</strong> rather than doing nothing because ten would overshoot.</li>
+          <li>Nothing is picked the first time you open the mode, so the steppers do nothing until you tap a pad on the top row. After that the setting stays picked when you come back.</li>
           <li><strong>The last pad of the bottom row sends every fader and knob's CC again</strong>, at the value it last reported, so gear that has moved on — after loading a project, say — comes back into line. Controls nothing has been heard from are skipped, so an untouched knob never slams a synth to zero. A MIDI Mix's own SEND ALL button does the same for its 33 controls.</li>
           <li><span class="ctl">R1</span> goes to Project mode.</li>
         </ul>
-        <h3 id="tempo">Tempo</h3>
+        <h3 id="tempo">Tempo <span class="ctl">PAD 1</span></h3>
+        <img src="images/global_tempo_full.png" width="500">
         <ul>
           <li>20 to 300 BPM, in 16th-note steps. The tempo belongs to the project and is saved with it, like the scale.</li>
-          <li>Fader 1 covers the whole range from bottom to top. The tempo changes only when the fader moves, so opening the mode never changes it, but the first move jumps it to wherever the fader is.</li>
+          <li><strong>No fader sets the tempo.</strong> A fader covering 20–300 BPM in its travel is about three BPM a pixel — enough to reach a tempo, never quite the one you wanted — and a fader that means something different in one mode is a fader you cannot trust. Fader 1 sends its CC here as it does everywhere else.</li>
           <li><strong>Reading the display:</strong> three digits 3 pads wide don’t fit in 8 columns, so the hundreds digit (1, 2 or 3) is 2 pads wide. The digits touch, so they alternate white, amber, white to keep them apart. Below 100 BPM the first two columns stay dark.</li>
-          <li>Up and down step 1 BPM per tap and stop at 300 and 20 BPM. Holding a pad doesn’t repeat, so use fader 1 for big changes.</li>
-          <li>In the simulator, dragging fader 1 moves about 2–3 BPM per pixel; the up and down pads, or the mouse wheel with <kbd>Ctrl</kbd> held, set exact values.</li>
+          <li>The steppers stop at 300 and 20 BPM. Holding a pad doesn’t repeat, so a long way is +10 taps rather than a held pad.</li>
+          
           <li>The simulator prints what the pads do on them: TEMPO, MIDI CH, SWING and DEVICES on the top row, +1 and −1 on the up and down pads, the channel numbers 1–16, P1–P8 on the port row, and PADS, MIXER, INT/AUTO/EXT and REFRESH on the devices page.</li>
         </ul>
-        <h3 id="swing">Swing</h3>
+
+        <h3 id="midi-channel">MIDI channel, port and instrument <span class="ctl">PAD 2</span></h3>
+        <img src="images/global_midi_ch.png" width="500">
         <ul>
-          <li><strong>50 to 75.</strong> 50 is straight; at 75 every second step plays half a step late, a hard shuffle. It reads on the same display as the tempo, fader 1 sweeps it and the up and down pads step it by 1.</li>
+          <li>Pad 2 sets which MIDI channel the <strong>selected track</strong> plays on. Rows 3 and 4 are channels 1–8 and 9–16. The track’s channel lights in the track’s colour, and its <span class="ctl">B</span> button stays lit so you can see whose channel it is.</li>
+          <li>Tap a channel to move the track there. Notes the track is playing are released on the old channel first, and its preset is sent again on the new one.</li>
+          <li><strong>To set another track, press its <span class="ctl">B</span> button.</strong> This is the one mode where <span class="ctl">B1</span>–<span class="ctl">B8</span> don’t jump to Note mode: they only move the selection, so you can work along the tracks setting each one’s channel, port or instrument in turn. <strong><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> changes the track page, so all 64 tracks are reachable without leaving.</li>
+          <li>New tracks play on channels 1–16 in order, then start again: tracks 17–32, 33–48 and 49–64 each run 1–16 too. Channels are saved with the project, so two tracks can share one synth, or a drum track can sit on channel 10.</li>
+          <li><strong>The MIDI clock goes out of every port</strong>, 24 per quarter note, with Start when you press play and Stop when you stop, so a drum machine or a synth's arpeggiator on any port runs in time. Gear that follows its own clock ignores it.</li>
+          <li><strong>Row 5 picks the MIDI port</strong>, <strong>P1</strong> to <strong>P8</strong>: which MIDI output the track plays out of. With 8 ports of 16 channels the sequencer addresses 128 instruments, so tracks on the same channel can still drive different gear.</li>
+          <li>Each page of 8 tracks starts on its own port: tracks 1–8 on P1, tracks 9–16 on P2, and so on to tracks 57–64 on P8. With 64 tracks the eight pages land exactly on the eight ports, one page each. Change any track’s port here; the setting belongs to the track and is saved with the project.</li>
+          <li>Moving a track to another port works like changing its channel: notes it is playing are released on the old port first, and its preset is sent again on the new one.</li>
+          <li>Which hardware or software output each port reaches is up to the device the sequencer runs on. On Linux each port is an ALSA sequencer port of its own, <strong>P1</strong> to <strong>P8</strong>, so they can be patched anywhere with <code>aconnect</code> or a patchbay: a 4×4 USB interface takes P1–P4, one to each socket, and nothing reaches your gear until they are wired up.</li>
+          <li><strong>Rows 6 and 7 pick an internal instrument</strong>, <strong>I1</strong> to <strong>I16</strong>: the track plays on the sequencer’s own sound engine instead of going out of a MIDI port.</li>
+          <li><strong>A track uses a port or an instrument, never both.</strong> Whichever it is on lights in the track colour and the other row dims further, so one look tells you where the track goes. Tapping the instrument it is already on sends it back to its MIDI port, and tapping any port does the same.</li>
+          <li>Moving a track between a port and an instrument works like a channel change: its sounding notes are released first, and its preset is sent again at the new destination.</li>
+          <li><strong>The instruments aren’t built yet.</strong> A track on I1–I16 makes no sound until a sound engine is attached; its steps still play, and everything is saved with the project, so patterns written now will play when the instruments arrive.</li>
+        </ul>
+
+        <h3 id="swing">Swing <span class="ctl">PAD 3</span></h3>
+        <img src="images/global_swing.png" width="500">
+        <ul>
+          <li><strong>50 to 75.</strong> 50 is straight; at 75 every second step plays half a step late, a hard shuffle. It reads on the same display as the tempo and uses the same four stepper pads.</li>
           <li>Swing holds back the second step of each pair — the “and” of each beat — and leaves the first where it is. It applies to every track at once, which is what makes them groove together.</li>
           <li><strong>The grid doesn’t move.</strong> Steps keep their places on the pads; only when their notes play changes. The playhead, the bar and the song count them where they sit.</li>
           <li>For one hit that drags or pushes rather than a groove across the pattern, use per-step <a href="probability.html">micro-timing</a>. The two add up.</li>
           <li>Swing belongs to the project and is saved with it.</li>
         </ul>
-        <h3 id="arp">Arpeggiator <span class="ctl">PAD 5</span></h3>
-        <p>A step holding a chord plays its notes <strong>one at a time instead of together</strong>. It belongs to the selected track, so a whole part arpeggiates without touching a single step — and it pairs with <a href="scale.html#chords">one key, one chord</a>, where one key press fills a step with a triad or a seventh in the first place.</p>
-        <ul>
-          <li><strong>Row 3 — the mode.</strong> OFF, UP, DOWN, UP-DOWN, DOWN-UP, AS PLAYED and RANDOM. Up and down climb the chord in pitch order; up-down and down-up turn round without playing the end notes twice; as played follows the order the step's notes were written in, which differs from up only when a chord was built out of order. The one in use lights in the track's colour.</li>
-          <li><strong>Row 5 — the rate</strong>, as note values against a step of a sixteenth: 1/8, 1/8T, 1/16, 1/16T, 1/32, 1/32T, 1/64, 1/64T. All of them divide the 24 ticks of a step exactly, so the triplets are true triplets rather than something rounded.</li>
-          <li><strong>Row 7 — how many octaves</strong> it climbs, 1 to 4. Two octaves on a C–E–G gives C E G C E G an octave up, then round again.</li>
-          <li><strong>The step's <a href="params.html">gate</a> says how long the run lasts.</strong> A one-step gate at 1/64 is four notes; lengthen the gate and the run carries on over the steps after it. That is the whole length control — there isn't a second one to keep in step with it.</li>
-          <li>While the arp is off, the rate and octave rows dim further: they have nothing to say.</li>
-          <li><strong>A step's <a href="params.html#ratchet">ratchet</a> is ignored while the arp is on.</strong> Both spread one step out in time, and two of them at once is a muddle rather than a feature.</li>
-          <li>Per track and saved with the project. <span class="ctl">B1</span>–<span class="ctl">B8</span> move to another track without leaving the page, so a rig is set up track after track.</li>
-        </ul>
+
 
         <h3 id="devices">Devices <span class="ctl">PAD 4</span></h3>
+        <img src="images/global_devices.png" width="500">
         <p>What is plugged in, without leaving the instrument — and the one setting that belongs to the rig rather than to the music.</p>
         <ul>
           <li><strong>Row 3 — the gear.</strong> Pad 1 is the pad grid (an APC mini mk2), pad 2 the mixer panel (an Akai MIDI Mix) and pad 3 the <a href="note.html#midi-in">keyboard</a> being listened to. Lit white means it is here and answering; nearly dark means nothing is on it.</li>
@@ -84,22 +99,19 @@
           <li>Which device each port goes to is set in the config file. <code>aconnect -o</code> lists the devices you can send to and the names to use; see <a href="index.html#listing-ports">finding the names</a>.</li>
         </ul>
 
-        <h3 id="midi-channel">MIDI channel, port and instrument</h3>
+        <h3 id="arp">Arpeggiator <span class="ctl">PAD 5</span></h3>
+        <img src="images/global_arp.png" width="500">
+        <p>A step holding a chord plays its notes <strong>one at a time instead of together</strong>. It belongs to the selected track, so a whole part arpeggiates without touching a single step — and it pairs with <a href="scale.html#chords">one key, one chord</a>, where one key press fills a step with a triad or a seventh in the first place.</p>
         <ul>
-          <li>Pad 2 sets which MIDI channel the <strong>selected track</strong> plays on. Rows 3 and 4 are channels 1–8 and 9–16. The track’s channel lights in the track’s colour, and its <span class="ctl">B</span> button stays lit so you can see whose channel it is.</li>
-          <li>Tap a channel to move the track there. Notes the track is playing are released on the old channel first, and its preset is sent again on the new one.</li>
-          <li><strong>To set another track, press its <span class="ctl">B</span> button.</strong> This is the one mode where <span class="ctl">B1</span>–<span class="ctl">B8</span> don’t jump to Note mode: they only move the selection, so you can work along the tracks setting each one’s channel, port or instrument in turn. <strong><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span></strong> changes the track page, so all 32 tracks are reachable without leaving.</li>
-          <li>New tracks play on channels 1–16 in order, and tracks 17–32 on channels 1–16 again. Channels are saved with the project, so two tracks can share one synth, or a drum track can sit on channel 10.</li>
-          <li><strong>The MIDI clock goes out of every port</strong>, 24 per quarter note, with Start when you press play and Stop when you stop, so a drum machine or a synth's arpeggiator on any port runs in time. Gear that follows its own clock ignores it.</li>
-          <li><strong>Row 5 picks the MIDI port</strong>, <strong>P1</strong> to <strong>P8</strong>: which MIDI output the track plays out of. With 8 ports of 16 channels the sequencer addresses 128 instruments, so tracks on the same channel can still drive different gear.</li>
-          <li>Each page of 8 tracks starts on its own port: tracks 1–8 on P1, tracks 9–16 on P2, tracks 17–24 on P3 and tracks 25–32 on P4. Change any track’s port here; the setting belongs to the track and is saved with the project.</li>
-          <li>Moving a track to another port works like changing its channel: notes it is playing are released on the old port first, and its preset is sent again on the new one.</li>
-          <li>Which hardware or software output each port reaches is up to the device the sequencer runs on. On Linux each port is an ALSA sequencer port of its own, <strong>P1</strong> to <strong>P8</strong>, so they can be patched anywhere with <code>aconnect</code> or a patchbay: a 4×4 USB interface takes P1–P4, one to each socket, and nothing reaches your gear until they are wired up.</li>
-          <li><strong>Rows 6 and 7 pick an internal instrument</strong>, <strong>I1</strong> to <strong>I16</strong>: the track plays on the sequencer’s own sound engine instead of going out of a MIDI port.</li>
-          <li><strong>A track uses a port or an instrument, never both.</strong> Whichever it is on lights in the track colour and the other row dims further, so one look tells you where the track goes. Tapping the instrument it is already on sends it back to its MIDI port, and tapping any port does the same.</li>
-          <li>Moving a track between a port and an instrument works like a channel change: its sounding notes are released first, and its preset is sent again at the new destination.</li>
-          <li><strong>The instruments aren’t built yet.</strong> A track on I1–I16 makes no sound until a sound engine is attached; its steps still play, and everything is saved with the project, so patterns written now will play when the instruments arrive.</li>
+          <li><strong>Row 3 — the mode.</strong> OFF, UP, DOWN, UP-DOWN, DOWN-UP, AS PLAYED and RANDOM. Up and down climb the chord in pitch order; up-down and down-up turn round without playing the end notes twice; as played follows the order the step's notes were written in, which differs from up only when a chord was built out of order. The one in use lights in the track's colour.</li>
+          <li><strong>Row 5 — the rate</strong>, as note values against a step of a sixteenth: 1/8, 1/8T, 1/16, 1/16T, 1/32, 1/32T, 1/64, 1/64T. All of them divide the 24 ticks of a step exactly, so the triplets are true triplets rather than something rounded.</li>
+          <li><strong>Row 7 — how many octaves</strong> it climbs, 1 to 4. Two octaves on a C–E–G gives C E G C E G an octave up, then round again.</li>
+          <li><strong>The step's <a href="params.html">gate</a> says how long the run lasts.</strong> A one-step gate at 1/64 is four notes; lengthen the gate and the run carries on over the steps after it. That is the whole length control — there isn't a second one to keep in step with it.</li>
+          <li>While the arp is off, the rate and octave rows dim further: they have nothing to say.</li>
+          <li><strong>A step's <a href="params.html#ratchet">ratchet</a> is ignored while the arp is on.</strong> Both spread one step out in time, and two of them at once is a muddle rather than a feature.</li>
+          <li>Per track and saved with the project. <span class="ctl">B1</span>–<span class="ctl">B8</span> move to another track without leaving the page, so a rig is set up track after track.</li>
         </ul>
+
   </main>
 </div>
 <script src="shared.js"></script>

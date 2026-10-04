@@ -6,6 +6,7 @@
 
 #include "common/ApcMiniSurface.h"
 #include "common/MidiMixSurface.h"
+#include "common/VoiceLibrary.h"
 #include "linux/AlsaAnnounce.h"
 #include "linux/AlsaMidiInput.h"
 #include "linux/AlsaMidiOutput.h"
@@ -47,6 +48,10 @@ class MidiRig : public ControlSurface, public DeviceStatus {
   // The keyboard to listen to, named in the config; empty finds one by itself.
   void setInputName(const std::string& name) { inputName_ = name; }
   void setPortSpec(uint8_t port, const std::string& spec);
+  // The voice lists, kept told which device each port is wired to as the ports are wired.
+  void setVoiceLibrary(VoiceLibrary* voices) { voices_ = voices; }
+  // What each port is wired to, as ALSA names it; empty for a port reaching nothing.
+  const std::string& portDeviceName(uint8_t port) const { return out_.portDeviceName(port); }
   // Wires the ports up, printing what it did. Called once at startup and again on a refresh.
   void wire();
 
@@ -97,6 +102,7 @@ class MidiRig : public ControlSurface, public DeviceStatus {
   bool portsStale_;              // gear has come or gone since the ports were last wired
   std::vector<int> arrived_;     // clients that turned up at the last poll, kept to save churn
   bool portWas_[kNumMidiPorts];  // which ports reached something at the last wiring
+  VoiceLibrary* voices_;         // NULL until the voice lists are read
   AlsaMidiOutput out_;
   AlsaMidiInput in_;
   AlsaMidiPort apcPort_;

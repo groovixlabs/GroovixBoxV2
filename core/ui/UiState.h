@@ -34,8 +34,10 @@ struct UiState {
   uint8_t trackPage;         // tracks on B1..B8 and the pattern mode columns
   uint8_t patternPage;       // patterns on the pattern mode rows
   uint8_t projectPage;       // page shown in project mode
-  uint8_t presetPage;        // page shown in preset mode
+  uint8_t presetPage;        // page shown in preset mode, inside its window
+  uint8_t presetWindow;      // which block of 8 pages preset mode is showing
   bool shiftHeld;            // Shift is held
+  bool noteHeld;             // R3 is held: in note mode a pad then ends the pattern there
   bool clearHeld;            // R5 is held
   bool duplicateHeld;        // R6 is held
   bool recordHeld;           // R7 is held: in scene mode it captures instead of launching

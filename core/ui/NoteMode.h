@@ -32,13 +32,11 @@ class NoteMode : public Mode {
 
   void handlePad(UiState& state, uint8_t pad, bool pressed) override;
   void renderPads(const UiState& state, LedFrame& frame) const override;
+  const ModeLegend* legend(const UiState& state) const override;
+  uint8_t displayValues(const UiState& state, DisplayValue* values) const override;
   void reset() override;
 
-  // The piano roll of tracks that show one.
-  void scrollRoll(UiState& state, uint8_t direction) { roll_.scroll(state, direction); }
-  bool canScrollRoll(const UiState& state, uint8_t direction) const {
-    return roll_.canScroll(state, direction);
-  }
+  // The piano roll of tracks that show one. It scrolls itself, from its own arrow pads.
   void showRollStepPage(UiState& state, uint8_t page) { roll_.showStepPage(state, page); }
 
  private:

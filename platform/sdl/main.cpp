@@ -58,6 +58,7 @@
 #include "common/FileStorage.h"
 #include "common/LogMidiOutput.h"
 #include "common/RigPaths.h"
+#include "common/VoiceLibrary.h"
 #include "sdl/SdlSurface.h"
 #ifdef GX_AUDIO_JACK
 #include "audio/JackBackend.h"
@@ -209,23 +210,34 @@ class MirroredSurface : public gx::ControlSurface {
   gx::ControlSurface* hardware_;
 };
 
-void formatStatus(const gx::GroovixApp& app, char* out, size_t size) {
+void formatStatus(const gx::GroovixApp& app, const gx::VoiceLibrary& voices, char* out,
+                  size_t size) {
   const gx::UiController& ui = app.ui();
   const gx::Sequencer& seq = app.sequencer();
   const uint8_t track = ui.selectedTrack();
-  // Projects and presets as page.slot, e.g. 3.08. A preset also shows the two numbers it
-  // actually sends, since a MIDI bank is 128 patches - two pages - and the split is
-  // invisible on the pads.
+  // Projects and presets as page.slot, e.g. 3.08. A preset also shows the voice it names -
+  // what the pads send is a row of the track's device's list, so the name is the useful half
+  // and the three numbers behind it say what actually goes out.
   const uint16_t project = app.currentProject();
   const uint16_t preset = seq.trackPreset(track);
+  const uint8_t port = seq.trackMidiPort(track);
+  char voice[64] = "";
+  gx::VoiceAddress address;
+  if (voices.voicesFor(port).lookup(preset, address)) {
+    const std::string name = voices.voiceName(port, preset);
+    std::snprintf(voice, sizeof(voice), " %d:%d:%d%s%s", address.msb, address.lsb,
+                  address.program, name.empty() ? "" : " ", name.c_str());
+  } else {
+    std::snprintf(voice, sizeof(voice), " (no voice)");
+  }
   const bool ownScale = seq.keyboardLayout(track) == gx::kKeyboardOwnScale;
   std::snprintf(out, size,
-                "PRJ %d.%02d %-7s TRK %d PAT %d PRE %d.%02d B%d:%d STEP %02d/%d %d BPM "
+                "PRJ %d.%02d %-7s TRK %d PAT %d PRE %d.%02d%s PG %d/%d STEP %02d/%d %d BPM "
                 "%s %s%s%s OCT %d %s%s",
                 project / gx::kSlotsPerPage + 1, project % gx::kSlotsPerPage + 1,
                 gx::UiController::modeName(ui.mode()), track + 1, seq.selectedPattern(track) + 1,
-                preset / gx::kSlotsPerPage + 1, preset % gx::kSlotsPerPage + 1,
-                preset / 128, preset % 128,  // the Bank Select and Program Change it sends
+                preset / gx::kSlotsPerPage + 1, preset % gx::kSlotsPerPage + 1, voice,
+                ui.shownPage(gx::UiController::kPageSteps) + 1, gx::kNumStepPages,
                 seq.playhead(track) + 1, seq.trackLength(track), seq.bpm(),
                 gx::rootName(ownScale ? seq.keyboardRoot(track) : seq.scaleRoot()),
                 gx::scaleName(ownScale ? seq.keyboardScale(track) : seq.scale()),
@@ -295,6 +307,16 @@ int run(const Options& options) {
   }
 #endif
   gx::MidiEventSink noteOutput(*midiOut);
+
+  // What each device's presets actually send. Read before the ports are wired, so the first
+  // wiring already knows which list belongs to which port.
+  gx::VoiceLibrary voices;
+  voices.load(configDir, stdout);
+  noteOutput.setVoices(&voices);
+  midiLog.setVoices(&voices);
+#ifdef GX_HAVE_ALSA
+  rig.setVoiceLibrary(&voices);
+#endif
   // Tracks routed to I1-I16 play here instead of going out of a MIDI port.
   gx::AudioEngine instruments;
   noteOutput.setInstruments(&instruments);
@@ -309,7 +331,6 @@ int run(const Options& options) {
   // On the heap: with the desktop capacity limits the app holds over a megabyte of projects.
   std::unique_ptr<gx::GroovixApp> appOwner(new gx::GroovixApp(controls, storage, noteOutput));
   gx::GroovixApp& app = *appOwner;
-  app.begin();
 
   std::unique_ptr<gx::AudioBackend> audio = openAudio(options, instruments);
 
@@ -328,9 +349,17 @@ int run(const Options& options) {
     rig.setPortSpec(port, config.portSpec(port));
   }
   rig.wire();
+  for (uint8_t port = 0; port < gx::kNumMidiPorts; ++port) {
+    std::printf("voices: %s\n", voices.describePort(port).c_str());
+  }
   app.setMidiInput(&rig.input());
   app.ui().setDeviceStatus(&rig);
+  app.ui().setPresetCatalog(&voices);
 #endif
+  // Only now: opening a project sends every track's preset, and those have to go out of ports
+  // that are wired, to the voice list of the gear that is on them. Begun before the wiring,
+  // they went nowhere and were read against whatever list the port had yet to be given.
+  app.begin();
   gx::InstrumentConfig instrumentConfig;
   loadInstruments(instruments, instrumentConfig,
                   gx::rigConfigPath(options.instrumentsPath, configDir,
@@ -388,7 +417,7 @@ int run(const Options& options) {
       int8_t bankStep = 0;
       if (rig.takeBankStep(bankStep)) app.ui().stepTrackPage(bankStep);
 #endif
-      formatStatus(app, status, sizeof(status));
+      formatStatus(app, voices, status, sizeof(status));
       // The button labels follow what the buttons do, e.g. their Shift functions.
       const gx::UiController& ui = app.ui();
       for (uint8_t i = 0; i < gx::kNumRightButtons; ++i) surface.setRightLabel(i, ui.rightButtonLabel(i));
@@ -396,6 +425,7 @@ int run(const Options& options) {
         surface.setBottomLabel(i, ui.bottomButtonLabel(i));
       }
       surface.setLabelsShifted(ui.shiftHeld());
+      surface.setActiveMode(ui.mode());  // lights the open mode in the top bar
       for (uint8_t i = 0; i < gx::kNumPads; ++i) surface.setPadLabel(i, ui.padLabel(i));
     }
     surface.setStatus(status);

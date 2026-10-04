@@ -6,6 +6,7 @@
 
 #include "ui/Font3x5.h"
 #include "ui/Mode.h"
+#include "ui/UiController.h"  // ModeId and the R button names the mode bar stands on
 
 namespace gx {
 
@@ -26,6 +27,10 @@ const int kLabelLineGap = 4;
 const SDL_Color kPadTextLight = {230, 230, 235, 255};
 const SDL_Color kPadTextDark = {20, 20, 24, 255};
 const int kPadLabelLineGap = 3;
+const SDL_Color kModeIdle = {38, 38, 45, 255};
+const SDL_Color kModeHover = {52, 52, 61, 255};
+const SDL_Color kModeActive = {236, 238, 243, 255};
+const SDL_Color kModeActiveText = {18, 18, 22, 255};
 const SDL_Color kFaderSlot = {10, 10, 12, 255};
 const SDL_Color kFaderCap = {170, 170, 178, 255};
 const SDL_Color kFaderLine = {40, 40, 46, 255};
@@ -93,6 +98,38 @@ const int kSharpWidth = 5;
 const uint8_t kSharpRows[kGlyphHeight] = {012, 037, 012, 037, 012};  // bit 4 = left column
 
 int charWidth(char ch) { return ch == '#' ? kSharpWidth : kGlyphWidth; }
+
+// The mode bar. Each button is the R button that opens that mode, with or without Shift, so
+// clicking one presses what a player presses - the shortcut cannot behave differently from
+// the hardware because it goes through the same events.
+struct ModeButton {
+  const char* label;
+  uint8_t button;  // R1..R8, 0-based
+  bool shift;
+};
+const ModeButton kModeButtons[] = {
+    {"PROJECT", kButtonProject, false}, {"SETTINGS", kButtonProject, true},
+    {"SONG", kButtonPlay, true},        {"SCENE", kButtonPattern, true},
+    {"PATTERN", kButtonPattern, false}, {"NOTE", kButtonNote, false},
+    {"SCALE", kButtonNote, true},       {"PARAM", kButtonParams, false},
+    {"PRESET", kButtonParams, true},    {"PROB", kButtonClear, true},
+};
+const uint8_t kNumModeButtons = sizeof(kModeButtons) / sizeof(kModeButtons[0]);
+
+// Which mode each button opens, in ModeId order, so the open one can be lit.
+const uint8_t kModeOfButton[kNumModeButtons] = {
+    kModeProject, kModeGlobal, kModeArrangement, kModeScene, kModePattern,
+    kModeNote,    kModeScale,  kModeStepParams,  kModePreset, kModeProbability,
+};
+
+ControlEvent makeControl(uint8_t group, uint8_t index, bool pressed) {
+  ControlEvent event;
+  std::memset(&event, 0, sizeof(event));
+  event.group = group;
+  event.index = index;
+  event.pressed = pressed;
+  return event;
+}
 
 int textWidth(const char* text, int scale) {
   int width = 0;
@@ -202,7 +239,10 @@ SdlSurface::SdlSurface()
       vsync_(false),
       quitRequested_(false),
       mouseHeld_(false),
-      shiftPressed_(false) {
+      shiftPressed_(false),
+      queuedCount_(0),
+      queuedNext_(0),
+      activeMode_(0xFF) {
   std::memset(&mouseControl_, 0, sizeof(mouseControl_));
   frame_.clear();
   status_[0] = '\0';
@@ -278,6 +318,10 @@ bool SdlSurface::pollEvent(ControlEvent& event) {
     return true;
   }
 
+  // A mode button's presses, one per poll, ahead of the mouse and keyboard: they are a press
+  // and a release that have to reach the app in order.
+  if (takeQueued(event)) return true;
+
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     switch (e.type) {
@@ -298,6 +342,25 @@ bool SdlSurface::pollEvent(ControlEvent& event) {
         ControlEvent hit;
         mouseX_ = e.button.x;
         mouseY_ = e.button.y;
+        const int mode = e.button.button == SDL_BUTTON_LEFT ? modeAt(e.button.x, e.button.y) : -1;
+        if (mode >= 0) {
+          // Queue the presses this mode is opened with. Shift wraps the R button when the
+          // mode needs it, exactly as a hand would hold it.
+          // Not while the last one is still coming out: refilling would drop its tail, and
+          // the tail is the Shift release. The app drains the queue every frame, so this
+          // only ever declines a second click inside one frame.
+          if (queuedNext_ < queuedCount_) break;
+          const ModeButton& picked = kModeButtons[mode];
+          queuedCount_ = queuedNext_ = 0;
+          if (picked.shift) queued_[queuedCount_++] = makeControl(kGroupShift, 0, true);
+          queued_[queuedCount_++] = makeControl(kGroupRight, picked.button, true);
+          queued_[queuedCount_++] = makeControl(kGroupRight, picked.button, false);
+          if (picked.shift) queued_[queuedCount_++] = makeControl(kGroupShift, 0, false);
+          // Hand out the first one now: this poll found the click, and returning nothing
+          // would leave the whole press a poll behind the click that made it.
+          takeQueued(event);
+          return true;
+        }
         if (faderAt(e.button.x, e.button.y, hit)) {
           // Left-click grabs a fader: the cap jumps to the pointer and follows it while dragged.
           if (e.button.button != SDL_BUTTON_LEFT || mouseHeld_ || draggingFader_) break;
@@ -421,6 +484,12 @@ SDL_Rect SdlSurface::rightRect(uint8_t index) {
 SDL_Rect SdlSurface::bottomRect(uint8_t index) {
   const int offset = (kPadSize - kButtonSize) / 2;
   SDL_Rect rect = {kGridX + index * kPitch + offset, kBottomY, kButtonSize, kButtonSize};
+  return rect;
+}
+
+// Under each B button, a pad's width so the row reads as one strip rather than eight studs.
+SDL_Rect SdlSurface::pageRect(uint8_t index) {
+  SDL_Rect rect = {kGridX + index * kPitch, kPageRowY, kPadSize, kPageButtonHeight};
   return rect;
 }
 
@@ -594,6 +663,32 @@ bool SdlSurface::moveFader(const ControlEvent& fader, int value, ControlEvent& e
   return true;
 }
 
+// The bar spans the whole window, each button an equal share of it.
+// The next press a mode button queued, if any. Empties the queue as it goes.
+bool SdlSurface::takeQueued(ControlEvent& event) {
+  if (queuedNext_ >= queuedCount_) return false;
+  event = queued_[queuedNext_++];
+  if (queuedNext_ == queuedCount_) queuedCount_ = queuedNext_ = 0;
+  setPressed(event);
+  return true;
+}
+
+SDL_Rect SdlSurface::modeRect(uint8_t index) {
+  const int span = kWindowWidth - 2 * kMargin;
+  const int pitch = span / kNumModeButtons;
+  const SDL_Rect rect = {kMargin + pitch * index, kModeBarY, pitch - kModeButtonGap,
+                         kModeBarHeight};
+  return rect;
+}
+
+int SdlSurface::modeAt(int x, int y) const {
+  for (uint8_t i = 0; i < kNumModeButtons; ++i) {
+    const SDL_Rect rect = modeRect(i);
+    if (x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h) return i;
+  }
+  return -1;
+}
+
 bool SdlSurface::hitTest(int x, int y, ControlEvent& out) const {
   const SDL_Point point = {x, y};
   out.pressed = true;
@@ -621,6 +716,15 @@ bool SdlSurface::hitTest(int x, int y, ControlEvent& out) const {
     if (SDL_PointInRect(&point, &rect)) {
       out.group = kGroupBottom;
       out.index = i;
+      return true;
+    }
+  }
+  for (uint8_t i = 0; i < kNumMixStrips; ++i) {
+    const SDL_Rect rect = pageRect(i);
+    if (SDL_PointInRect(&point, &rect)) {
+      // It is the A2 button, not a control of its own: one page mechanism, not two.
+      out.group = kGroupMixButton;
+      out.index = mixButtonIndex(1, i);
       return true;
     }
   }
@@ -701,7 +805,7 @@ void SdlSurface::drawMixer() {
   fillRoundRect(r, panel, kPanelRadius);
 
   setColor(r, kLabel);
-  drawText(r, kMixX, (kPanelY - kTextHeight) / 2, "MIXER", kTextScale);
+  drawText(r, kMixX, kStatusY, "MIXER", kTextScale);
 
   char number[3];
   for (uint8_t strip = 0; strip < kNumMixStrips; ++strip) {
@@ -762,10 +866,28 @@ void SdlSurface::drawFader(const SDL_Rect& rect, uint16_t value, bool active) {
   SDL_RenderFillRect(r, &line);
 }
 
+// The open mode is lit, the one under the pointer a shade up from the rest. The hardware has
+// no room for these; the simulator does, and it is the one place a mode is named in words.
+void SdlSurface::drawModeBar() {
+  SDL_Renderer* r = renderer_;
+  for (uint8_t i = 0; i < kNumModeButtons; ++i) {
+    const SDL_Rect rect = modeRect(i);
+    const bool active = kModeOfButton[i] == activeMode_;
+    const bool hover = modeAt(mouseX_, mouseY_) == static_cast<int>(i);
+    setColor(r, active ? kModeActive : hover ? kModeHover : kModeIdle);
+    fillRoundRect(r, rect, kModeButtonRadius);
+    setColor(r, active ? kModeActiveText : kLabel);
+    drawText(r, rect.x + (rect.w - textWidth(kModeButtons[i].label, kTextScale)) / 2,
+             rect.y + (rect.h - kTextHeight) / 2, kModeButtons[i].label, kTextScale);
+  }
+}
+
 void SdlSurface::draw() {
   SDL_Renderer* r = renderer_;
   setColor(r, kBackground);
   SDL_RenderClear(r);
+
+  drawModeBar();
 
   setColor(r, kPanel);
   const SDL_Rect panel = {kPanelX, kPanelY, kPanelRight - kPanelX, kPanelBottom - kPanelY};
@@ -800,6 +922,20 @@ void SdlSurface::draw() {
              rect.y + rect.h + kLabelGap, text, kTextScale);
   }
 
+  // The page row, lit by the mixer's own A2 colours: green the page on screen, dim blue one
+  // holding something, grey an empty one, dark where the mode has no such page.
+  for (uint8_t i = 0; i < kNumMixStrips; ++i) {
+    const uint8_t a2 = mixButtonIndex(1, i);
+    const SDL_Rect rect = pageRect(i);
+    drawControl(r, rect, frame_.mixButtons[a2], mixButtonPressed_[a2], kButtonRadius);
+    std::snprintf(label, sizeof(label), "%d", i + 1);
+    setColor(r, isLit(frame_.mixButtons[a2]) ? kStatus : kLabel);
+    drawText(r, rect.x + (rect.w - textWidth(label, kTextScale)) / 2,
+             rect.y + (rect.h - kTextHeight) / 2, label, kTextScale);
+  }
+  setColor(r, kHint);
+  drawText(r, kGridX, kPageRowY + kPageButtonHeight + kLabelGap, "PAGE", kTextScale);
+
   const SDL_Rect shift = shiftRect();
   drawControl(r, shift, frame_.shift, shiftPressed_, kButtonRadius);
   setColor(r, kLabel);
@@ -819,7 +955,7 @@ void SdlSurface::draw() {
   drawMixer();
 
   setColor(r, kStatus);
-  drawText(r, kGridX, (kPanelY - kTextHeight) / 2, status_, kTextScale);
+  drawText(r, kGridX, kStatusY, status_, kTextScale);
 
   setColor(r, kHint);
   drawText(r, kGridX, kFooterY,

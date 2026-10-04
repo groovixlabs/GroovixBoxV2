@@ -6,7 +6,8 @@
 
 namespace gx {
 
-MidiRig::MidiRig(const Options& options) : options_(options), portsStale_(false) {
+MidiRig::MidiRig(const Options& options)
+    : options_(options), portsStale_(false), voices_(NULL) {
   for (uint8_t port = 0; port < kNumMidiPorts; ++port) portWas_[port] = false;
 }
 
@@ -88,7 +89,15 @@ void MidiRig::silencePorts(const bool* before) {
 }
 
 void MidiRig::recordPorts() {
-  for (uint8_t port = 0; port < kNumMidiPorts; ++port) portWas_[port] = out_.portConnected(port);
+  for (uint8_t port = 0; port < kNumMidiPorts; ++port) {
+    portWas_[port] = out_.portConnected(port);
+    // Which voices a port plays follows what is on it. This is the one place every wiring
+    // passes through, so a REFRESH that moves a synth to another port moves its voice list
+    // with it and nothing has to be rebound by hand.
+    if (voices_) {
+      voices_->setPortDevice(port, portWas_[port] ? out_.portDeviceName(port) : std::string());
+    }
+  }
 }
 
 // Listens to a keyboard: the one named in the config, else whatever looks like one. Nothing

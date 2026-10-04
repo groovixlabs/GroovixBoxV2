@@ -250,6 +250,10 @@ class Sequencer {
   void previewNoteOff(uint8_t track, uint8_t note);
 
  private:
+  // Any of a track's patterns, from the project or from the built-in bank; the writable form
+  // is null for the bank, which is how the bank stays read-only.
+  const Pattern* patternAt(uint8_t track, uint8_t pattern) const;
+  Pattern* writablePattern(uint8_t track, uint8_t pattern);
   const Pattern* currentPattern(uint8_t track) const;
   const Step* stepAt(uint8_t track, uint16_t step) const;
   Step* stepAt(uint8_t track, uint16_t step);

@@ -26,6 +26,7 @@ class ScaleMode : public Mode {
 
   void handlePad(UiState& state, uint8_t pad, bool pressed) override;
   void renderPads(const UiState& state, LedFrame& frame) const override;
+  const ModeLegend* legend(const UiState& state) const override;
   // Note names on the piano, scale names, and the track's keyboard pads.
   const char* padLabel(const UiState& state, uint8_t pad) const override;
 

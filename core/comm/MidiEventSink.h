@@ -4,6 +4,7 @@
 
 #include "comm/InstrumentOutput.h"
 #include "comm/MidiOutput.h"
+#include "comm/VoiceTable.h"
 #include "engine/EventSink.h"
 #include "engine/Project.h"
 
@@ -25,6 +26,9 @@ class MidiEventSink : public EventSink {
   explicit MidiEventSink(MidiOutput& output);
   // Where tracks on an internal instrument play. Without one they make no sound.
   void setInstruments(InstrumentOutput* instruments) { instruments_ = instruments; }
+  // Which voices each port's device offers. Without one, every port plays the built-in
+  // General MIDI list, which is what a test and a build with no config file see.
+  void setVoices(const VoiceSource* voices) { voices_ = voices; }
 
   void noteOn(uint8_t track, uint8_t note, uint8_t velocity) override;
   void noteOff(uint8_t track, uint8_t note) override;
@@ -52,6 +56,7 @@ class MidiEventSink : public EventSink {
 
   MidiOutput& output_;
   InstrumentOutput* instruments_;  // NULL until a synth is attached
+  const VoiceSource* voices_;      // NULL until the platform has read the voice lists
   uint8_t channels_[kNumTracks];   // 0..15
   uint8_t ports_[kNumTracks];      // 0..kNumMidiPorts-1
   uint8_t instruments_slots_[kNumTracks];  // 0..kNumInstruments-1, or kNoInstrument

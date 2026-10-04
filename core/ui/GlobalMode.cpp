@@ -8,7 +8,6 @@ namespace gx {
 
 namespace {
 
-const uint8_t kValueFader = 0;    // fader 1 sets the picked setting
 const uint8_t kValueTopRow = 2;   // the value's five rows, below a blank row
 const uint8_t kIdleSettingLevel = 60;
 // MIDI channel setting: rows 3 and 4 are channels 1-8 and 9-16, row 5 the MIDI ports P1..P8
@@ -19,16 +18,50 @@ const uint8_t kIdleChannelLevel = 35;
 const uint8_t kFirstPortPad = 4 * kGridCols;
 const uint8_t kFirstInstrumentPad = 5 * kGridCols;
 const uint8_t kUnusedRouteLevel = 12;  // the routing the track isn't using
-// Bottom row, columns 5 and 6: step the value up and down by 1.
+// The channel, port and instrument in use are lifted towards white rather than left at the
+// plain track colour. A track colour's brightness follows its hue - yellow reads about twice
+// as bright as blue - so the raw colour made the setting in use look dim on half the tracks,
+// dimmer than the green this surface uses everywhere else to mean "this one". Lifting evens
+// them out and keeps the hue, so the pad still says which track is being set.
+const uint8_t kRouteInUseLift = 120;
+// Bottom row: coarse in columns 2 and 3, fine in columns 5 and 6. Two pairs rather than a
+// fader, because a fader covers 20..300 BPM in its travel - about three BPM a pixel - which
+// can reach a tempo but never quite the one you wanted. Coarse gets you near, fine lands.
 const uint8_t kStepRow = kGridRows - 1;
+const uint8_t kCoarseUpPad = kStepRow * kGridCols + 1;
+const uint8_t kCoarseDownPad = kStepRow * kGridCols + 2;
 const uint8_t kUpPad = kStepRow * kGridCols + 4;
 const uint8_t kDownPad = kStepRow * kGridCols + 5;
+const int16_t kCoarseStep = 10;
 // Sends every fader and knob's CC again, so the gear matches the panel after a change of
 // project. An action rather than a setting, so it sits on the bottom row with the steppers.
 const uint8_t kSendCcPad = kStepRow * kGridCols + 7;
 const uint8_t kSendCcLevel = 70;
 const uint8_t kHeldUp = 1;
 const uint8_t kHeldDown = 2;
+const uint8_t kHeldCoarseUp = 4;
+const uint8_t kHeldCoarseDown = 8;
+
+// The four stepper pads, as how far each moves the value and which bit marks it held.
+struct Stepper {
+  uint8_t pad;
+  int16_t step;
+  uint8_t heldBit;
+};
+const Stepper kSteppers[] = {
+    {kCoarseUpPad, kCoarseStep, kHeldCoarseUp},
+    {kCoarseDownPad, -kCoarseStep, kHeldCoarseDown},
+    {kUpPad, 1, kHeldUp},
+    {kDownPad, -1, kHeldDown},
+};
+const uint8_t kNumSteppers = sizeof(kSteppers) / sizeof(kSteppers[0]);
+
+const Stepper* stepperFor(uint8_t pad) {
+  for (uint8_t i = 0; i < kNumSteppers; ++i) {
+    if (kSteppers[i].pad == pad) return &kSteppers[i];
+  }
+  return 0;
+}
 const uint8_t kStepPadLevel = 70;
 const uint8_t kStepPadLimitLevel = 20;  // the value can't go further this way
 
@@ -93,13 +126,6 @@ static_assert(kFirstInstrumentPad + kNumInstruments <= kStepRow * kGridCols,
 static_assert(kNumMidiPorts <= kGridCols, "the ports fit on one row");
 static_assert(kTracksPerMidiPort == kTracksPerPage,
               "a track page starts on its own port, so the pages and ports line up");
-
-// Fader 1 covers the whole tempo range, rounded to the nearest BPM.
-uint16_t valueForFader(uint16_t fader, uint16_t low, uint16_t high) {
-  if (fader > kFaderMax) fader = kFaderMax;
-  const uint32_t span = high - low;
-  return static_cast<uint16_t>(low + (fader * span + kFaderMax / 2) / kFaderMax);
-}
 
 void drawDigit(LedFrame& frame, uint8_t digit, uint8_t firstCol, Rgb color) {
   const uint16_t glyph = kFont3x5['0' + digit - kFontFirstChar];
@@ -172,18 +198,19 @@ uint16_t GlobalMode::minValue() const { return selected_ == kGlobalSwing ? kMinS
 uint16_t GlobalMode::maxValue() const { return selected_ == kGlobalSwing ? kMaxSwing : kMaxBpm; }
 
 void GlobalMode::handlePad(UiState& state, uint8_t pad, bool pressed) {
-  if (pad == kUpPad || pad == kDownPad) {
-    const uint8_t bit = pad == kUpPad ? kHeldUp : kHeldDown;
+  if (const Stepper* stepper = stepperFor(pad)) {
     if (!pressed) {
-      held_ = static_cast<uint8_t>(held_ & ~bit);
+      held_ = static_cast<uint8_t>(held_ & ~stepper->heldBit);
       return;
     }
     if (!isEditable()) return;
-    held_ = static_cast<uint8_t>(held_ | bit);
-    const uint16_t current = value();
-    if (pad == kUpPad ? current < maxValue() : current > minValue()) {
-      setValue(static_cast<uint16_t>(pad == kUpPad ? current + 1 : current - 1));
-    }
+    held_ = static_cast<uint8_t>(held_ | stepper->heldBit);
+    // Clamped, not refused: a coarse step near the end should still take you to the end
+    // rather than do nothing because ten would overshoot.
+    const int32_t wanted = static_cast<int32_t>(value()) + stepper->step;
+    const int32_t low = minValue(), high = maxValue();
+    const int32_t landed = wanted < low ? low : wanted > high ? high : wanted;
+    if (landed != static_cast<int32_t>(value())) setValue(static_cast<uint16_t>(landed));
     return;
   }
   if (!pressed) return;
@@ -261,6 +288,8 @@ const char* GlobalMode::padLabel(const UiState&, uint8_t pad) const {
     return nullptr;
   }
   if (isNumberSetting()) {
+    if (pad == kCoarseUpPad) return "+10";
+    if (pad == kCoarseDownPad) return "-10";
     if (pad == kUpPad) return "+1";
     if (pad == kDownPad) return "-1";
   }
@@ -277,14 +306,6 @@ const char* GlobalMode::padLabel(const UiState&, uint8_t pad) const {
     return kInstrumentLabels[pad - kFirstInstrumentPad];
   }
   return nullptr;
-}
-
-bool GlobalMode::handleFader(UiState&, uint8_t fader, uint16_t position) {
-  if (fader != kValueFader || !isNumberSetting()) return false;
-  // The tempo isn't ours while we are following: swallow the move rather than let the fader
-  // start sending a CC by surprise.
-  if (!tempoIsExternal()) setValue(valueForFader(position, minValue(), maxValue()));
-  return true;  // a fader the mode uses doesn't also send its CC
 }
 
 void GlobalMode::renderPads(const UiState& state, LedFrame& frame) const {
@@ -341,10 +362,11 @@ void GlobalMode::renderPads(const UiState& state, LedFrame& frame) const {
   }
   if (selected_ == kGlobalMidiChannel) {
     const Rgb color = trackColor(state.track);
+    const Rgb inUse = lift(color, kRouteInUseLift);
     const uint8_t current = sequencer_.trackMidiChannel(state.track);
     for (uint8_t channel = 0; channel < kNumMidiChannels; ++channel) {
       frame.pads[kFirstChannelPad + channel] =
-          channel == current ? color : dim(color, kIdleChannelLevel);
+          channel == current ? inUse : dim(color, kIdleChannelLevel);
     }
     // The track plays out of a MIDI port or on an internal instrument: the one in use lights
     // in the track colour, and the row it isn't using is dimmer still.
@@ -353,23 +375,58 @@ void GlobalMode::renderPads(const UiState& state, LedFrame& frame) const {
     const uint8_t idlePort = onInstrument ? kUnusedRouteLevel : kIdleChannelLevel;
     for (uint8_t port = 0; port < kNumMidiPorts; ++port) {
       frame.pads[kFirstPortPad + port] =
-          (!onInstrument && port == currentPort) ? color : dim(color, idlePort);
+          (!onInstrument && port == currentPort) ? inUse : dim(color, idlePort);
     }
     const uint8_t currentInstrument = sequencer_.trackInstrument(state.track);
     const uint8_t idleInstrument = onInstrument ? kIdleChannelLevel : kUnusedRouteLevel;
     for (uint8_t instrument = 0; instrument < kNumInstruments; ++instrument) {
       frame.pads[kFirstInstrumentPad + instrument] =
-          instrument == currentInstrument ? color : dim(color, idleInstrument);
+          instrument == currentInstrument ? inUse : dim(color, idleInstrument);
     }
     return;
   }
   if (!isNumberSetting()) return;
   const uint16_t current = value();
   drawNumber(frame, current);
-  // Both steppers read as unavailable while the tempo belongs to someone else.
+  // Every stepper reads as unavailable while the tempo belongs to someone else, and dims at
+  // the end it cannot move past.
   const bool locked = tempoIsExternal();
-  frame.pads[kUpPad] = stepPadColor(held_ & kHeldUp, locked || current >= maxValue());
-  frame.pads[kDownPad] = stepPadColor(held_ & kHeldDown, locked || current <= minValue());
+  for (uint8_t i = 0; i < kNumSteppers; ++i) {
+    const Stepper& stepper = kSteppers[i];
+    const bool atLimit = stepper.step > 0 ? current >= maxValue() : current <= minValue();
+    frame.pads[stepper.pad] = stepPadColor(held_ & stepper.heldBit, locked || atLimit);
+  }
 }
+
+
+// ---- what the rows are for, for a screen beside the instrument ----
+
+namespace {
+
+const Rgb kPickColor = {54, 214, 95};
+const Rgb kValueColor = {40, 100, 255};
+const Rgb kStepColor = {243, 244, 246};
+
+const ModeLegend kGlobalLegend = {
+    "SHIFT + R1",
+    "Global settings",
+    {
+        {1, 1, kPickColor, "row 1", "tempo, MIDI, swing, devices, arp"},
+        {3, 7, kValueColor, "rows 3-7", "the picked setting's value"},
+        {8, 8, kStepColor, "row 8", "pad 5 +1, pad 6 -1, pad 8 resends CCs"},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+    },
+    3,
+    {"fader 1 sets the picked value", "B1-B8 only move the selection here",
+     "R1 back to project", NULL},
+    3,
+    {kPickColor, {}, kValueColor, kValueColor, kValueColor, kValueColor, kValueColor, kStepColor},
+};
+
+}  // namespace
+
+const ModeLegend* GlobalMode::legend(const UiState&) const { return &kGlobalLegend; }
 
 }  // namespace gx

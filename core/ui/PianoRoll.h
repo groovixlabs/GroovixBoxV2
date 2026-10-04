@@ -8,12 +8,12 @@
 
 namespace gx {
 
-// What Shift + B5..B8 do in the piano roll.
+// Where Shift + the roll's arrow cluster moves the view.
 enum RollScroll {
-  kRollUp = 0,  // B5: higher notes
-  kRollDown,    // B6: lower notes
-  kRollLeft,    // B7: earlier steps
-  kRollRight,   // B8: later steps
+  kRollUp = 0,  // higher notes
+  kRollDown,    // lower notes
+  kRollLeft,    // earlier steps
+  kRollRight,   // later steps
   kNumRollScrolls,
 };
 
@@ -23,9 +23,10 @@ enum RollScroll {
 //  - tap a pad to add that note to the step's chord, tap it again to take it out; holding a
 //    pad plays its note without changing the step
 //  - Clear + pad clears the step, Duplicate + pad + pad copies it
-//  - Shift + a pad on the bottom row makes its step the pattern's last
-//  - Shift + B5/B6 scroll the notes up/down and Shift + B7/B8 the steps left/right, 4 at a
-//    time so half the view stays in sight; hold R3 + B1..B8 to jump to a step page
+//  - R3 + a pad makes its step the pattern's last
+//  - Shift + an arrow cluster at the bottom right scrolls the view: left (8,6), down (8,7),
+//    right (8,8) and up (7,7), 4 at a time so half of what was on screen stays in sight.
+//    Hold R3 + B1..B8 to jump to a step page
 // Each track keeps its own view.
 class PianoRoll {
  public:

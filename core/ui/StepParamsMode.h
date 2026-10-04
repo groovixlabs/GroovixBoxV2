@@ -46,6 +46,8 @@ class StepParamsMode : public Mode {
 
   void handlePad(UiState& state, uint8_t pad, bool pressed) override;
   void renderPads(const UiState& state, LedFrame& frame) const override;
+  const ModeLegend* legend(const UiState& /*state*/) const override { return &legend_; }
+  uint8_t displayValues(const UiState& state, DisplayValue* values) const override;
   void reset() override;
 
  private:
@@ -61,6 +63,10 @@ class StepParamsMode : public Mode {
   Sequencer& sequencer_;
   // The lane a row shows right now: the second one has a Shift face, if it was given one.
   uint8_t laneAt(const UiState& state, uint8_t index) const;
+
+  // Built once from the lanes this instance was given: the same class is the velocity/gate
+  // mode and the probability/micro-timing one, so what its rows do differs per instance.
+  ModeLegend legend_;
 
   uint8_t lanes_[kMaxStepLanes];  // StepLane
   uint8_t shiftLane_;             // what Shift puts on the second lane, or kNoLane

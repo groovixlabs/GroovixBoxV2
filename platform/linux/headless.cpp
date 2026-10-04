@@ -16,6 +16,7 @@
 //   --no-midi-out     leave the ports unwired; patch them by hand
 //   --midi-log        print every MIDI message the sequencer sends
 //   --no-surfaces     don't open the APC or the MIDI Mix
+//   --no-display      leave the 800x480 panel shut (only in a GX_BUILD_DISPLAY=ON build)
 //   --allow-multiple  run beside another instance (they share the gear; for testing)
 //
 // It runs until Ctrl-C or SIGTERM, then saves the open project and puts the LEDs out, so
@@ -38,6 +39,10 @@
 #include "common/FileStorage.h"
 #include "common/LogMidiOutput.h"
 #include "common/RigPaths.h"
+#include "common/VoiceLibrary.h"
+#ifdef GX_HAVE_DISPLAY
+#include "display/DisplayWindow.h"
+#endif
 #include "linux/MidiRig.h"
 #include "linux/RigConfig.h"
 #include "linux/SingleInstance.h"
@@ -45,6 +50,20 @@
 namespace {
 
 std::atomic<bool> gRunning(true);
+
+#ifdef GX_HAVE_DISPLAY
+// The display shows voices by name; the voice lists are what has them.
+class LibraryNaming : public gx::DisplayWindow::Naming {
+ public:
+  explicit LibraryNaming(const gx::VoiceLibrary& voices) : voices_(voices) {}
+  std::string voiceName(uint8_t port, uint16_t slot) const override {
+    return port == gx::kNoDisplayPort ? std::string() : voices_.voiceName(port, slot);
+  }
+
+ private:
+  const gx::VoiceLibrary& voices_;
+};
+#endif
 void stopOnSignal(int) { gRunning = false; }
 
 // Sends every message to a real port and to the log, for --midi-log.
@@ -63,6 +82,7 @@ class TeeMidiOutput : public gx::MidiOutput {
 
 struct Options {
   const char* dataDir = NULL;
+  bool useDisplay = true;  // only reaches anything in a build with GX_BUILD_DISPLAY=ON
   const char* configDir = NULL;
   const char* controlsPath = NULL;
   const char* midiOutDevice = NULL;
@@ -104,10 +124,17 @@ int run(const Options& options) {
                                             : rig.output();
   gx::MidiEventSink noteOutput(midiOut);
 
+  // What each device's presets actually send. Read before the ports are wired, so the first
+  // wiring already knows which list belongs to which port.
+  gx::VoiceLibrary voices;
+  voices.load(configDir, stdout);
+  noteOutput.setVoices(&voices);
+  midiLog.setVoices(&voices);
+  rig.setVoiceLibrary(&voices);
+
   // On the heap: with the desktop capacity limits the app holds over a megabyte of projects.
   std::unique_ptr<gx::GroovixApp> appOwner(new gx::GroovixApp(rig, storage, noteOutput));
   gx::GroovixApp& app = *appOwner;
-  app.begin();
 
   gx::RigConfig config;
   // Only complain about a missing file when one was asked for by name or by directory: a rig
@@ -120,8 +147,17 @@ int run(const Options& options) {
     rig.setPortSpec(port, config.portSpec(port));
   }
   rig.wire();
+  for (uint8_t port = 0; port < gx::kNumMidiPorts; ++port) {
+    std::printf("voices: %s\n", voices.describePort(port).c_str());
+  }
   app.setMidiInput(&rig.input());
   app.ui().setDeviceStatus(&rig);
+  app.ui().setPresetCatalog(&voices);
+
+  // Only now: opening a project sends every track's preset, and those have to go out of ports
+  // that are wired, to the voice list of the gear that is on them. Begun before the wiring,
+  // they went nowhere and were read against whatever list the port had yet to be given.
+  app.begin();
 
   // The clock ticks on its own thread so playback timing doesn't depend on how often the
   // surfaces are polled. The two threads take turns through one mutex, as the simulator does.
@@ -130,6 +166,18 @@ int run(const Options& options) {
     std::lock_guard<std::mutex> held(coreMutex);
     app.tick(nowUs);
   });
+#ifdef GX_HAVE_DISPLAY
+  // The panel beside the instrument. It is a reporter, not a control: nothing it shows can be
+  // touched, and a rig without one runs exactly the same.
+  gx::DisplayWindow display;
+  LibraryNaming naming(voices);
+  if (options.useDisplay && display.open(config.value("displayfont"))) {
+    display.setNaming(&naming);
+  }
+  gx::DisplayFrame displayFrame;
+  uint32_t lastDraw = 0;
+#endif
+
   clock.start();
   std::printf("clock: 1 ms ticks at %s priority\n", clock.realTime() ? "real-time" : "normal");
   std::printf("GroovixBox running. Ctrl-C to stop.\n");
@@ -137,6 +185,8 @@ int run(const Options& options) {
 
   // Input and LEDs at about 60 Hz: fast enough for the pads to feel immediate, slow enough to
   // leave the machine alone.
+  bool drawPending = false;
+  (void)drawPending;
   while (gRunning) {
     {
       std::lock_guard<std::mutex> held(coreMutex);
@@ -147,7 +197,25 @@ int run(const Options& options) {
       // The mixer's bank buttons move the track page, so its strips and the pads agree.
       int8_t bankStep = 0;
       if (rig.takeBankStep(bankStep)) app.ui().stepTrackPage(bankStep);
+#ifdef GX_HAVE_DISPLAY
+      // 30 a second is plenty for something read at arm's length, and it halves the drawing
+      // this thread does while the pads still answer at 60.
+      const uint32_t now = gx::ClockThread::nowMs();
+      if (display.isOpen() && now - lastDraw >= 33) {
+        lastDraw = now;
+        app.ui().fillDisplay(displayFrame);
+        drawPending = true;
+      }
+#endif
     }
+#ifdef GX_HAVE_DISPLAY
+    // Drawn outside the lock: pixels take long enough that the clock thread should not be
+    // kept waiting on them, and the frame is this thread's own copy by now.
+    if (drawPending) {
+      display.show(displayFrame);
+      drawPending = false;
+    }
+#endif
     usleep(16000);
   }
 
@@ -176,6 +244,8 @@ int main(int argc, char* argv[]) {
       options.midiLog = true;
     } else if (std::strcmp(argv[i], "--no-surfaces") == 0) {
       options.useSurfaces = false;
+    } else if (std::strcmp(argv[i], "--no-display") == 0) {
+      options.useDisplay = false;
     } else if (std::strcmp(argv[i], "--allow-multiple") == 0) {
       options.allowMultiple = true;
     } else {

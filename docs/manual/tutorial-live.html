@@ -94,8 +94,8 @@
         return muted.indexOf(track) >= 0 ? { c: g.dim(spec.c, 0.28) } : spec;
       },
       right: g.functionButtons(1, true, false),
-      // Pattern mode's bottom row: B1-B4 track pages, B5-B8 pattern pages.
-      bottom: function (i) { return i === 0 || i === 4 ? { c: g.C.green } : { c: g.C.grey }; }
+      // Pattern mode's bottom row is the track pages, all eight of them.
+      bottom: function (i) { return i === 0 ? { c: g.C.green } : { c: g.C.grey }; }
     });
   })();
 </script>

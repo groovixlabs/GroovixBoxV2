@@ -143,6 +143,48 @@ static_assert(kStepRows + kMaxStepLanes * kRowsPerLane == kGridRows,
 static_assert(kGateUnitsPerStep == 6, "the ramp's first five pads are sixths of a step");
 static_assert(16 * kGateUnitsPerStep == kMaxGateUnits, "the ramp's last pad is the longest gate");
 
+// ---- what the rows are for, for a screen beside the instrument ----
+
+namespace {
+
+const Rgb kStepsColor = {54, 214, 95};    // the steps, the same green they light
+const Rgb kVelocityColor = {255, 225, 0};
+const Rgb kGateColor = {0, 215, 200};     // cyan, so it isn't mistaken for the steps' green
+const Rgb kProbColor = {255, 60, 170};
+const Rgb kNudgeColor = {255, 189, 108};
+const Rgb kShiftColor = {160, 60, 255};
+
+struct LaneText {
+  const char* label;
+  const char* text;
+  Rgb color;
+  const char* valueKey;
+};
+
+// One entry per StepLane, in the order the enum declares them.
+const LaneText kLaneText[kNumLaneKinds] = {
+    {"velocity", "velocity, 16 levels 8 -> 127", kVelocityColor, "VELOCITY"},
+    {"gate", "gate, 1/6 step to 16 steps", kGateColor, "GATE"},
+    {"chance", "how often it plays, 6% -> 100%", kProbColor, "CHANCE"},
+    {"micro-timing", "how far off the grid it plays, in ticks", kNudgeColor, "NUDGE"},
+    {"ratchet", "pad n fires the step n+1 times", kShiftColor, "RATCHET"},
+};
+
+// The gate lane as words: one per rung of kGateRamp, so the screen says what the pads mean.
+const char* const kGateNames[kLanePads] = {
+    "1/6 step", "2/6 step", "1/2 step", "4/6 step", "5/6 step",
+    "1 step",   "2 steps",  "3 steps",  "4 steps",  "5 steps",
+    "6 steps",  "8 steps",  "10 steps", "12 steps", "14 steps", "16 steps",
+};
+
+// The micro-timing lane as words, one per rung of kNudgeRamp.
+const char* const kNudgeNames[kLanePads] = {
+    "-12", "-10", "-8", "-6", "-4", "-3", "-2", "-1",
+    "straight", "+1", "+2", "+3", "+4", "+6", "+8", "+12",
+};
+
+}  // namespace
+
 StepParamsMode::StepParamsMode(Sequencer& sequencer, uint8_t firstLane, uint8_t secondLane,
                                uint8_t shiftLane)
     : sequencer_(sequencer), shiftLane_(shiftLane), laneCount_(0), selected_(0), heldSteps_(0) {
@@ -150,6 +192,77 @@ StepParamsMode::StepParamsMode(Sequencer& sequencer, uint8_t firstLane, uint8_t 
   lanes_[1] = kNoLane;
   if (firstLane < kNumLaneKinds) lanes_[laneCount_++] = firstLane;
   if (secondLane < kNumLaneKinds) lanes_[laneCount_++] = secondLane;
+
+  // The legend follows the lanes this instance was given, so the velocity/gate mode and the
+  // probability/micro-timing one each describe themselves without a second class.
+  legend_.key = firstLane == kLaneVelocity ? "R4" : "SHIFT + R5";
+  legend_.name = firstLane == kLaneVelocity ? "Step parameters" : "Probability";
+  legend_.numBands = 0;
+  legend_.bands[legend_.numBands].firstRow = 1;
+  legend_.bands[legend_.numBands].lastRow = 4;
+  legend_.bands[legend_.numBands].color = kStepsColor;
+  legend_.bands[legend_.numBands].label = "rows 1-4";
+  legend_.bands[legend_.numBands].text = "the 32 steps - brighter is more";
+  ++legend_.numBands;
+  for (uint8_t i = 0; i < laneCount_; ++i) {
+    const LaneText& lane = kLaneText[lanes_[i]];
+    DisplayBand& band = legend_.bands[legend_.numBands++];
+    band.firstRow = static_cast<uint8_t>(5 + i * 2);
+    band.lastRow = static_cast<uint8_t>(6 + i * 2);
+    band.color = lane.color;
+    band.label = i == 0 ? "rows 5-6" : "rows 7-8";
+    band.text = lane.text;
+  }
+  if (shiftLane_ < kNumLaneKinds) {
+    DisplayBand& band = legend_.bands[legend_.numBands++];
+    band.firstRow = 0;  // a modifier, not rows of its own
+    band.lastRow = 0;
+    band.color = kShiftColor;
+    band.label = "SHIFT 7-8";
+    band.text = kLaneText[shiftLane_].text;
+  }
+  legend_.numMods = 0;
+  legend_.mods[legend_.numMods++] = "SHIFT + top row: step page";
+  legend_.mods[legend_.numMods++] = "R5 + step reset";
+  legend_.mods[legend_.numMods++] = "R3 back to note";
+  for (uint8_t row = 0; row < kGridRows; ++row) {
+    legend_.rowColor[row] = row < 4 ? kStepsColor
+                            : row < 6 ? kLaneText[lanes_[0]].color
+                            : laneCount_ > 1 ? kLaneText[lanes_[1]].color
+                                             : Rgb();
+  }
+}
+
+uint8_t StepParamsMode::displayValues(const UiState& state, DisplayValue* values) const {
+  const uint16_t step = shownStep(state);
+  if (step == kNoSlot) return 0;
+  uint8_t count = 0;
+  values[count].key = "STEP";
+  values[count].text = NULL;
+  values[count].number = static_cast<uint16_t>(step + 1);
+  values[count].suffix = NULL;
+  ++count;
+  for (uint8_t i = 0; i < laneCount_ && count < kMaxDisplayValues; ++i) {
+    const uint8_t lane = lanes_[i];
+    DisplayValue& v = values[count++];
+    v.key = kLaneText[lane].valueKey;
+    v.text = NULL;
+    v.suffix = NULL;
+    v.number = value(lane, state.track, step);
+    // Two lanes are rungs rather than counts, so their pad reads better as a word.
+    if (lane == kLaneGate) v.text = kGateNames[gatePadFor(v.number)];
+    if (lane == kLaneNudge) v.text = kNudgeNames[nudgePadFor(static_cast<int8_t>(v.number))];
+    if (lane == kLaneProbability) v.suffix = "%";
+  }
+  if (shiftLane_ == kLaneRatchet && count < kMaxDisplayValues) {
+    const uint8_t hits = sequencer_.stepRatchet(state.track, step);
+    DisplayValue& v = values[count++];
+    v.key = "RATCHET";
+    v.text = hits > 1 ? NULL : "off";
+    v.number = hits;
+    v.suffix = hits > 1 ? " hits" : NULL;
+  }
+  return count;
 }
 
 // Shift turns the second lane into its other face - the ratchets, over the gate - so a step's

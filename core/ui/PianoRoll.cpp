@@ -13,8 +13,29 @@ const uint8_t kPastEndNoteLevel = 20;   // notes of steps past the pattern's end
 const uint8_t kRootRowLevel = 22;       // the scale root's rows, tinted with the track colour
 const uint8_t kEmptyLevel = 14;         // every other empty pad
 const uint8_t kLastStepLevel = 50;      // the last step's column
+const uint8_t kScrollPadLevel = 90;     // an arrow with somewhere further to go
 const Rgb kLastStepColor = {255, 0, 0};
 const int kMaxDegree = 255 - (kGridRows - 1);  // scaleNote takes degrees up to 255
+
+// Shift turns four pads of the bottom right into an arrow cluster - left, down and right
+// along the bottom row with up above the middle one. The inverted T a thumb finds without
+// looking, and on the pads rather than the buttons because the thing being moved is the grid.
+// Indexed by RollScroll, so the order here is the order of that enum.
+const uint8_t kScrollPads[kNumRollScrolls] = {
+    padIndex(6, 6),  // up:    row 7, column 7
+    padIndex(7, 6),  // down:  row 8, column 7
+    padIndex(7, 5),  // left:  row 8, column 6
+    padIndex(7, 7),  // right: row 8, column 8
+};
+
+// Which direction this pad scrolls while Shift is held, or kNumRollScrolls for a pad that
+// does nothing.
+uint8_t scrollForPad(uint8_t pad) {
+  for (uint8_t direction = 0; direction < kNumRollScrolls; ++direction) {
+    if (kScrollPads[direction] == pad) return direction;
+  }
+  return kNumRollScrolls;
+}
 
 }  // namespace
 
@@ -49,9 +70,17 @@ void PianoRoll::handlePad(UiState& state, uint8_t pad, bool pressed) {
   const uint8_t row = pad / kGridCols;
   const uint16_t step = static_cast<uint16_t>(firstStep(state) + pad % kGridCols);
   uint16_t from = kNoSlot;
+  if (state.noteHeld) {
+    // R3 held + a pad ends the pattern at that pad's step, the same gesture the step grid
+    // uses - the roll is the same mode with another grid on it, so it answers the same way.
+    sequencer_.setTrackLength(track, static_cast<uint16_t>(step + 1));
+    return;
+  }
   if (state.shiftHeld) {
-    // Shift + a bottom-row pad ends the pattern at its step, as Shift + a step does.
-    if (row == kGridRows - 1) sequencer_.setTrackLength(track, static_cast<uint16_t>(step + 1));
+    // Shift + the arrow cluster scrolls the view. Every other pad is inert under Shift - a
+    // note is not something to add by accident with a thumb on a modifier.
+    const uint8_t direction = scrollForPad(pad);
+    if (direction < kNumRollScrolls) scroll(state, direction);
     return;
   }
   if (state.clearHeld) {
@@ -123,6 +152,15 @@ void PianoRoll::render(const UiState& state, LedFrame& frame) const {
       if (heldNotes_[pad] != kInvalidNote) c = kWhite;
       frame.pads[pad] = c;
     }
+  }
+
+  // Over the notes: Shift turns four pads into the arrows. Only those four change, and an
+  // arrow with nowhere further to go goes dark rather than dim, so a lit pad always moves the
+  // view and a dark one never does.
+  if (!state.shiftHeld) return;
+  for (uint8_t direction = 0; direction < kNumRollScrolls; ++direction) {
+    frame.pads[kScrollPads[direction]] =
+        canScroll(state, direction) ? dim(kWhite, kScrollPadLevel) : kBlack;
   }
 }
 

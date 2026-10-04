@@ -433,6 +433,7 @@
       <li style="--t: var(--led-green)">selected · playing</li>
       <li style="--t: var(--led-blue)">holds something</li>
       <li style="--t: var(--led-grey)">empty</li>
+      <li style="--t: #964600">built-in pattern</li>
       <li style="--t: var(--led-red)">marker · record</li>
       <li style="--t: var(--led-white)">held · playhead</li>
     </ul>
@@ -457,13 +458,13 @@
 
       <div class="btn" style="--led: var(--led-white)">
         <div class="btn-top"><b>R3</b><span>Note</span></div>
-        <p>Opens Note mode, and returns from Scale. Hold it and press <kbd>B1</kbd>–<kbd>B8</kbd> for another page of 32 steps.</p>
+        <p>Opens Note mode, and returns from Scale. SHIFT + the top pad row picks its page of 32 steps.</p>
         <p class="shifted"><b>SHIFT + R3</b> → Scale mode</p>
       </div>
 
       <div class="btn" style="--led: var(--led-white)">
         <div class="btn-top"><b>R4</b><span>Params</span></div>
-        <p>Opens Step parameters for the selected track. Hold it and press <kbd>B1</kbd>–<kbd>B8</kbd> for another page of steps.</p>
+        <p>Opens Step parameters for the selected track. SHIFT + the top pad row picks its step page.</p>
         <p class="shifted"><b>SHIFT + R4</b> → Preset mode, where holding R4 picks the preset page instead</p>
       </div>
 
@@ -521,9 +522,9 @@
         <ul class="gest">
           <li><span>tap step</span><span>Switches an empty step on. Tapping never switches one <em>off</em> — R5 + step does.</span></li>
           <li><span>hold + keys</span><span>Hold a step and tap keys to give it that chord, up to 4 notes. Or hold keys and tap steps.</span></li>
-          <li><span>SHIFT + step</span><span>Makes it the pattern's last step. It turns red and the steps after it go dark.</span></li>
-          <li><span>SHIFT + key</span><span>The leftmost or rightmost key moves that track's keyboard an octave.</span></li>
-          <li><span>hold R3 + B</span><span>Another page of 32 steps; the playing page blinks while R3 is held.</span></li>
+          <li><span>R3 + step</span><span>Hold R3, tap a step: it becomes the pattern's last. Turns red, the steps after go dark.</span></li>
+          <li><span>SHIFT + key</span><span>Top-left key up an octave, bottom-left key down — the way the notes run. Both light white while SHIFT is held.</span></li>
+          <li><span>SHIFT + top row</span><span>Pad 1–8 goes straight to that page of 32 steps, and the row shows which page you are on while SHIFT is held — green there, dim blue for a page with steps, grey for empty.</span></li>
         </ul>
       </article>
 
@@ -539,17 +540,17 @@
             <i style="--t: var(--t6)"></i>
             <i style="--t: var(--t6)"></i>
             <i style="--t: var(--t6)"></i>
-            <i style="--t: var(--led-red)" class="half"></i>
+            <i style="--t: var(--t6)"></i>
           </div>
           <ul class="bands">
             <li style="--t: var(--t6)"><b>all</b> 8 steps across, 8 notes of the track's scale up</li>
-            <li style="--t: var(--led-red)"><b>row 8</b> SHIFT + a pad here sets the last step</li>
+            <li style="--t: var(--led-white)"><b>SHIFT</b> four pads at the bottom right become the arrows</li>
           </ul>
         </div>
         <ul class="gest">
           <li><span>tap pad</span><span>Adds that note to the step, or takes it out. Hold to hear it without changing anything.</span></li>
-          <li><span>SHIFT + B5/B6</span><span>Scrolls the notes up or down by 4.</span></li>
-          <li><span>SHIFT + B7/B8</span><span>Scrolls the steps left or right by 4.</span></li>
+          <li><span>SHIFT + arrows</span><span>Left (8,6), down (8,7), right (8,8), up (7,7) — an inverted T. Up and down move the notes, left and right the steps, 4 at a time. Dark where there's nowhere to go.</span></li>
+          <li><span>R3 + pad</span><span>Makes its step the pattern's last. SHIFT does nothing to any pad but the four arrows.</span></li>
           <li><span>note</span><span>One of three ways to use the grid — it replaces chords, and pairs with Drums or Own&nbsp;scale.</span></li>
         </ul>
       </article>
@@ -656,11 +657,14 @@
             <li style="--t: var(--led-green)"><b>cols</b> the 8 tracks of the track page</li>
             <li style="--t: var(--led-blue)"><b>rows</b> the 8 patterns of the pattern page</li>
             <li style="--t: var(--led-green)"><b>green</b> one per column: the pattern that track plays</li>
+            <li style="--t: #964600"><b>amber</b> pages 5–8: the built-in bank, read-only</li>
           </ul>
         </div>
         <ul class="gest">
           <li><span>tap pad</span><span>That track plays that pattern at once, keeping the playhead. It selects the track too.</span></li>
-          <li><span>B1–B4</span><span>Page the tracks. <em>B5–B8</em> page the patterns. No SHIFT here, and SHIFT changes nothing.</span></li>
+          <li><span>B1–B8</span><span>Page the tracks — the columns — all eight pages. No SHIFT needed, and SHIFT changes nothing.</span></li>
+          <li><span>SHIFT + row 1</span><span>The top pad row becomes the pattern pages — the rows — and shows which one you are on.</span></li>
+          <li><span>pages 5–8</span><span>The built-in bank, lit amber: drums on track 1, bass 2, chords 3, arp 4, fills 5, repeating every 8 tracks. Read-only — R6 copies one down to pages 1–4 to edit.</span></li>
           <li><span>SHIFT + row 8</span><span>The bottom pad row becomes the mutes. A muted track's whole column dims.</span></li>
           <li><span>R6</span><span>Copies a pattern, also to another track or page.</span></li>
         </ul>
@@ -762,14 +766,16 @@
             <i style="--t: var(--led-grey)" class="half"></i>
           </div>
           <ul class="bands">
-            <li style="--t: var(--led-grey)"><b>all</b> 64 patches a page, 8 pages, 512 in all</li>
-            <li style="--t: var(--led-green)"><b>green</b> the one in use — a preset is a number, so no pad is full or empty</li>
+            <li style="--t: var(--led-grey)"><b>all</b> 64 voices a page, 8 pages a window, 8 windows</li>
+            <li style="--t: var(--led-green)"><b>green</b> the one in use — a preset is a voice in the gear, so no pad is full or empty</li>
           </ul>
         </div>
         <ul class="gest">
-          <li><span>tap pad</span><span>Sends Bank Select — CC 0 then CC 32 — and a Program Change to the selected track's gear.</span></li>
+          <li><span>tap pad</span><span>Sends that voice: Bank Select CC 0, then CC 32, then the Program Change that latches them.</span></li>
           <li><span>order</span><span>Pick the track with <em>B1–B8</em> first, then SHIFT + R4. A tap of R4 here goes on to Step parameters.</span></li>
-          <li><span>pages</span><span>Hold <em>SHIFT</em> or <em>R4</em> and press B1–B8.</span></li>
+          <li><span>pages</span><span>Hold <em>SHIFT</em> or <em>R4</em> and press B1–B8 — 64 voices each.</span></li>
+          <li><span>SHIFT + row 8</span><span>Picks the window: 512 voices each, 8 of them. Green is the window on screen, blue holds voices, grey is past the end of the list.</span></li>
+          <li><span>the list</span><span><em>voices.conf</em> names a CSV per device — the maker's own list. Slot 1.01 is its first voice. No list means General MIDI, 128 voices.</span></li>
           <li><span>note</span><span>R5 and R6 do nothing here. A patch lives in the synth, not in the sequencer.</span></li>
         </ul>
       </article>
@@ -815,9 +821,11 @@
           <tr><th>Gesture</th><th>Where</th><th>Changes</th></tr>
         </thead>
         <tbody>
-          <tr><td>SHIFT + B1–B4</td><td>Note, Scenes, Global</td><td>Track page — which tracks B1–B8 select. Your position is kept: track 4 becomes track 12.</td></tr>
-          <tr><td>B1–B4 / B5–B8</td><td>Pattern</td><td>Track page / pattern page. They need no modifier and ignore SHIFT, so pages stay reachable while it is held for the mutes.</td></tr>
-          <tr><td>hold R3 + B1–B8</td><td>Note</td><td>Step page, 32 steps each. The page the playhead is on blinks.</td></tr>
+          <tr><td>SHIFT + B1–B8</td><td>Note, Scale, Params, Probability, Scenes, Global</td><td>Track page — which tracks B1–B8 select. Your position is kept: track 4 becomes track 12. Eight pages of eight is all 64 tracks.</td></tr>
+          <tr><td>B1–B8</td><td>Pattern</td><td>Track page — the columns. They need no modifier and ignore SHIFT, so the pages stay reachable while it is held for the mutes.</td></tr>
+          <tr><td>SHIFT + top pad row</td><td>Note, Params, Probability, Pattern</td><td>Step page in the step modes, pattern page in Pattern mode — one press, and while SHIFT is held that row <em>is</em> the map: green for the page on screen, blue for one holding something, grey for empty, the playing step page blinking.</td></tr>
+          <tr><td>hold R3 + B1–B8</td><td>Note, on a piano roll track</td><td>Step page. Every pad of the roll is a note, so there is no row to give the pages.</td></tr>
+          <tr><td>SHIFT + the roll's arrows</td><td>Note, on a piano roll track</td><td>Scrolls rather than pages: left (8,6), down (8,7), right (8,8), up (7,7), 4 at a time.</td></tr>
           <tr><td>hold R4 + B1–B8</td><td>any mode</td><td>Step page, opening Step parameters.</td></tr>
           <tr><td>hold R1 + B1–B8</td><td>any mode</td><td>Project page, opening Project mode.</td></tr>
           <tr><td>hold R4 or SHIFT + B</td><td>Preset</td><td>Preset page.</td></tr>
@@ -839,14 +847,14 @@
           <li><span>K1–K3</span><span>Knob rows: Cutoff (74), Resonance (71) and Pan (10, centred) by default.</span></li>
           <li><span>fader</span><span>Volume (CC 7), on the strip's track channel and port.</span></li>
           <li><span>MUTE</span><span>Mutes the track at once. <em>Mixer SHIFT + MUTE</em> solos instead; several tracks can be soloed.</span></li>
-          <li><span>A2</span><span>The page row — REC ARM on a MIDI Mix. In Pattern mode: A2 1–4 tracks, A2 5–8 patterns.</span></li>
+          <li><span>A2</span><span>The page row — REC ARM on a MIDI Mix. It mirrors B1–B8, so in Pattern mode it is the track pages.</span></li>
           <li><span>M1–M3</span><span>Nothing yet.</span></li>
         </ul>
       </div>
 
       <div class="panel">
         <h3>Track colours</h3>
-        <p style="margin: 0; font-size: 0.85rem; color: var(--ink-soft)">Eight colours, repeated on every track page: tracks 9–16 look like 1–8. No track is red, so the markers that are — the last step, Record, the recording playhead — can never be mistaken for one.</p>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--ink-soft)">Eight colours, repeated on every track page: tracks 9–16 look like 1–8, and so on to 64. No track is red, so the markers that are — the last step, Record, the recording playhead — can never be mistaken for one.</p>
         <ul class="tracks">
           <li><span style="--t: var(--t1)"></span>1 peach</li>
           <li><span style="--t: var(--t2)"></span>2 orange</li>
@@ -858,8 +866,8 @@
           <li><span style="--t: var(--t8)"></span>8 pink</li>
         </ul>
         <ul class="capacity">
-          <li><b>32</b> tracks</li>
-          <li><b>32</b> patterns each</li>
+          <li><b>64</b> tracks</li>
+          <li><b>64</b> patterns each</li>
           <li><b>256</b> steps</li>
           <li><b>4</b> notes a step</li>
           <li><b>32</b> scenes</li>

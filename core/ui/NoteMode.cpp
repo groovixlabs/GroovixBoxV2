@@ -1,6 +1,7 @@
 #include "ui/NoteMode.h"
 
 #include "ui/Controls.h"
+#include "engine/Scale.h"
 #include "ui/Palette.h"
 
 namespace gx {
@@ -12,6 +13,15 @@ static_assert(kNumStepPads <= 32 && kNumPads - kNumStepPads <= 32,
 namespace {
 
 const uint8_t kNumKeys = kNumPads - kNumStepPads;
+// Shift + the top-left and bottom-left keys move the keyboard an octave. Vertical rather
+// than the outer columns it used to be, because pitch runs up this keyboard - every row is
+// higher than the one below it - so moving by an octave should go the same way the notes do.
+// Two pads rather than whole edges, so Shift + a key still asks for the single note almost
+// everywhere, which is how one note of a chord track is played.
+const uint8_t kOctaveUpPad = kNumStepPads;                     // row 5, column 1
+const uint8_t kOctaveDownPad = kNumPads - kGridCols;           // row 8, column 1
+// The modes whose pads change wholesale under Shift - the mutes, the preset windows, the
+// ratchet lane - already repaint and need no hint on top. See shiftHintColor().
 const uint8_t kEmptyStepLevel = 14;  // faint tint so the steps read as the track
 const uint8_t kRootMarkLevel = 70;   // root pads, tinted with the track colour
 const uint8_t kChordKeyLevel = 26;   // the other keys, while the track plays chords
@@ -122,9 +132,14 @@ void NoteMode::handleStep(UiState& state, uint8_t pad, bool pressed) {
   }
 
   uint16_t from = kNoSlot;
-  if (state.shiftHeld) {
-    // Shift + a step ends the pattern there.
+  if (state.noteHeld) {
+    // R3 held + a step ends the pattern there. Shift used to do this, but Shift on the top
+    // row now picks a step page, and paging happens constantly while a length is set once -
+    // so the frequent gesture gets the easy modifier and this one takes R3.
     sequencer_.setTrackLength(state.track, static_cast<uint16_t>(step + 1));
+  } else if (state.shiftHeld) {
+    // Shift alone on a step does nothing now: better inert than toggling a step because a
+    // thumb was still on Shift.
   } else if (state.clearHeld) {
     sequencer_.clearStep(state.track, step);
   } else if (state.duplicateHeld) {
@@ -177,17 +192,17 @@ void NoteMode::handleNote(UiState& state, uint8_t pad, bool pressed) {
     return;
   }
 
-  // Shift + the outer keyboard columns moves the keyboard an octave; it plays no note. On any
-  // other key it asks for the single note, which is how you play one note of a chord track.
+  // Shift + the keyboard's top-left and bottom-left keys move it an octave; they play no
+  // note. On any other key Shift asks for the single note, which is how you play one note of
+  // a chord track.
   bool rootOnly = false;
   if (state.shiftHeld) {
-    const uint8_t column = pad % kGridCols;
-    if (column == 0) {
-      shiftOctave(state.track, -1);
+    if (pad == kOctaveUpPad) {
+      shiftOctave(state.track, 1);
       return;
     }
-    if (column == kGridCols - 1) {
-      shiftOctave(state.track, 1);
+    if (pad == kOctaveDownPad) {
+      shiftOctave(state.track, -1);
       return;
     }
     rootOnly = true;
@@ -276,7 +291,7 @@ void NoteMode::renderPads(const UiState& state, LedFrame& frame) const {
     } else if (playing && step == playhead) {
       frame.pads[pad] = playheadColor(sequencer_.recording(), active);
     } else if (step + 1 == length) {
-      frame.pads[pad] = kLastStepColor;  // Shift + a step moves the end here
+      frame.pads[pad] = kLastStepColor;  // R3 held + a step moves the end here
     } else {
       frame.pads[pad] = active ? color : dim(color, kEmptyStepLevel);
     }
@@ -334,6 +349,93 @@ void NoteMode::renderPads(const UiState& state, LedFrame& frame) const {
       if (noteForPad(track, pad) == state.playingNotes[i]) frame.pads[pad] = kWhite;
     }
   }
+
+  // Last, so it sits over whatever those keys were showing: Shift makes its two octave keys
+  // plain, since nothing else on the grid says they are there.
+  if (state.shiftHeld) {
+    frame.pads[kOctaveUpPad] = shiftHintColor();
+    frame.pads[kOctaveDownPad] = shiftHintColor();
+  }
+}
+
+
+// ---- what the rows are for, for a screen beside the instrument ----
+
+namespace {
+
+const Rgb kStepsColor = {54, 214, 95};
+const Rgb kKeysColor = {0, 215, 200};
+const Rgb kOctaveColor = {255, 189, 108};
+
+const ModeLegend kNoteLegend = {
+    "R3",
+    "Note",
+    {
+        {1, 4, kStepsColor, "rows 1-4", "the 32 steps - R5 + step removes one"},
+        {5, 8, kKeysColor, "rows 5-8", "the keyboard, from the root at left"},
+        {0, 0, kLastStepColor, "R3 + step", "makes it the pattern's last step"},
+        {0, 0, kOctaveColor, "SHIFT key", "top left up, bottom left down an octave"},
+        {0, 0, kSelectedColor, "SHIFT top", "row picks the page of 32 steps"},
+        {0, 0, {}, NULL, NULL},
+    },
+    5,
+    {"hold step + key give it that chord", "SHIFT + R3 scale", NULL, NULL},
+    2,
+    {kStepsColor, kStepsColor, kStepsColor, kStepsColor,
+     kKeysColor, kKeysColor, kKeysColor, kKeysColor},
+};
+
+// The same mode showing a track as a piano roll: one grid, not two halves.
+const ModeLegend kRollLegend = {
+    "R3",
+    "Note - piano roll",
+    {
+        {1, 8, kKeysColor, "the grid", "8 steps across, 8 scale notes up"},
+        {0, 0, kLastStepColor, "R3 + pad", "makes that step the pattern's last"},
+        {0, 0, shiftHintColor(), "SHIFT arrow", "bottom right: scrolls the view by 4"},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+        {0, 0, {}, NULL, NULL},
+    },
+    3,
+    {"tap a pad add or remove that note", "hold R3 + B1-B8 step page", "SHIFT + R3 scale", NULL},
+    3,
+    {kKeysColor, kKeysColor, kKeysColor, kKeysColor,
+     kKeysColor, kKeysColor, kKeysColor, kKeysColor},
+};
+
+}  // namespace
+
+// The roll is the same mode with a different grid on it, so it says something different -
+// and which one is per track, so the legend is asked for with the state to hand.
+const ModeLegend* NoteMode::legend(const UiState& state) const {
+  return sequencer_.trackPianoRoll(state.track) ? &kRollLegend : &kNoteLegend;
+}
+
+uint8_t NoteMode::displayValues(const UiState& state, DisplayValue* values) const {
+  const bool own = sequencer_.keyboardLayout(state.track) == kKeyboardOwnScale;
+  const bool drums = sequencer_.keyboardLayout(state.track) == kKeyboardDrums;
+  uint8_t count = 0;
+  values[count].key = "KEY";
+  values[count].text = drums ? "drum pads"
+                             : rootName(own ? sequencer_.keyboardRoot(state.track)
+                                            : sequencer_.scaleRoot());
+  values[count].number = 0;
+  values[count].suffix = drums ? NULL
+                               : scaleName(own ? sequencer_.keyboardScale(state.track)
+                                               : sequencer_.scale());
+  ++count;
+  values[count].key = "OCTAVE";
+  values[count].text = NULL;
+  values[count].number = sequencer_.keyboardOctave(state.track);
+  values[count].suffix = NULL;
+  ++count;
+  values[count].key = "LENGTH";
+  values[count].text = NULL;
+  values[count].number = sequencer_.trackLength(state.track);
+  values[count].suffix = " steps";
+  ++count;
+  return count;
 }
 
 }  // namespace gx

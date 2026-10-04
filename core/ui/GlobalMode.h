@@ -41,8 +41,8 @@ class GlobalMode : public Mode {
   void setDeviceStatus(DeviceStatus* devices) { devices_ = devices; }
 
   void handlePad(UiState& state, uint8_t pad, bool pressed) override;
-  bool handleFader(UiState& state, uint8_t fader, uint16_t value) override;
   void renderPads(const UiState& state, LedFrame& frame) const override;
+  const ModeLegend* legend(const UiState& state) const override;
   // The settings on the top row, then the pads of the picked setting.
   const char* padLabel(const UiState& state, uint8_t pad) const override;
   void reset() override;

@@ -15,6 +15,11 @@ option(GX_BUILD_SIMULATOR "Build the SDL2 simulator" ON)
 # The internal instrument engine (platform/audio) is desktop and single-board Linux only.
 # Turn it off for a MIDI-only build; an MCU build never compiles platform/ at all.
 option(GX_BUILD_AUDIO "Build the internal instrument engine" ON)
+# A screen beside the instrument: an 800x480 panel on a Pi, showing what every track is doing
+# while it plays and what the mode's rows are for while it is stopped. Off by default, since
+# most rigs have no screen - and it is a separate module from the simulator, which draws the
+# whole device rather than reporting on it.
+option(GX_BUILD_DISPLAY "Build the 800x480 performance display" OFF)
 if(GX_BUILD_SIMULATOR AND NOT GX_BUILD_AUDIO)
   message(FATAL_ERROR
           "The simulator plays the internal instruments, so it needs GX_BUILD_AUDIO=ON.\n"
@@ -27,6 +32,7 @@ endif()
 
 # ---- Portable core: engine, ui, storage, comm, app. No platform code. ----
 set(CORE_SOURCES
+  core/engine/FactoryPatterns.cpp
   core/engine/Project.cpp
   core/engine/Scale.cpp
   core/engine/Sequencer.cpp
@@ -44,16 +50,19 @@ set(CORE_SOURCES
   core/storage/ProjectCodec.cpp
   core/storage/SlotStore.cpp
   core/comm/MidiEventSink.cpp
+  core/comm/VoiceTable.cpp
   core/app/GroovixApp.cpp)
 
 add_library(gx_core STATIC ${CORE_SOURCES})
 target_include_directories(gx_core PUBLIC core)
 
-# Capacity limits for desktop builds (simulator, tests): 4 pages of tracks, 8 of patterns and steps.
+# Capacity limits for desktop builds (simulator, tests): 8 pages each of tracks, patterns and
+# steps, which is every page the surface can reach - the track pages fill B1..B8 and the
+# pattern pages the top pad row under Shift.
 # MCU builds leave these undefined and get the smaller defaults in core/engine/Project.h.
 # PUBLIC so every target linking the core agrees on the data layout.
-set(GX_NUM_TRACKS 32 CACHE STRING "Tracks in desktop builds (1-32: 4 track pages on B1..B4)")
-set(GX_NUM_PATTERNS 32 CACHE STRING "Patterns per track in desktop builds (1-64)")
+set(GX_NUM_TRACKS 64 CACHE STRING "Tracks in desktop builds (1-64: 8 track pages on B1..B8)")
+set(GX_NUM_PATTERNS 64 CACHE STRING "Patterns per track in desktop builds (1-64: 8 pattern pages)")
 set(GX_MAX_STEPS 256 CACHE STRING "Steps per pattern in desktop builds (1-256, 8 pages of 32)")
 target_compile_definitions(gx_core PUBLIC
   GX_NUM_TRACKS=${GX_NUM_TRACKS}
@@ -123,7 +132,8 @@ add_library(gx_platform_common STATIC
   platform/common/ClockThread.cpp
   platform/common/FileStorage.cpp
   platform/common/LogMidiOutput.cpp
-  platform/common/RigPaths.cpp)
+  platform/common/RigPaths.cpp
+  platform/common/VoiceLibrary.cpp)
 target_include_directories(gx_platform_common PUBLIC platform)
 target_link_libraries(gx_platform_common PUBLIC gx_core Threads::Threads)
 target_compile_options(gx_platform_common PRIVATE ${GX_WARNINGS})
@@ -147,6 +157,26 @@ if(ALSA_FOUND)
   add_executable(groovix platform/linux/headless.cpp)
   target_link_libraries(groovix PRIVATE gx_platform_linux)
   target_compile_options(groovix PRIVATE ${GX_WARNINGS})
+
+  if(GX_BUILD_DISPLAY)
+    # SDL draws it, SDL_ttf sets the type. On a Pi with no X server, SDL's KMSDRM backend
+    # writes straight to the panel, so this needs no desktop - only the two libraries:
+    #   sudo apt install libsdl2-dev libsdl2-ttf-dev
+    find_package(SDL2 REQUIRED)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SDL2_TTF SDL2_ttf)
+    if(NOT SDL2_TTF_FOUND)
+      message(FATAL_ERROR
+              "The display needs SDL2_ttf for its type.\n"
+              "  sudo apt install libsdl2-ttf-dev\n"
+              "Or configure with -DGX_BUILD_DISPLAY=OFF.")
+    endif()
+    target_sources(groovix PRIVATE platform/display/DisplayWindow.cpp)
+    target_link_libraries(groovix PRIVATE SDL2::SDL2 ${SDL2_TTF_LIBRARIES})
+    target_include_directories(groovix PRIVATE ${SDL2_TTF_INCLUDE_DIRS})
+    target_compile_definitions(groovix PRIVATE GX_HAVE_DISPLAY)
+    message(STATUS "Display: 800x480 panel (SDL2_ttf ${SDL2_TTF_VERSION})")
+  endif()
 endif()
 
 # ---- SDL2 simulator (Linux, macOS, Windows) ----

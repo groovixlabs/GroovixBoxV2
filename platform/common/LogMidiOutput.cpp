@@ -28,7 +28,7 @@ void LogMidiOutput::send(const MidiMessage& message) {
       // and it is half of what the next Program Change will mean.
       if (message.data1 == kMidiBankSelectMsb || message.data1 == kMidiBankSelectLsb) {
         const bool msb = message.data1 == kMidiBankSelectMsb;
-        if (msb) rememberBankMsb(message);
+        rememberBank(message, msb);
         std::fprintf(out_, "MIDI P%d ch%-2d bank %s (CC %2d) %3d\n", port, channel,
                      msb ? "MSB" : "LSB", message.data1, message.data2);
         break;
@@ -38,14 +38,15 @@ void LogMidiOutput::send(const MidiMessage& message) {
       break;
     case kMidiProgramChange: {
       // The Program Change is where the bank is latched, so this is the line that says which
-      // sound the gear lands on: the bank it was given, and the preset pad that bank and this
-      // program add up to. A bank here is the MSB - 128 presets each, four of them over the
-      // 512 slots - which is what the pads and the status line count in.
-      const uint8_t bank = bankMsb(message);
-      const uint16_t slot = static_cast<uint16_t>(bank * 128 + message.data1);
-      std::fprintf(out_, "MIDI P%d ch%-2d program %3d  preset %d.%02d (bank %d, program %d)\n",
-                   port, channel, message.data1, slot / kPresetsPerPage + 1,
-                   slot % kPresetsPerPage + 1, bank, message.data1);
+      // sound the gear lands on: the whole address, and - when the voice lists have been read
+      // - the preset pad and the voice's own name.
+      VoiceAddress address;
+      address.msb = bankByte(message, true);
+      address.lsb = bankByte(message, false);
+      address.program = message.data1;
+      std::fprintf(out_, "MIDI P%d ch%-2d program %3d  bank %d:%d%s\n", port, channel,
+                   message.data1, address.msb, address.lsb,
+                   describeVoice(message, address).c_str());
       break;
     }
     default:
@@ -55,18 +56,35 @@ void LogMidiOutput::send(const MidiMessage& message) {
   }
 }
 
+// The slot a voice sits at is a row of its device's list, not something the three bytes add
+// up to, so it can only be had by looking the address back up. Nothing to look it up in, or
+// an address the device's list hasn't got, leaves the line with the bank and program alone -
+// which is still the whole of what went out.
+std::string LogMidiOutput::describeVoice(const MidiMessage& message,
+                                         const VoiceAddress& address) {
+  if (!voices_) return std::string();
+  uint16_t slot = 0;
+  std::string name;
+  if (!voices_->findVoice(message.port, address, slot, name)) return std::string();
+  char out[160];
+  std::snprintf(out, sizeof(out), "  preset %u.%02u%s%s",
+                static_cast<unsigned>(slot / kPresetsPerPage + 1),
+                static_cast<unsigned>(slot % kPresetsPerPage + 1), name.empty() ? "" : "  ",
+                name.c_str());
+  return out;
+}
+
 // A receiver holds the bank it was last sent until a Program Change uses it, so the log has
 // to hold it the same way to report what that Program Change means. One per destination,
 // because two tracks on different channels or ports select their sounds independently.
-uint8_t& LogMidiOutput::bankMsbFor(const MidiMessage& message) {
+uint8_t& LogMidiOutput::bankByte(const MidiMessage& message, bool msb) {
   const uint8_t port = message.port < kNumMidiPorts ? message.port : 0;
-  return bankMsb_[port][message.status & 0x0F];
+  const uint8_t channel = message.status & 0x0F;
+  return msb ? bankMsb_[port][channel] : bankLsb_[port][channel];
 }
 
-void LogMidiOutput::rememberBankMsb(const MidiMessage& message) {
-  bankMsbFor(message) = static_cast<uint8_t>(message.data2 & 0x7F);
+void LogMidiOutput::rememberBank(const MidiMessage& message, bool msb) {
+  bankByte(message, msb) = static_cast<uint8_t>(message.data2 & 0x7F);
 }
-
-uint8_t LogMidiOutput::bankMsb(const MidiMessage& message) { return bankMsbFor(message); }
 
 }  // namespace gx

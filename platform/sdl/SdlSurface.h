@@ -30,9 +30,19 @@ class SdlSurface : public ControlSurface {
     kLabelChars = 9,  // longest right-button label, "DUPLICATE"
     kLabelWidth = kLabelChars * 4 * kTextScale - kTextScale,
 
+    // A row of mode buttons across the top: a shortcut the hardware has no room for, and
+    // the one place the simulator shows which mode is open in words.
+    kModeBarHeight = 30,
+    kModeBarGap = 12,
+    kModeButtonGap = 6,
+    kModeButtonRadius = 5,
+
     kPitch = kPadSize + kPadGap,
     kGridX = kMargin,
-    kGridY = kMargin + 2 * kTextHeight,
+    kModeBarY = kMargin,
+    // The status line sits between the mode bar and the panel, centred in what is left.
+    kStatusY = kModeBarY + kModeBarHeight + kModeBarGap,
+    kGridY = kStatusY + kTextHeight + kModeBarGap + kPanelPadding,
     kGridWidth = kGridCols * kPitch - kPadGap,
     kGridHeight = kGridRows * kPitch - kPadGap,
     kRightX = kGridX + kGridWidth + kButtonGap,
@@ -41,12 +51,18 @@ class SdlSurface : public ControlSurface {
     kPanelX = kGridX - kPanelPadding,
     kPanelY = kGridY - kPanelPadding,
     kPanelRight = kRightX + kButtonSize + kLabelGap + kLabelWidth + kPanelPadding,
-    kFaderGap = 18,  // from the B / Shift labels to the faders
+    // A row of page buttons under B1..B8: the mixer's A2 row brought over to the keyboard
+    // side, so pages can be changed without holding Shift or R1/R3/R4.
+    kPageRowGap = 14,
+    kPageButtonHeight = 22,
+
+    kFaderGap = 18,  // from the page row to the faders
     kFaderTravel = 112,
     kFaderCapWidth = 36,
     kFaderCapHeight = 16,
     kFaderSlotWidth = 6,
-    kFaderY = kBottomY + kButtonSize + kLabelGap + kTextHeight + kFaderGap,
+    kPageRowY = kBottomY + kButtonSize + kLabelGap + kTextHeight + kPageRowGap,
+    kFaderY = kPageRowY + kPageButtonHeight + kLabelGap + kTextHeight + kFaderGap,
     kFaderHeight = kFaderTravel + kFaderCapHeight,
     kFooterLineGap = 6,
 
@@ -104,6 +120,8 @@ class SdlSurface : public ControlSurface {
   void setPadLabel(uint8_t index, const char* text);
   // Draws the labels brighter, e.g. while they show the Shift functions.
   void setLabelsShifted(bool shifted) { labelsShifted_ = shifted; }
+  // Which mode is open, so its button in the top bar is lit. See kModeButtons.
+  void setActiveMode(uint8_t mode) { activeMode_ = mode; }
   // Moves a fader's cap without reporting it, e.g. to follow a hardware fader.
   void setFaderPosition(uint8_t group, uint8_t index, uint16_t value);
 
@@ -114,11 +132,20 @@ class SdlSurface : public ControlSurface {
 
  private:
   bool hitTest(int x, int y, ControlEvent& out) const;
+  // The mode bar: a button is the R button it stands for, with or without Shift, so clicking
+  // one presses exactly what a player would press and nothing can behave differently.
+  static SDL_Rect modeRect(uint8_t index);
+  int modeAt(int x, int y) const;  // -1 when the point is not on a mode button
+  bool takeQueued(ControlEvent& event);
+  void drawModeBar();
   bool isPressed(const ControlEvent& control) const;
   void setPressed(const ControlEvent& event);
   static SDL_Rect padRect(uint8_t index);
   static SDL_Rect rightRect(uint8_t index);
   static SDL_Rect bottomRect(uint8_t index);
+  // The page row: button n is the mixer's A2 button n, so it pages whatever the open mode
+  // pages over and lights the same way, with nothing new in core to keep in step.
+  static SDL_Rect pageRect(uint8_t index);
   static SDL_Rect shiftRect();
   // Mixer: knobs and A1/A2 buttons are indexed row by row, side buttons top to bottom.
   static SDL_Rect knobRect(uint8_t index);
@@ -162,6 +189,12 @@ class SdlSurface : public ControlSurface {
   bool mixButtonPressed_[kNumMixButtons];
   bool mixSidePressed_[kNumMixSideButtons];
   uint8_t faderSync_;  // next control to report at start; past the last when done
+  // Presses queued by a mode button, handed out one poll at a time: pressing a mode is
+  // Shift down, R down, R up, Shift up, exactly as fingers would do it.
+  ControlEvent queued_[4];
+  uint8_t queuedCount_;
+  uint8_t queuedNext_;
+  uint8_t activeMode_;
   bool draggingFader_;
   ControlEvent dragFader_;
   bool draggingKnob_;      // knobs turn by how far the pointer moves, not where it is

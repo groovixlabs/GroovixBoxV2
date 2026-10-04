@@ -99,6 +99,13 @@ class UiController {
   void sendAllControls();
   // What the platform knows about the gear around it, shown on the devices page of global
   // settings. A build that knows nothing leaves it unset, and the page shows everything absent.
+  // Fills a screen's worth of state: what every track is doing while the sequencer runs, and
+  // what this mode's rows are for while it is stopped. Called from the drawing thread, like
+  // render(); a build with no screen never calls it.
+  void fillDisplay(DisplayFrame& frame) const;
+
+  // How many voices each port's gear has, for preset mode's pads and windows.
+  void setPresetCatalog(const PresetCatalog* catalog) { presetMode_.setCatalog(catalog); }
   void setDeviceStatus(DeviceStatus* devices) { globalMode_.setDeviceStatus(devices); }
   // A note played on a keyboard plugged into the sequencer. It reaches the selected track
   // whatever is on screen - you can play while looking at the patterns - and while playing and
@@ -107,6 +114,7 @@ class UiController {
   // Presses button 0..7 of a page row (the mixer's A2 row, or the APC's bottom row in pattern
   // mode); a button this build has no page for does nothing.
   void selectPage(uint8_t button);
+  void applyPage(uint8_t kind, uint8_t page);
 
   static const char* modeName(uint8_t mode);
   // Function of a right-hand button, e.g. for labels.
@@ -128,19 +136,26 @@ class UiController {
   void selectTrack(uint8_t track);
   void selectTrackPage(uint8_t page);
   void selectStepPage(uint8_t page);
+  // Shift + a pad of the top row picks that page of whatever the grid shows. True when the
+  // row took the pad, so it is never also a pad of the mode - including the matching release,
+  // and only that release.
+  bool takePageRowPad(uint8_t pad, bool pressed);
+  // Which pages the top pad row gives when Shift is held, false for a mode that has none.
+  bool pageRowPadKind(uint8_t& kind) const;
+  Rgb pageRowPadColor(uint8_t kind, uint8_t page, uint32_t nowMs) const;
+  Rgb stepPageColor(uint8_t page, uint32_t nowMs) const;
   void clampStepPage();
   // True while R1 is held in project mode, R4 in preset mode, or Shift in either: B1..B8
   // pick pages.
   bool pageSelectActive() const;
   // True while Shift is held in note or global settings mode: B1..B8 pick track pages.
   bool trackPagingActive() const;
-  // True in pattern mode: B1..B4 pick track pages and B5..B8 pattern pages, Shift or not.
+  // True in pattern mode: B1..B4 pick track pages, Shift or not. The pattern pages are on
+  // the top pad row under Shift, with the rest of the pages.
   bool patternModePaging() const;
   // True while R3 is held in note mode, R4 in step parameters or R5 in probability mode:
   // B1..B8 pick step pages.
   bool stepPagingActive() const;
-  // True while Shift is held in note mode on a piano roll track: B5..B8 scroll the roll.
-  bool rollScrollActive() const;
 
   void renderFunctionButtons(LedFrame& frame) const;
   void handleMuteButton(uint8_t strip);
@@ -150,16 +165,15 @@ class UiController {
   // The track a fader or knob belongs to: its strip on the current track page, or the
   // selected track for the master faders.
   uint8_t ccTrack(uint8_t group, uint8_t index) const;
-  void renderMixButtons(LedFrame& frame) const;
+  void renderMixButtons(LedFrame& frame, uint32_t nowMs) const;
   // The mixer's A2 row: the pages of the open mode, with the one you are on brightest.
-  void renderMixPageButtons(LedFrame& frame) const;
+  void renderMixPageButtons(LedFrame& frame, uint32_t nowMs) const;
   bool hasPageData(uint8_t kind, uint8_t page) const;
   void renderTrackButtons(LedFrame& frame) const;
   void renderLibraryPageButtons(LedFrame& frame) const;
   void renderPatternModeButtons(LedFrame& frame) const;
   void renderTrackPageButtons(LedFrame& frame) const;
   void renderStepPageButtons(LedFrame& frame, uint32_t nowMs) const;
-  void renderRollScrollButtons(LedFrame& frame) const;
 
   Sequencer& sequencer_;
   Library& library_;
@@ -182,6 +196,7 @@ class UiController {
   uint8_t lastCc_[kNumCcControls];
   uint16_t mixButtonsHeld_;  // the mixer's A1/A2 buttons currently held
   uint8_t mixSideHeld_;      // the mixer's right-hand column
+  uint8_t pageRowHeld_;      // top-row pads whose press the step-page row took
   bool projectButtonHeld_;
   bool paramsButtonHeld_;
   bool noteButtonHeld_;
