@@ -183,12 +183,11 @@ int DisplayWindow::width(const char* text, uint8_t size) const {
   return w;
 }
 
-void DisplayWindow::drawClipped(const std::string& text, int x, int y, int maxWidth, uint8_t size,
-                                Rgb color, uint8_t alpha) {
-  if (text.empty()) return;
+int DisplayWindow::drawClipped(const std::string& text, int x, int y, int maxWidth, uint8_t size,
+                               Rgb color, uint8_t alpha) {
+  if (text.empty() || maxWidth <= 0) return 0;
   if (width(text.c_str(), size) <= maxWidth) {
-    draw(text, x, y, size, color, alpha);
-    return;
+    return draw(text, x, y, size, color, alpha);
   }
   // A voice name can be longer than its column; cut it rather than letting it run into the
   // pattern number beside it.
@@ -196,7 +195,7 @@ void DisplayWindow::drawClipped(const std::string& text, int x, int y, int maxWi
   while (!cut.empty() && width((cut + "...").c_str(), size) > maxWidth) {
     cut.erase(cut.size() - 1);
   }
-  draw(cut + "...", x, y, size, color, alpha);
+  return draw(cut + "...", x, y, size, color, alpha);
 }
 
 void DisplayWindow::drawTransport(const DisplayFrame& frame) {
@@ -347,6 +346,14 @@ void DisplayWindow::drawValues(const DisplayFrame& frame) {
   fill(0, top, kWidth, kBottomHeight, kBand);
   fill(0, top, kWidth, 1, kRule);
 
+  // The project block is drawn last but its left edge is wanted first, so a voice name knows
+  // where it has to stop.
+  const std::string project = slotText(frame.project);
+  const int projectWidth = width("PROJECT", kSmall) > width(project.c_str(), kBody)
+                               ? width("PROJECT", kSmall)
+                               : width(project.c_str(), kBody);
+  const int projectLeft = kWidth - kEdge - projectWidth;
+
   int x = kEdge;
   for (uint8_t i = 0; i < frame.numValues; ++i) {
     const DisplayValue& value = frame.values[i];
@@ -357,11 +364,21 @@ void DisplayWindow::drawValues(const DisplayFrame& frame) {
     int used = value.text ? draw(value.text, x, top + 38, kLarge, kInk)
                           : draw(number(value.number), x, top + 38, kLarge, kInk);
     if (value.suffix) used += draw(value.suffix, x + used + 6, top + 46, kBody, kDim) + 6;
+    // A value that is a voice slot gets its name from the device's own list beside the
+    // number, because the number alone is no use for picking a sound. Nothing is drawn when
+    // the port has no list - the built-in General MIDI one has numbers and no names - so the
+    // line simply stays as it was.
+    if (value.voicePort != kNoDisplayPort && naming_) {
+      const std::string voice = naming_->voiceName(value.voicePort, value.number - 1);
+      if (!voice.empty()) {
+        const int nameX = x + used + 12;
+        used += drawClipped(voice, nameX, top + 40, projectLeft - nameX - 24, kBody, kInk) + 12;
+      }
+    }
     const int keyWidth = width(value.key, kSmall);
     x += (used > keyWidth ? used : keyWidth) + 40;
   }
 
-  const std::string project = slotText(frame.project);
   draw("PROJECT", kWidth - kEdge - width("PROJECT", kSmall), top + 18, kSmall, kFaint);
   draw(project, kWidth - kEdge - width(project.c_str(), kBody), top + 42, kBody, kDim);
 }

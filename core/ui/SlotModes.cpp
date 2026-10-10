@@ -92,59 +92,26 @@ PatternMode::PatternMode(Sequencer& sequencer) : sequencer_(sequencer) {}
 
 namespace {
 
-const uint8_t kMuteRow = kGridRows - 1;
-const uint8_t kMutedColumnLevel = 70;  // how far a muted track's column drops
-const uint8_t kMutedRowLevel = 20;     // the mute row itself, while Shift is held
-
-// The track a column shows, or kNumTracks past the end of the track page.
-uint16_t trackForColumn(const UiState& state, uint8_t column) {
-  return state.trackPage * kTracksPerPage + column;
-}
+const uint8_t kMutedGridLevel = 70;  // how far a muted track's grid drops
 
 }  // namespace
 
-void PatternMode::handlePad(UiState& state, uint8_t pad, bool pressed) {
-  // Shift + the bottom row mutes, the same row scene mode uses for it.
-  if (pressed && state.shiftHeld && pad / kGridCols == kMuteRow) {
-    const uint16_t track = trackForColumn(state, pad % kGridCols);
-    if (track < kNumTracks) {
-      const uint8_t t = static_cast<uint8_t>(track);
-      sequencer_.setTrackMuted(t, !sequencer_.trackMuted(t));
-    }
-    return;
-  }
-  SlotGridMode::handlePad(state, pad, pressed);
-}
-
+// A muted track's whole grid dims. Nothing it plays is heard, so a pattern lit as if it were
+// sounding would be a lie, and this is the one cue that says which of the two you are looking
+// at while you audition patterns inside a scene.
 void PatternMode::renderPads(const UiState& state, LedFrame& frame) const {
   SlotGridMode::renderPads(state, frame);
-
-  for (uint8_t column = 0; column < kGridCols; ++column) {
-    const uint16_t track = trackForColumn(state, column);
-    if (track >= kNumTracks || !sequencer_.trackMuted(static_cast<uint8_t>(track))) continue;
-    for (uint8_t row = 0; row < kGridRows; ++row) {
-      const uint8_t pad = padIndex(row, column);
-      frame.pads[pad] = dim(frame.pads[pad], kMutedColumnLevel);
-    }
-  }
-
-  // Holding Shift turns the bottom row into the mutes, as it turns the buttons into page maps.
-  if (!state.shiftHeld) return;
-  for (uint8_t column = 0; column < kGridCols; ++column) {
-    const uint16_t track = trackForColumn(state, column);
-    if (track >= kNumTracks) continue;
-    const uint8_t t = static_cast<uint8_t>(track);
-    const Rgb color = trackColor(t);
-    frame.pads[padIndex(kMuteRow, column)] =
-        sequencer_.trackMuted(t) ? dim(color, kMutedRowLevel) : color;
+  if (!sequencer_.trackMuted(state.track)) return;
+  for (uint8_t pad = 0; pad < kNumPads; ++pad) {
+    frame.pads[pad] = dim(frame.pads[pad], kMutedGridLevel);
   }
 }
 
+// Pad 0..63 is pattern 1..64 of the selected track, reading the grid left to right and top
+// down. A build with fewer patterns than pads leaves the rest of the grid dark.
 uint16_t PatternMode::slotForPad(const UiState& state, uint8_t pad) const {
-  const uint16_t track = state.trackPage * kTracksPerPage + pad % kGridCols;
-  const uint16_t pattern = state.patternPage * kPatternsPerPage + pad / kGridCols;
-  if (track >= kNumTracks || pattern >= kNumPatterns) return kNoSlot;
-  return static_cast<uint16_t>(track * kNumPatterns + pattern);
+  if (pad >= kNumPatterns) return kNoSlot;
+  return static_cast<uint16_t>(state.track * kNumPatterns + pad);
 }
 
 bool PatternMode::isSelected(const UiState&, uint16_t slot) const {
@@ -161,13 +128,8 @@ Rgb PatternMode::filledColor(const UiState&, uint16_t slot) const {
   return isFactoryPattern(slotPattern(slot)) ? kFactoryColor : kFilledColor;
 }
 
-// Launching a pattern also selects its track, so the column you touch is the one R3 opens
-// and the one global settings edits: the bottom row pages the grid here instead of picking
-// tracks.
-void PatternMode::select(UiState& state, uint16_t slot) {
-  const uint8_t track = slotTrack(slot);
-  sequencer_.selectPattern(track, slotPattern(slot));
-  state.track = track;
+void PatternMode::select(UiState&, uint16_t slot) {
+  sequencer_.selectPattern(slotTrack(slot), slotPattern(slot));
 }
 
 void PatternMode::clear(UiState&, uint16_t slot) {
@@ -257,6 +219,38 @@ void PresetMode::select(UiState& state, uint16_t slot) {
   sequencer_.setTrackPreset(state.track, slot);
 }
 
+// Window, page and voice, all 1-based as the surface counts them. The three are the address
+// of one voice read from the outside in - window of 512, page of 64 within it, then the voice
+// itself - and the third is the whole number, not the pad's place on the page, because that
+// is what a device's own voice list is numbered by. They are worth spelling out because a
+// window and a page are each one pad among eight identical ones, and because the voice stays
+// the track's while you page away from it: the green pad goes off screen, this does not.
+uint8_t PresetMode::displayValues(const UiState& state, DisplayValue* values) const {
+  uint8_t count = 0;
+  values[count].key = "WINDOW";
+  values[count].text = NULL;
+  values[count].number = static_cast<uint16_t>(state.presetWindow + 1);
+  values[count].suffix = NULL;
+  ++count;
+  values[count].key = "PAGE";
+  values[count].text = NULL;
+  values[count].number = static_cast<uint16_t>(state.presetPage + 1);
+  values[count].suffix = NULL;
+  ++count;
+  values[count].key = "PRESET";
+  values[count].text = NULL;
+  values[count].number = static_cast<uint16_t>(sequencer_.trackPreset(state.track) + 1);
+  values[count].suffix = NULL;
+  // The number alone is no use for picking a sound, so ask the screen to name the voice from
+  // the device's own list. A track on an internal instrument has no list and no port, so it
+  // gets the number and nothing else.
+  values[count].voicePort = sequencer_.trackInstrument(state.track) == kNoInstrument
+                                ? sequencer_.trackMidiPort(state.track)
+                                : kNoDisplayPort;
+  ++count;
+  return count;
+}
+
 
 // ---- what the rows are for, for a screen beside the instrument ----
 
@@ -264,32 +258,30 @@ namespace {
 
 const Rgb kTrackColumn = {54, 214, 95};
 const Rgb kPatternRow = {30, 156, 255};
-const Rgb kMuteColor = {255, 130, 0};
 const Rgb kSlotColor = {30, 156, 255};
 const Rgb kOpenColor = {54, 214, 95};
 const Rgb kWindowColor = {160, 60, 255};
 
 const ModeLegend kPatternLegend = {
-    "R2",
+    "R4",
     "Pattern",
     {
-        {1, 8, kTrackColumn, "columns", "the 8 tracks of this track page"},
-        {1, 8, kPatternRow, "rows", "the 8 patterns of this pattern page"},
-        {0, 0, kMuteColor, "SHIFT row 8", "the bottom pad row becomes the mutes"},
+        {1, 4, kPatternRow, "rows 1-4", "patterns 1-32 of the selected track"},
+        {5, 8, kFactoryColor, "rows 5-8", "patterns 33-64, the built-in bank"},
+        {0, 0, kTrackColumn, "B1-B8", "the track, SHIFT + B1-B8 the track page"},
         {0, 0, {}, NULL, NULL},
         {0, 0, {}, NULL, NULL},
         {0, 0, {}, NULL, NULL},
     },
     3,
-    {"B1-B4 track pages, B5-B8 pattern pages - no SHIFT", "R6 + pad + pad copy a pattern",
-     "SHIFT + R2 scenes", NULL},
+    {"R5 + pad clear a pattern", "R6 + pad + pad copy a pattern", "SHIFT + R4 scenes", NULL},
     3,
     {kPatternRow, kPatternRow, kPatternRow, kPatternRow,
-     kPatternRow, kPatternRow, kPatternRow, kPatternRow},
+     kFactoryColor, kFactoryColor, kFactoryColor, kFactoryColor},
 };
 
 const ModeLegend kProjectLegend = {
-    "R1",
+    "SHIFT + R5",
     "Project",
     {
         {1, 8, kSlotColor, "the grid", "64 project slots, 8 pages in all"},
@@ -300,7 +292,7 @@ const ModeLegend kProjectLegend = {
         {0, 0, {}, NULL, NULL},
     },
     2,
-    {"tap a slot open it, saving the open one first", "hold R1 + B1-B8 page",
+    {"tap a slot open it, saving the open one first", "SHIFT + B1-B8 page",
      "R5 + slot clear - the file goes to the trash folder", NULL},
     3,
     {kSlotColor, kSlotColor, kSlotColor, kSlotColor,
@@ -308,7 +300,7 @@ const ModeLegend kProjectLegend = {
 };
 
 const ModeLegend kPresetLegend = {
-    "SHIFT + R4",
+    "SHIFT + R2",
     "Preset",
     {
         {1, 8, kSlotColor, "the grid", "64 voices a page, 8 pages a window"},
@@ -319,7 +311,7 @@ const ModeLegend kPresetLegend = {
         {0, 0, {}, NULL, NULL},
     },
     3,
-    {"hold R4 or SHIFT + B1-B8 page", "pick the track with B1-B8 first",
+    {"hold R2 or SHIFT + B1-B8 page", "pick the track with B1-B8 first",
      "R5 and R6 do nothing - a patch lives in the synth", NULL},
     3,
     {kSlotColor, kSlotColor, kSlotColor, kSlotColor,

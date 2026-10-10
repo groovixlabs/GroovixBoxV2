@@ -14,7 +14,7 @@
 <div class="page-narrow">
   <div id="topnav"></div>
   <main>
-        <h2>Global settings <span class="ctl">SHIFT</span> + <span class="ctl">R1</span></h2>
+        <h2>Global settings <span class="ctl">SHIFT</span> + <span class="ctl">R3</span></h2>
         <p class="section-intro">The tempo and the swing, and where each track plays: its MIDI channel and port, or an internal instrument. The top row picks a setting; the pads below show it and change it.</p>
         <figure>
           <!--
@@ -29,7 +29,7 @@
           <li>All four light while a setting is picked, turn white while pressed, and dim at the end they cannot move past. A coarse step near an end <strong>lands on the end</strong> rather than doing nothing because ten would overshoot.</li>
           <li>Nothing is picked the first time you open the mode, so the steppers do nothing until you tap a pad on the top row. After that the setting stays picked when you come back.</li>
           <li><strong>The last pad of the bottom row sends every fader and knob's CC again</strong>, at the value it last reported, so gear that has moved on — after loading a project, say — comes back into line. Controls nothing has been heard from are skipped, so an untouched knob never slams a synth to zero. A MIDI Mix's own SEND ALL button does the same for its 33 controls.</li>
-          <li><span class="ctl">R1</span> goes to Project mode.</li>
+          <li><span class="ctl">R3</span> goes back to <a href="probability.html">Probability</a> mode.</li>
         </ul>
         <h3 id="tempo">Tempo <span class="ctl">PAD 1</span></h3>
         <img src="images/global_tempo_full.png" width="500">
@@ -47,7 +47,7 @@
         <ul>
           <li>Pad 2 sets which MIDI channel the <strong>selected track</strong> plays on. Rows 3 and 4 are channels 1–8 and 9–16. The track’s channel lights in the track’s colour, and its <span class="ctl">B</span> button stays lit so you can see whose channel it is.</li>
           <li>Tap a channel to move the track there. Notes the track is playing are released on the old channel first, and its preset is sent again on the new one.</li>
-          <li><strong>To set another track, press its <span class="ctl">B</span> button.</strong> This is the one mode where <span class="ctl">B1</span>–<span class="ctl">B8</span> don’t jump to Note mode: they only move the selection, so you can work along the tracks setting each one’s channel, port or instrument in turn. <strong><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> changes the track page, so all 64 tracks are reachable without leaving.</li>
+          <li><strong>To set another track, press its <span class="ctl">B</span> button.</strong> Here, as in <a href="pattern.html">Pattern mode</a>, <span class="ctl">B1</span>–<span class="ctl">B8</span> don’t jump to Note mode: they only move the selection, so you can work along the tracks setting each one’s channel, port or instrument in turn. <strong><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> changes the track page, so all 64 tracks are reachable without leaving.</li>
           <li>New tracks play on channels 1–16 in order, then start again: tracks 17–32, 33–48 and 49–64 each run 1–16 too. Channels are saved with the project, so two tracks can share one synth, or a drum track can sit on channel 10.</li>
           <li><strong>The MIDI clock goes out of every port</strong>, 24 per quarter note, with Start when you press play and Stop when you stop, so a drum machine or a synth's arpeggiator on any port runs in time. Gear that follows its own clock ignores it.</li>
           <li><strong>Row 5 picks the MIDI port</strong>, <strong>P1</strong> to <strong>P8</strong>: which MIDI output the track plays out of. With 8 ports of 16 channels the sequencer addresses 128 instruments, so tracks on the same channel can still drive different gear.</li>
@@ -135,7 +135,7 @@
         if (!((bits >> (2 - (col - first))) & 1)) return { c: g.OFF };
         return { c: tens ? AMBER : g.C.white, lit: true };
       },
-      right: g.functionButtons(0, false, false),
+      right: g.functionButtons(2, false, false),  // R3 lights: the settings sit behind PROB
       bottom: g.trackButtons(0),
       faders: [0.357, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
     });

@@ -59,11 +59,87 @@ const GX_DEFAULTS = [
     'mixmaster'   => ['cc' => null, 'sweep' => 'full'],
 ];
 
+// Which device plays which role. A control surface is bound to a job, not to a model, so the
+// same APC can be the sequencer grid on one rig and the page panel on another - which is the
+// point: a grid with no spare button for SHIFT needs a panel that has one.
+//
+// The key is what goes in controls.conf; the label is the heading on the page.
+const GX_SURFACE_ROLES = [
+    'surface.grid'  => 'Sequencer',
+    'surface.panel' => 'Page panel',
+    'surface.mixer' => 'Mixer',
+];
+
+// Every device the instrument can drive, and the roles it is able to play. This must match
+// the table in platform/linux/MidiRig.cpp: the page offers nothing the instrument would turn
+// down, which is the whole reason the page is stricter than a text editor.
+const GX_SURFACE_DEVICES = [
+    'launchpadx' => ['label' => 'Launchpad X', 'roles' => ['surface.grid']],
+    'apcmini'  => ['label' => 'APC mini mk2', 'roles' => ['surface.grid', 'surface.panel']],
+    'apckey25' => ['label' => 'APC Key 25',   'roles' => ['surface.panel']],
+    'midimix'  => ['label' => 'MIDI Mix',     'roles' => ['surface.mixer']],
+];
+
+function gx_is_surface_key(string $name): bool {
+    return array_key_exists($name, GX_SURFACE_ROLES);
+}
+
+// The devices that can play a role, as id => label, for that role's dropdown.
+function gx_surface_choices(string $role): array {
+    $choices = [];
+    foreach (GX_SURFACE_DEVICES as $id => $device) {
+        if (in_array($role, $device['roles'], true)) $choices[$id] = $device['label'];
+    }
+    return $choices;
+}
+
 // Keys controls.conf carries for the platform rather than the control map.
 function gx_platform_keys(): array {
     $keys = ['midiout', 'midiin'];
+    foreach (GX_SURFACE_ROLES as $key => $_) $keys[] = $key;
     for ($p = 1; $p <= GX_MIDI_PORTS; $p++) $keys[] = 'p' . $p;
+    // A port can go to a UDP server instead of to a cable. Every port takes the line; the
+    // page offers it on P8, which is the one the rig keeps for it.
+    for ($p = 1; $p <= GX_MIDI_PORTS; $p++) $keys[] = 'p' . $p . '.socket';
+    // And a port can be kept out of the transport, the clock, or both.
+    foreach (GX_PORT_SWITCHES as $suffix => $_) {
+        for ($p = 1; $p <= GX_MIDI_PORTS; $p++) $keys[] = 'p' . $p . '.' . $suffix;
+    }
     return $keys;
+}
+
+// Keys whose value is an "address:port" rather than a device name.
+function gx_is_socket_key(string $name): bool {
+    return (bool)preg_match('/^p\d+\.socket$/', $name);
+}
+
+// Keys whose value is "on" or "off" rather than a device name: what a port is sent besides
+// its notes. Two switches, not one, because they answer different questions - gear with a
+// sequencer of its own must not be told to play but still wants the tempo, while gear that
+// keeps its own time wants neither. The label is what the page puts beside the tickbox.
+const GX_PORT_SWITCHES = [
+    'transport' => 'Hold back Start and Stop',
+    'clock'     => 'Hold back the clock',
+];
+
+function gx_is_port_switch_key(string $name): bool {
+    foreach (GX_PORT_SWITCHES as $suffix => $_) {
+        if (preg_match('/^p\d+\.' . $suffix . '$/', $name)) return true;
+    }
+    return false;
+}
+
+// A dotted IPv4 address and a port, which is what the instrument will accept: it does not
+// look names up, because a DNS wait on the clock path is the thing this avoids.
+function gx_valid_socket_target(string $value): bool {
+    $at = strrpos($value, ':');
+    if ($at === false || $at === 0 || $at === strlen($value) - 1) return false;
+    $host = substr($value, 0, $at);
+    $port = substr($value, $at + 1);
+    if (!preg_match('/^\d+$/', $port)) return false;
+    $number = (int)$port;
+    if ($number < 1 || $number > 65535) return false;
+    return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
 }
 
 // Every control name the instrument accepts, in the order the page shows them.
@@ -183,8 +259,36 @@ function gx_check_controls(string $text): array {
             continue;
         }
         if (in_array($name, $platform, true)) {
-            if ($pair['value'] === '') {
+            if (gx_is_surface_key($name)) {
+                // A role names a device the instrument knows, or "auto" for letting it
+                // choose. Anything else is reported there and the role falls back to
+                // choosing anyway, so the line would be a lie about what the rig is doing.
+                $choice = strtolower($pair['value']);
+                if ($choice !== 'auto' && !array_key_exists($choice, gx_surface_choices($name))) {
+                    $known = implode(', ', array_keys(gx_surface_choices($name)));
+                    $problems[] = [
+                        'line' => $i + 1,
+                        'text' => "\"{$pair['value']}\" cannot be the "
+                                  . strtolower(GX_SURFACE_ROLES[$name]) . "; try $known, or auto",
+                    ];
+                }
+            } elseif (gx_is_port_switch_key($name)) {
+                // The instrument reports anything else and goes on sending the very bytes the
+                // line was written to stop, so it is a mistake here too.
+                if (!in_array(strtolower($pair['value']), ['on', 'off'], true)) {
+                    $problems[] = [
+                        'line' => $i + 1,
+                        'text' => "\"{$pair['value']}\" is not \"on\" or \"off\"",
+                    ];
+                }
+            } elseif ($pair['value'] === '') {
                 $problems[] = ['line' => $i + 1, 'text' => "\"$name\" names no device"];
+            } elseif (gx_is_socket_key($name) && !gx_valid_socket_target($pair['value'])) {
+                $problems[] = [
+                    'line' => $i + 1,
+                    'text' => "\"{$pair['value']}\" is not an address and port, like 192.168.1.50:5000"
+                              . " (a dotted address, not a name)",
+                ];
             }
             continue;  // the platform reads these; the control map steps over them
         }

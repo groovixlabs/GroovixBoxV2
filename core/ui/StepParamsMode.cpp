@@ -195,7 +195,7 @@ StepParamsMode::StepParamsMode(Sequencer& sequencer, uint8_t firstLane, uint8_t 
 
   // The legend follows the lanes this instance was given, so the velocity/gate mode and the
   // probability/micro-timing one each describe themselves without a second class.
-  legend_.key = firstLane == kLaneVelocity ? "R4" : "SHIFT + R5";
+  legend_.key = firstLane == kLaneVelocity ? "R2" : "R3";
   legend_.name = firstLane == kLaneVelocity ? "Step parameters" : "Probability";
   legend_.numBands = 0;
   legend_.bands[legend_.numBands].firstRow = 1;
@@ -224,7 +224,7 @@ StepParamsMode::StepParamsMode(Sequencer& sequencer, uint8_t firstLane, uint8_t 
   legend_.numMods = 0;
   legend_.mods[legend_.numMods++] = "SHIFT + top row: step page";
   legend_.mods[legend_.numMods++] = "R5 + step reset";
-  legend_.mods[legend_.numMods++] = "R3 back to note";
+  legend_.mods[legend_.numMods++] = "R1 back to note";
   for (uint8_t row = 0; row < kGridRows; ++row) {
     legend_.rowColor[row] = row < 4 ? kStepsColor
                             : row < 6 ? kLaneText[lanes_[0]].color

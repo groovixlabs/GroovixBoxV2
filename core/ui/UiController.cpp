@@ -9,37 +9,36 @@ static_assert(kButtonPlay < kNumRightButtons, "every function needs a button");
 static_assert(kNumBottomButtons == kTracksPerPage, "track buttons sit under the pad columns");
 static_assert(kNumTrackPages <= kNumBottomButtons,
               "the track pages have to fit on B1..B8");
-static_assert(kNumPatternPages <= kGridCols,
-              "the pattern pages have to fit the top pad row under Shift");
+static_assert(kNumPatterns <= kNumPads,
+              "pattern mode gives every pattern of a track a pad, so they all have to fit");
 static_assert(kNumStepPages <= kGridCols,
-              "and so do the step pages");
+              "the step pages have to fit the top pad row under Shift");
 
 namespace {
 
 const char* const kModeNames[kNumModes] = {"PROJECT", "PATTERN", "NOTE",  "PRESET", "SCALE",
                                            "PARAMS",  "GLOBAL",  "PROB",  "SCENE",  "SONG"};
 
+// In RightButton order, which is the order of the physical row.
 const char* const kButtonNames[kNumRightButtons] = {
-    "PROJECT", "PATTERN", "NOTE", "PARAMS", "CLEAR", "DUPLICATE", "RECORD", "PLAY",
+    "NOTE", "PARAMS", "PROB", "PATTERN", "CLEAR", "DUPLICATE", "RECORD", "PLAY",
 };
 
 const Rgb kButtonColors[kNumRightButtons] = {
-    {255, 255, 255},  // R1 project
-    {255, 255, 255},  // R2 pattern
-    {255, 255, 255},  // R3 note
-    {255, 255, 255},  // R4 preset
+    {255, 255, 255},  // R1 note
+    {255, 255, 255},  // R2 params
+    {255, 255, 255},  // R3 probability
+    {255, 255, 255},  // R4 pattern
     {255, 90, 0},     // R5 clear
     {0, 150, 255},    // R6 duplicate
     {255, 0, 0},      // R7 record
     {0, 255, 0},      // R8 play
 };
 
-// Labels for Shift + a button, by what it does in the current mode.
-// R6 and R7 are blank because the APC's firmware keeps them for its Drum and Note modes.
-const char* const kShiftRightLabels[kNumRightButtons] = {"GLOBAL", "SCENE", "SCALE", "PRESET",
-                                                         "PROB",   "",      "",      "SONG"};
-const char* const kPatternPageLabels[kNumBottomButtons] = {
-    "PAT 1-8", "PAT 9-16", "PAT 17-24", "PAT 25-32", "PAT 33-40", "PAT 41-48", "PAT 49-56", "PAT 57-64"};
+// Labels for Shift + a button. R6 and R7 are blank because the APC's firmware keeps them for
+// its Drum and Note modes.
+const char* const kShiftRightLabels[kNumRightButtons] = {"SCALE",   "PRESET", "GLOBAL", "SCENE",
+                                                         "PROJECT", "",       "",       "SONG"};
 const char* const kTrackPageLabels[kNumBottomButtons] = {"T1-8",   "T9-16",  "T17-24", "T25-32",
                                                          "T33-40", "T41-48", "T49-56", "T57-64"};
 // Labels for B1..B8 while a held R button makes them page buttons.
@@ -50,11 +49,38 @@ const char* const kStepPageLabels[kNumBottomButtons] = {"S1-32",    "S33-64",   
                                                         "S193-224", "S225-256"};
 static_assert(kStepsPerPage == 32, "the step page labels count 32 steps a page");
 static_assert(kNumPages <= kNumBottomButtons, "every project and preset page has a label");
+// The page panel has a row per kind of page and a pad per page of it.
+static_assert(UiController::kPageTracks + 1 == kNumPageKinds,
+              "a page panel row for every PageKind");
+static_assert(kNumPanelWindows == kPagesPerKind,
+              "the window row is a row like any other, so it holds every window the model has");
+// The arrow buttons are passed straight to PianoRoll::scroll, so their order is RollScroll's:
+// up, down, left, right. Nothing translates between them, and this is what says so.
+static_assert(kNumPanelArrows == kNumRollScrolls, "an arrow button per roll direction");
+static_assert(kRollUp == 0 && kRollDown == 1 && kRollLeft == 2 && kRollRight == 3,
+              "arrow buttons 1..4 are up, down, left and right in that order");
+static_assert(kNumStepPages <= kPagesPerKind && kNumTrackPages <= kPagesPerKind &&
+                  kNumPages <= kPagesPerKind,
+              "every page of every kind reaches a pad of the page panel");
+
+// Which kind of page each row of the page panel shows, top to bottom. This is the player's
+// layout, deliberately not the order the kinds are declared in: steps and tracks are what
+// you reach for while playing, so they take the top rows, and presets - the row with the
+// window buttons beside it - takes the bottom.
+const uint8_t kPanelRowKind[kNumPageKinds] = {
+    UiController::kPageSteps, UiController::kPageTracks, UiController::kPageProjects,
+    UiController::kPagePresets};
+
+// Which mode each of the panel's mode buttons opens, top to bottom: scale, project, scenes,
+// the settings, preset. These are exactly the five that need Shift on the APC, so the panel
+// reaches every one of them in a single press. Probability was here while it was Shift + R5;
+// it has a bare button of its own now, and the button it vacated went to project, which does
+// not - the set follows the Shift layer rather than being a list of its own.
+const uint8_t kPanelModeOf[kNumPanelModes] = {kModeScale, kModeProject, kModeScene,
+                                              kModeGlobal, kModePreset};
 
 const uint8_t kIdleLevel = 40;         // buttons that are not active
 const uint8_t kSilencedLevel = 130;    // a mixer strip another track's solo has silenced
-const uint8_t kPageDataLevel = 90;     // a page with something on it, on the mixer's A2 row
-const uint8_t kPageEmptyLevel = 30;    // and one without
 
 uint8_t pageOf(uint16_t slot) {
   const uint16_t page = slot / kSlotsPerPage;
@@ -100,7 +126,6 @@ UiController::UiController(Sequencer& sequencer, Library& library)
       mixButtonsHeld_(0),
       mixSideHeld_(0),
       pageRowHeld_(0),
-      projectButtonHeld_(false),
       paramsButtonHeld_(false),
       noteButtonHeld_(false),
       paramsTapPending_(false),
@@ -109,7 +134,6 @@ UiController::UiController(Sequencer& sequencer, Library& library)
   state_.track = 0;
   state_.stepPage = 0;
   state_.trackPage = 0;
-  state_.patternPage = 0;
   state_.projectPage = 0;
   state_.presetPage = 0;
   state_.presetWindow = 0;
@@ -197,6 +221,18 @@ void UiController::handleEvent(const ControlEvent& event) {
     case kGroupShift:
       state_.shiftHeld = event.pressed;
       break;
+    case kGroupPage:
+      if (event.pressed) handlePagePad(event.index);
+      break;
+    case kGroupPresetWindow:
+      if (event.pressed) handlePresetWindow(event.index);
+      break;
+    case kGroupPanelMode:
+      if (event.pressed) handlePanelMode(event.index);
+      break;
+    case kGroupPanelArrow:
+      if (event.pressed) handlePanelArrow(event.index);
+      break;
     case kGroupFader:
       if (event.index < kNumTrackFaders) {
         state_.faders[event.index] = event.value > kFaderMax ? kFaderMax : event.value;
@@ -234,13 +270,9 @@ void UiController::handleEvent(const ControlEvent& event) {
         mixButtonsHeld_ = static_cast<uint16_t>(event.pressed ? (mixButtonsHeld_ | bit)
                                                               : (mixButtonsHeld_ & ~bit));
         if (event.pressed) mixShiftTapPending_ = false;  // SOLO was used as a modifier
-        if (event.pressed && event.index < kNumMixStrips) {
-          handleMuteButton(event.index);
-        } else if (event.pressed) {
-          // The A2 row (REC ARM on a MIDI Mix) picks the pages of the open mode, so paging
-          // never needs Shift + a track button, which can select a track by mistake.
-          selectPage(static_cast<uint8_t>(event.index - kNumMixStrips));
-        }
+        // The A1 row mutes. The A2 row (REC ARM on a MIDI Mix) does nothing: it is held and
+        // released like any button, and lights while it is held, but nothing acts on it.
+        if (event.pressed && event.index < kNumMixStrips) handleMuteButton(event.index);
       }
       break;
     case kGroupMixSide:
@@ -275,7 +307,6 @@ const char* UiController::bottomButtonLabel(uint8_t button) const {
   // In the order handleTrackButton checks them.
   if (pageSelectActive()) return button < kNumPages ? kSlotPageLabels[button] : "";
   if (stepPagingActive()) return button < kNumStepPages ? kStepPageLabels[button] : "";
-  if (patternModePaging()) return button < kNumTrackPages ? kTrackPageLabels[button] : "";
   if (!state_.shiftHeld) return nullptr;
   if (trackPagingActive()) return button < kNumTrackPages ? kTrackPageLabels[button] : "";
   return "";
@@ -287,30 +318,29 @@ const char* UiController::padLabel(uint8_t pad) const {
   // drew underneath - the pad does the one and not the other.
   uint8_t kind = 0;
   if (state_.shiftHeld && pad < kGridCols && pageRowPadKind(kind)) {
-    if (pad >= pageCount(kind)) return "";
-    return kind == kPageSteps ? kStepPageLabels[pad] : kPatternPageLabels[pad];
+    return pad < pageCount(kind) ? kStepPageLabels[pad] : "";
   }
   return modes_[mode_]->padLabel(state_, pad);
 }
 
 void UiController::handleButton(uint8_t button, bool pressed) {
-  // Shift + R3 opens scale mode everywhere else; R3 alone returns to note mode.
+  // Shift + R1 opens scale mode everywhere else; R1 alone returns to note mode.
   if (pressed && button == kButtonNote && state_.shiftHeld) {
     selectMode(kModeScale);
     return;
   }
-  // Shift + R4 opens preset mode; R4 on its own is the step parameters, which are edited far
+  // Shift + R2 opens preset mode; R2 on its own is the step parameters, which are edited far
   // more often than a patch is picked.
   if (pressed && button == kButtonParams && state_.shiftHeld) {
     selectMode(kModePreset);
     return;
   }
-  // Shift + R1 opens global settings; R1 alone goes to project mode as usual.
-  if (pressed && button == kButtonProject && state_.shiftHeld) {
+  // Shift + R3 opens global settings; R3 alone goes to probability mode.
+  if (pressed && button == kButtonProbability && state_.shiftHeld) {
     selectMode(kModeGlobal);
     return;
   }
-  // Shift + R2 opens scene mode; R2 alone goes to pattern mode as usual.
+  // Shift + R4 opens scene mode; R4 alone goes to pattern mode as usual.
   if (pressed && button == kButtonPattern && state_.shiftHeld) {
     selectMode(kModeScene);
     return;
@@ -334,12 +364,12 @@ void UiController::handleButton(uint8_t button, bool pressed) {
     }
     return;
   }
-  // Shift + R5 opens probability mode; R5 on its own stays the Clear modifier.
+  // Shift + R5 opens project mode; R5 on its own stays the Clear modifier.
   if (pressed && button == kButtonClear && state_.shiftHeld) {
-    selectMode(kModeProbability);
+    selectMode(kModeProject);
     return;
   }
-  // In preset mode R4 is held to pick a preset page with B1..B8, so it acts on release: a tap
+  // In preset mode R2 is held to pick a preset page with B1..B8, so it acts on release: a tap
   // that picked no page opens the step parameters as usual.
   if (mode_ == kModePreset && button == kButtonParams) {
     paramsButtonHeld_ = pressed;
@@ -353,9 +383,8 @@ void UiController::handleButton(uint8_t button, bool pressed) {
   }
 
   switch (button) {
-    case kButtonProject:
-      projectButtonHeld_ = pressed;
-      if (pressed) selectMode(kModeProject);
+    case kButtonProbability:
+      if (pressed) selectMode(kModeProbability);
       break;
     case kButtonPattern:
       if (pressed) selectMode(kModePattern);
@@ -394,31 +423,24 @@ void UiController::handleButton(uint8_t button, bool pressed) {
   }
 }
 
-// B1..B8 normally return to note mode on a track of the current track page; in global
-// settings they change the track without leaving the mode, so a channel, port or instrument
-// can be given to one track after another. In pattern mode they page the grid instead:
-// B1..B4 the track pages, B5..B8 the pattern pages, whether or not Shift is held. While
-// R1/R4 is held, or Shift in project/preset mode, they pick a project/preset page, and with
-// Shift in note or global settings mode a track page. Changing page keeps a picked Duplicate source, so items
-// can be copied between pages.
+// B1..B8 normally return to note mode on a track of the current track page; in pattern mode
+// and global settings they change the track without leaving the mode, so a pattern, channel,
+// port or instrument can be given to one track after another. With Shift in project or preset
+// mode (or R2 held in preset mode) they pick a project/preset page, and with Shift in any
+// mode that works on the selected track a track page. Changing track or page keeps a picked
+// Duplicate source, so patterns can be copied between tracks and items between pages.
 void UiController::handleTrackButton(uint8_t button) {
   if (pageSelectActive()) {
     if (mode_ == kModeProject) {
       state_.projectPage = button;
     } else {
-      paramsTapPending_ = false;  // R4 was used for a page, so its release stays in the mode
+      paramsTapPending_ = false;  // R2 was used for a page, so its release stays in the mode
       state_.presetPage = button;
     }
   } else if (stepPagingActive()) {
     if (button < kNumStepPages) selectStepPage(button);
   } else if (trackPagingActive()) {
     if (button < kNumTrackPages) selectTrackPage(button);
-  } else if (patternModePaging()) {
-    // Pattern mode's bottom row moves the window over the grid: B1..B4 the columns it shows
-    // (track pages), B5..B8 the rows (pattern pages) — the row the mixer's A2 buttons mirror.
-    // No modifier, so Shift + R2 means scenes here as it does everywhere else, Shift held for
-    // the mutes still leaves the pages reachable, and a track is picked by touching a column.
-    selectPage(button);
   } else {
     const uint16_t track = state_.trackPage * kTracksPerPage + button;
     if (track < kNumTracks) selectTrack(static_cast<uint8_t>(track));
@@ -430,8 +452,6 @@ uint8_t UiController::pageCount(uint8_t kind) const {
   switch (kind) {
     case kPageSteps:
       return kNumStepPages;
-    case kPagePatterns:
-      return kNumPatternPages;
     case kPageTracks:
       return kNumTrackPages;
     default:
@@ -444,8 +464,6 @@ uint8_t UiController::shownPage(uint8_t kind) const {
   switch (kind) {
     case kPageSteps:
       return state_.stepPage;
-    case kPagePatterns:
-      return state_.patternPage;
     case kPageProjects:
       return state_.projectPage;
     case kPagePresets:
@@ -455,20 +473,14 @@ uint8_t UiController::shownPage(uint8_t kind) const {
   }
 }
 
-// What button 0..7 of a page row picks. One row, two surfaces: the APC's B1..B8 in pattern
-// mode and the mixer's A2 row everywhere, so both show and pick the same pages. One mapping
-// for every mode - pattern mode used to split the row, half tracks and half patterns, and
-// its pattern pages are on the top pad row now, where the page you are on is visible.
-// False for a button this build has no page for.
+// What button 0..7 of a page row picks: one mapping for every mode, used by Shift + B1..B8
+// and by every row of the page panel. False for a button this build has no page for.
 bool UiController::pageRowEntry(uint8_t button, uint8_t& kind, uint8_t& page) const {
   kind = pageKind();
   page = button;
   return page < pageCount(kind);
 }
 
-// The mixer's A2 row shows the pages of the open mode, the same ones the APC's bottom row
-// shows in pattern mode. The panel's LEDs are on or off, so only the page you are on is
-// bright enough to light there; on screen the others still show which pages hold something.
 // ---- a screen beside the instrument ----
 
 // While the sequencer runs you want to know what every track is doing; while it is stopped
@@ -527,33 +539,10 @@ void UiController::fillDisplay(DisplayFrame& frame) const {
     frame.contextFirstStep = static_cast<uint16_t>(first + 1);
     frame.contextLastStep = static_cast<uint16_t>(first + kStepsPerPage);
   }
+  // Every value starts as "not a voice", so a mode asks for a name by naming a port and the
+  // rest need say nothing. One place sets the default, rather than every mode remembering to.
+  for (uint8_t i = 0; i < kMaxDisplayValues; ++i) frame.values[i].voicePort = kNoDisplayPort;
   frame.numValues = frame.showTracks ? 0 : modes_[mode_]->displayValues(state_, frame.values);
-}
-
-void UiController::renderMixPageButtons(LedFrame& frame, uint32_t nowMs) const {
-  // The page the playhead is on blinks white, as it used to on the track buttons while R3
-  // was held. Here it needs nothing held, so where the music is is always visible.
-  const uint16_t playingPage = sequencer_.playhead(state_.track) / kStepsPerPage;
-  const bool blink = sequencer_.playing() && blinkOn(nowMs);
-  for (uint8_t button = 0; button < kNumMixStrips; ++button) {
-    const uint8_t index = mixButtonIndex(1, button);
-    uint8_t kind = 0;
-    uint8_t page = 0;
-    if (!pageRowEntry(button, kind, page)) {
-      frame.mixButtons[index] = kBlack;  // this build has no such page
-      continue;
-    }
-    if (kind == kPageSteps && blink && page == playingPage) {
-      frame.mixButtons[index] = kWhite;
-      continue;
-    }
-    if (page == shownPage(kind)) {
-      frame.mixButtons[index] = kSelectedColor;
-      continue;
-    }
-    frame.mixButtons[index] = dim(kFilledColor, hasPageData(kind, page) ? kPageDataLevel
-                                                                        : kPageEmptyLevel);
-  }
 }
 
 // Whether a page holds anything, which is what the B row shows while a modifier is held.
@@ -567,9 +556,6 @@ bool UiController::hasPageData(uint8_t kind, uint8_t page) const {
       }
       return false;
     }
-    case kPagePatterns:
-      return anyPatternData(sequencer_, state_.trackPage * kTracksPerPage, kTracksPerPage,
-                            page * kPatternsPerPage, kPatternsPerPage);
     case kPageProjects:
       return library_.projectPageHasData(page);
     case kPagePresets:
@@ -609,9 +595,6 @@ void UiController::applyPage(uint8_t kind, uint8_t page) {
   switch (kind) {
     case kPageSteps:
       selectStepPage(page);
-      break;
-    case kPagePatterns:
-      state_.patternPage = page;
       break;
     case kPageProjects:
       state_.projectPage = page;
@@ -657,19 +640,16 @@ void UiController::selectStepPage(uint8_t page) {
   state_.duplicateSource = kNoSlot;
 }
 
-// Shift turns the top pad row into the pages of whatever the grid is showing: the step pages
-// in note mode, step parameters and probability, the pattern pages in pattern mode. One press
-// goes straight to a page, and the same eight pads show which one you are on, so there is
-// nothing to count and nothing to hold open. The piano roll pages differently and is left
-// alone - every pad there is a note, so it has no row to spare.
+// Shift turns the top pad row into the pages of whatever the grid is showing - the step pages
+// in note mode, step parameters and probability. One press goes straight to a page, and the
+// same eight pads show which one you are on, so there is nothing to count and nothing to hold
+// open. The piano roll pages differently and is left alone - every pad there is a note, so it
+// has no row to spare. Pattern mode needs none of this: all 64 of a track's patterns are on
+// the grid at once, so there is no page to pick.
 bool UiController::pageRowPadKind(uint8_t& kind) const {
   if (mode_ == kModeNote && sequencer_.trackPianoRoll(state_.track)) return false;
   if (mode_ == kModeNote || mode_ == kModeStepParams || mode_ == kModeProbability) {
     kind = kPageSteps;
-    return true;
-  }
-  if (mode_ == kModePattern) {
-    kind = kPagePatterns;
     return true;
   }
   return false;
@@ -707,9 +687,14 @@ void UiController::clampStepPage() {
   }
 }
 
+// Project mode pages on Shift + B1..B8 alone: no R button opens project mode any more, so
+// there is none to hold there. Preset mode keeps its held R2 as
+// well, because R2 is still the button preset mode is reached from - a tap there returns to
+// the step parameters and a hold pages, which is the split paramsTapPending_ exists for.
 bool UiController::pageSelectActive() const {
-  return (mode_ == kModeProject && (projectButtonHeld_ || state_.shiftHeld)) ||
-         (mode_ == kModePreset && (paramsButtonHeld_ || state_.shiftHeld));
+  return mode_ == kModeProject ? state_.shiftHeld
+                               : mode_ == kModePreset &&
+                                     (paramsButtonHeld_ || state_.shiftHeld);
 }
 
 bool UiController::trackPagingActive() const {
@@ -718,11 +703,11 @@ bool UiController::trackPagingActive() const {
   // paging, and returning. Without this the gesture fell through to picking a track, which
   // also threw you into note mode - the mode you were editing in, gone on a keypress.
   //
-  // Not here: project, preset and pattern. Shift + B already picks their own page, and
-  // pattern mode's bottom row is the page row with or without Shift.
+  // Not here: project and preset. Shift + B already picks their own page.
   if (!state_.shiftHeld) return false;
   switch (mode_) {
     case kModeNote:
+    case kModePattern:
     case kModeScale:
     case kModeStepParams:
     case kModeProbability:
@@ -734,12 +719,7 @@ bool UiController::trackPagingActive() const {
   }
 }
 
-// Pattern mode's bottom row is the page row however you are holding the panel. Shift there
-// means one thing only - the bottom pad row is the mutes - so holding it to silence a track
-// never takes the pages away, and the buttons never change under your hand.
-bool UiController::patternModePaging() const { return mode_ == kModePattern; }
-
-// The piano roll still pages by holding R3, because its grid has no step area with corners
+// The piano roll still pages by holding R1, because its grid has no step area with corners
 // to put the gesture on: Shift there ends the pattern, and every pad is a note.
 bool UiController::stepPagingActive() const {
   return mode_ == kModeNote && noteButtonHeld_ && sequencer_.trackPianoRoll(state_.track);
@@ -764,16 +744,20 @@ void UiController::selectMode(uint8_t mode) {
 // Track buttons return to note mode with that track selected.
 void UiController::selectTrack(uint8_t track) {
   // A mode that shows the selected track's own content keeps you in it: picking another
-  // track while setting velocities means you want that track's velocities, not its steps.
-  // The slot modes go to note mode with the track, which is how a track is picked there.
-  const bool stay = mode_ == kModeGlobal || mode_ == kModeScale ||
+  // track while setting velocities means you want that track's velocities, not its steps,
+  // and in pattern mode B1..B8 is how you walk the tracks, exactly as in note mode.
+  // Project and preset mode go to note mode with the track, which is how a track is picked
+  // there.
+  const bool stay = mode_ == kModePattern || mode_ == kModeGlobal || mode_ == kModeScale ||
                     mode_ == kModeStepParams || mode_ == kModeProbability;
   if (track == state_.track && (stay || mode_ == kModeNote)) return;
   modes_[mode_]->reset();
   if (!stay) mode_ = kModeNote;
   state_.track = track;
   clampStepPage();
-  state_.duplicateSource = kNoSlot;
+  // A Duplicate source of the old track's steps is meaningless on the new one; a pattern slot
+  // names its own track, so it stays valid and a pattern can be copied to another track.
+  if (mode_ != kModePattern) state_.duplicateSource = kNoSlot;
 }
 
 void UiController::render(LedFrame& frame, uint32_t nowMs) const {
@@ -785,13 +769,12 @@ void UiController::render(LedFrame& frame, uint32_t nowMs) const {
     renderStepPageButtons(frame, nowMs);
   } else if (trackPagingActive()) {
     renderTrackPageButtons(frame);
-  } else if (patternModePaging()) {
-    renderPatternModeButtons(frame);
   } else {
     renderTrackButtons(frame);
   }
   frame.shift = state_.shiftHeld ? kWhite : dim(kWhite, kIdleLevel);
-  renderMixButtons(frame, nowMs);
+  renderMixButtons(frame);
+  renderPagePanel(frame, nowMs);
 
   modes_[mode_]->renderPads(state_, frame);
 
@@ -857,9 +840,9 @@ void UiController::handleMuteButton(uint8_t strip) {
 
 // A mute button shows whether its track is heard: white when soloed, the track colour when
 // it plays, half-lit when another track's solo is silencing it, and darkest when it is muted,
-// so a mute can still be told from a solo elsewhere. A2 has no function yet and only lights
-// while it is held.
-void UiController::renderMixButtons(LedFrame& frame, uint32_t nowMs) const {
+// so a mute can still be told from a solo elsewhere. A2 has no function and only lights while
+// it is held - dim enough that the MIDI Mix's on-or-off LED stays dark until it is pressed.
+void UiController::renderMixButtons(LedFrame& frame) const {
   for (uint8_t strip = 0; strip < kNumMixStrips; ++strip) {
     const uint16_t index = state_.trackPage * kTracksPerPage + strip;
     const bool present = index < kNumTracks;
@@ -880,8 +863,10 @@ void UiController::renderMixButtons(LedFrame& frame, uint32_t nowMs) const {
     }
     frame.mixButtons[mixButtonIndex(0, strip)] = mute;
 
+    const uint8_t a2 = mixButtonIndex(1, strip);
+    const bool a2Held = (mixButtonsHeld_ >> a2) & 1;
+    frame.mixButtons[a2] = a2Held ? kWhite : dim(kWhite, kIdleLevel);
   }
-  renderMixPageButtons(frame, nowMs);
   for (uint8_t button = 0; button < kNumMixSideButtons; ++button) {
     const bool held = (mixSideHeld_ >> button) & 1;
     frame.mixSide[button] = held ? kWhite : dim(kWhite, kIdleLevel);
@@ -893,10 +878,10 @@ void UiController::renderFunctionButtons(LedFrame& frame) const {
     bool lit = false;
     switch (button) {
       case kButtonPattern:
-        lit = mode_ == kModePattern || mode_ == kModeScene;  // Shift + R2's mode
+        lit = mode_ == kModePattern || mode_ == kModeScene;  // Shift + R4's mode
         break;
       case kButtonClear:
-        lit = state_.clearHeld || mode_ == kModeProbability;  // Shift + R5's mode
+        lit = state_.clearHeld || mode_ == kModeProject;  // Shift + R5's mode
         break;
       case kButtonDuplicate:
         lit = state_.duplicateHeld;
@@ -908,11 +893,15 @@ void UiController::renderFunctionButtons(LedFrame& frame) const {
         lit = sequencer_.playing();
         break;
       default:
-        // Scale, step parameters and global settings light R3, R4 and R1: the buttons
-        // their Shift layers belong to.
-        lit = (button == mode_) || (mode_ == kModeScale && button == kButtonNote) ||
-              (mode_ == kModeStepParams && button == kButtonParams) ||
-              (mode_ == kModeGlobal && button == kButtonProject);
+        // Every mode lights the button it is reached from, the ones on a Shift layer
+        // included: scale sits on note, preset on the step parameters, the settings on
+        // probability's R3. Spelled out per mode rather than comparing the button to the mode -
+        // those were once the same number, and that held the two enums together by accident.
+        lit = (button == kButtonNote && (mode_ == kModeNote || mode_ == kModeScale)) ||
+              (button == kButtonParams &&
+               (mode_ == kModeStepParams || mode_ == kModePreset)) ||
+              (button == kButtonProbability &&
+               (mode_ == kModeProbability || mode_ == kModeGlobal));
         break;
     }
     frame.right[button] = lit ? kButtonColors[button] : dim(kButtonColors[button], kIdleLevel);
@@ -931,7 +920,7 @@ void UiController::renderTrackButtons(LedFrame& frame) const {
   }
 }
 
-// R1/R4 held: B1..B8 show project or preset pages.
+// Shift held, or R2 in preset mode: B1..B8 show project or preset pages.
 void UiController::renderLibraryPageButtons(LedFrame& frame) const {
   const bool projects = (mode_ == kModeProject);
   const uint8_t shown = projects ? state_.projectPage : state_.presetPage;
@@ -941,23 +930,6 @@ void UiController::renderLibraryPageButtons(LedFrame& frame) const {
   }
 }
 
-// Pattern mode: B1..B4 show the track pages - which eight tracks are the grid's columns -
-// lit for the page on screen, half lit for a page holding something. The pattern pages are on
-// the top pad row under Shift. The mixer's A2 row shows the same, from the same mapping.
-void UiController::renderPatternModeButtons(LedFrame& frame) const {
-  for (uint8_t button = 0; button < kNumBottomButtons; ++button) {
-    uint8_t kind = 0;
-    uint8_t page = 0;
-    if (!pageRowEntry(button, kind, page)) {
-      frame.bottom[button] = kBlack;
-      continue;
-    }
-    frame.bottom[button] = pageColor(page, shownPage(kind), pageCount(kind),
-                                     hasPageData(kind, page));
-  }
-}
-
-
 void UiController::renderTrackPageButtons(LedFrame& frame) const {
   for (uint8_t page = 0; page < kNumBottomButtons; ++page) {
     const bool hasData = anyPatternData(sequencer_, page * kTracksPerPage, kTracksPerPage, 0,
@@ -966,10 +938,86 @@ void UiController::renderTrackPageButtons(LedFrame& frame) const {
   }
 }
 
-// R3 held in note mode: B1..B8 show step pages, and the page being played blinks.
+// R1 held in note mode: B1..B8 show step pages, and the page being played blinks.
 // What one step page looks like: green the page on screen, dim blue one holding steps, grey
 // an empty one, black where this build has no such page, white while the playhead is on it.
 // One rule, because the same map is drawn on the pads under Shift and on B1..B8 in the roll.
+// A panel whose only job is pages: one row per kind, one pad per page, every kind visible at
+// once rather than only the kind the open mode happens to page over. The pads read exactly as
+// the top row's do under Shift - the same function answers both - so a page means the same
+// thing wherever it is shown, and the step row keeps its playhead blink.
+void UiController::renderPagePanel(LedFrame& frame, uint32_t nowMs) const {
+  for (uint8_t row = 0; row < kNumPageKinds; ++row) {
+    const uint8_t kind = kPanelRowKind[row];
+    for (uint8_t page = 0; page < kPagesPerKind; ++page) {
+      frame.pages[pagePadIndex(row, page)] = pageRowPadColor(kind, page, nowMs);
+    }
+  }
+  // The window row reads as the windows do inside preset mode: the one on screen, one that
+  // reaches voices, and one past the end of the device's list. It sits straight above the
+  // preset page row, so the two are a tab strip and its pages - pick a window on one, a page
+  // of it on the other.
+  for (uint8_t window = 0; window < kNumPanelWindows; ++window) {
+    frame.pageWindows[window] =
+        window == state_.presetWindow      ? kSelectedColor
+        : presetMode_.windowHasVoices(state_, window) ? kFilledColor
+                                                      : kEmptyColor;
+  }
+  // The mode buttons: the one whose mode is open, and the rest waiting.
+  for (uint8_t button = 0; button < kNumPanelModes; ++button) {
+    frame.panelModes[button] = mode_ == kPanelModeOf[button] ? kSelectedColor : kEmptyColor;
+  }
+  // The arrows, lit only where there is somewhere to go - and dark altogether when no piano
+  // roll is on screen, since that is the only thing they move.
+  const bool roll = rollArrowsActive();
+  for (uint8_t arrow = 0; arrow < kNumPanelArrows; ++arrow) {
+    frame.panelArrows[arrow] =
+        roll && noteMode_.canScrollRoll(state_, arrow) ? kSelectedColor : kBlack;
+  }
+}
+
+// Whether the arrow buttons have anything to move: note mode, showing a track whose grid is a
+// piano roll. Anywhere else they are dark and inert rather than guessing at a meaning.
+bool UiController::rollArrowsActive() const {
+  return mode_ == kModeNote && sequencer_.trackPianoRoll(state_.track);
+}
+
+// An arrow nudges the piano roll by kRollScrollBy - one step, or one note of the track's
+// scale. Exactly what the roll's own pad cluster moves, through the same call, so the only
+// difference between the two is that these need no Shift.
+void UiController::handlePanelArrow(uint8_t arrow) {
+  if (arrow >= kNumPanelArrows || !rollArrowsActive()) return;
+  noteMode_.scrollRoll(state_, arrow);
+}
+
+// A panel mode button opens its mode outright, with no modifier - which is the whole point of
+// having them: the five modes that need Shift on the APC are one press away here.
+void UiController::handlePanelMode(uint8_t button) {
+  if (button >= kNumPanelModes) return;
+  selectMode(kPanelModeOf[button]);
+}
+
+// A page pad switches to that page of that kind outright. It needs no modifier and no mode:
+// the panel is not part of the grid, so there is nothing for it to be confused with.
+void UiController::handlePagePad(uint8_t pad) {
+  if (pad >= kNumPagePads) return;
+  const uint8_t kind = kPanelRowKind[pad / kPagesPerKind];
+  const uint8_t page = static_cast<uint8_t>(pad % kPagesPerKind);
+  // applyPage trusts its caller, as it does for the page row: each checks the page exists
+  // before asking for it. Every kind fills its row in a full build, so
+  // this only bites one configured smaller - GX_NUM_TRACKS=32 leaves four track pages.
+  if (page >= pageCount(kind)) return;
+  applyPage(kind, page);
+}
+
+// The panel's window row moves preset mode's 512-voice window. A window the device has no
+// voices for is refused, exactly as Shift + the bottom pad row refuses it inside the mode.
+void UiController::handlePresetWindow(uint8_t window) {
+  if (window >= kNumPanelWindows) return;
+  if (!presetMode_.windowHasVoices(state_, window)) return;
+  state_.presetWindow = window;
+}
+
 Rgb UiController::stepPageColor(uint8_t page, uint32_t nowMs) const {
   if (page >= kNumStepPages) return kBlack;
   const uint8_t track = state_.track;

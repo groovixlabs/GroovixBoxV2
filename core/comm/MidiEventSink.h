@@ -20,7 +20,7 @@ namespace gx {
 // InstrumentOutput given to setInstruments(), and dropped while there is none.
 //
 // The engine's clock goes out as MIDI clock, 24 per quarter note, bracketed by Start and
-// Stop, on every port by default (see setClockPorts).
+// Stop, on every port by default (see setClockPorts and setTransportPorts).
 class MidiEventSink : public EventSink {
  public:
   explicit MidiEventSink(MidiOutput& output);
@@ -41,14 +41,21 @@ class MidiEventSink : public EventSink {
   void transportStarted() override;
   void transportStopped() override;
 
-  // Which ports the clock and transport go out of, one bit per port, all of them by default.
-  // Gear that runs on its own clock ignores them, so this only needs changing to keep a
-  // particular port quiet.
+  // Which ports the clock goes out of, one bit per port, all of them by default. Gear that
+  // runs on its own clock ignores it, so this only needs changing to keep a port quiet.
   void setClockPorts(uint8_t mask) { clockPorts_ = mask; }
   uint8_t clockPorts() const { return clockPorts_; }
 
+  // And which ports Start and Stop go out of, which is a separate question. A groovebox with
+  // a sequencer of its own - a Volca, say - treats Start as "play your own pattern", so it
+  // must not be told to play while it is being used as a sound module; it still wants the
+  // clock, which is what its delay and LFO sync follow. The two masks are independent: a port
+  // taken out of this one goes on getting the clock.
+  void setTransportPorts(uint8_t mask) { transportPorts_ = mask; }
+  uint8_t transportPorts() const { return transportPorts_; }
+
  private:
-  void sendRealtime(uint8_t status);
+  void sendRealtime(uint8_t status, uint8_t ports);
 
   uint8_t channelFor(uint8_t track) const;
   uint8_t portFor(uint8_t track) const;
@@ -61,6 +68,7 @@ class MidiEventSink : public EventSink {
   uint8_t ports_[kNumTracks];      // 0..kNumMidiPorts-1
   uint8_t instruments_slots_[kNumTracks];  // 0..kNumInstruments-1, or kNoInstrument
   uint8_t clockPorts_;                     // bit per MIDI port: where the clock goes
+  uint8_t transportPorts_;                 // and where Start and Stop go
 };
 
 }  // namespace gx

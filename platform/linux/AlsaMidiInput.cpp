@@ -12,8 +12,19 @@ const unsigned kSourceCaps = SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ;
 
 // Clients that offer notes but are not something to play: the kernel's loopback, and the
 // surfaces the sequencer drives itself.
+//
+// The APC Key 25 is here for a reason worth knowing. It has 25 keys, so it looks exactly like
+// something to play - but the one port it offers also carries the pads and buttons the
+// sequencer drives as its page panel, and this listener takes every channel. Connecting it
+// would make each page switch play and record a note as well.
+//
+// Its keys are the price, and getting them back is straightforward when it is wanted: the keys
+// speak on channel 2 and the pads and buttons on channel 1 (measured on the device), so the
+// panel's surface - which owns that port - can forward channel 2 and nothing else. That
+// separates them whatever octave the keys are shifted to, which a note range cannot: two
+// octaves down puts the lowest key at note 12, inside the pads' own 0..39.
 bool isNotAController(const char* name) {
-  static const char* const kSkip[] = {"Midi Through", "APC mini", "MIDI Mix"};
+  static const char* const kSkip[] = {"Midi Through", "APC mini", "MIDI Mix", "APC Key 25"};
   for (size_t i = 0; i < sizeof(kSkip) / sizeof(kSkip[0]); ++i) {
     if (std::strstr(name, kSkip[i])) return true;
   }

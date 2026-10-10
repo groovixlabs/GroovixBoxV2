@@ -14,7 +14,7 @@
 <div class="page-narrow">
   <div id="topnav"></div>
   <main>
-        <h2>Scenes <span class="ctl">SHIFT</span> + <span class="ctl">R2</span></h2>
+        <h2>Scenes <span class="ctl">SHIFT</span> + <span class="ctl">R4</span></h2>
         <p class="section-intro">A scene is a song section — intro, verse, drop — remembered as what is playing: which tracks are silent, and which pattern each of the others plays. Build it, capture it to a pad, and bring it back with one tap.</p>
         <figure>
           <div class="device-frame"><div class="device" id="fig-scene"></div></div>
@@ -22,14 +22,14 @@
         </figure>
         <ul>
           <li><strong>Top four rows: 32 scenes.</strong> Grey is empty, blue holds a scene, green is the one playing — the same colours as project and preset slots.</li>
-          <li><strong>Bottom row: the eight tracks of the current track page.</strong> Tap to mute or unmute; the track’s colour means it plays, dark means it is silent. <span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> moves along the track pages, as everywhere else.</li>
+          <li><strong>Bottom row: the eight tracks of the current track page.</strong> Tap to mute or unmute; the track’s colour means it plays, dark means it is silent. <span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span> moves along the track pages, as everywhere else.</li>
           <li><strong>Tap a scene</strong> to launch it <strong>at the top of the next bar</strong>, so the change lands in time with the music however loosely you tap. The pad blinks green while it waits. A bar is 16 steps, four beats.</li>
           <li><strong>Tap the blinking scene again to change your mind</strong>, or tap another to replace it. Stopping forgets what was waiting, and while playback is stopped a tap launches at once — there is no bar to wait for.</li>
           <li><strong>Hold <span class="ctl">R7</span> (Record) and tap a pad</strong> to capture what you are hearing into it. The scene pads turn red while <span class="ctl">R7</span> is held, so it is clear that tapping writes instead of launching. Capturing over a scene replaces it.</li>
           <li><strong><span class="ctl">R5</span> (Clear) + a pad</strong> erases a scene. <strong><span class="ctl">R6</span> (Duplicate) + pad + pad</strong> copies one, which is the quick way to make a variation.</li>
           <li><strong>Tapping a scene while the <a href="song.html">song</a> is playing takes over from it.</strong> The song stops moving on to its next section and leaves you performing; stop and play again in Song mode to hand it back.</li>
           <li><strong>A scene launch drops any solo.</strong> Solo is for listening to one track; leaving it up would hide the scene you just launched.</li>
-          <li><strong>Getting here and back:</strong> <span class="ctl">SHIFT</span> + <span class="ctl">R2</span> from any mode, Pattern mode included, and <span class="ctl">R2</span> returns to Pattern mode. Pattern mode pages its grid on the bottom row instead of on <span class="ctl">SHIFT</span>, so this one gesture reaches scenes from everywhere.</li>
+          <li><strong>Getting here and back:</strong> <span class="ctl">SHIFT</span> + <span class="ctl">R4</span> from any mode, Pattern mode included, and <span class="ctl">R4</span> returns to Pattern mode. Pattern mode gives <span class="ctl">SHIFT</span> no job of its own on the pads, so this one gesture reaches scenes from everywhere.</li>
           <li><span class="ctl">R7</span> on its own still starts and stops recording — it only captures when a pad is tapped while it is held.</li>
         </ul>
         <h3>Writing a set</h3>
@@ -69,7 +69,7 @@
       },
       right: function (i) {
         var spec = g.functionButtons(-1, false, false)(i);
-        if (i === 1) spec = { c: g.C.white };  // R2 is lit in scene mode
+        if (i === 3) spec = { c: g.C.white };  // R4 is lit in scene mode
         return spec;
       },
       bottom: g.trackButtons(0)

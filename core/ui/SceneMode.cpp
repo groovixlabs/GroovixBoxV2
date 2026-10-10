@@ -100,7 +100,7 @@ const Rgb kLegendTrackColor = {255, 130, 0};
 const Rgb kLegendCaptureColor = {255, 43, 43};
 
 const ModeLegend kSceneLegend = {
-    "SHIFT + R2",
+    "SHIFT + R4",
     "Scenes",
     {
         {1, 4, kLegendSceneColor, "rows 1-4", "32 scenes - blue held, green playing"},
@@ -111,7 +111,7 @@ const ModeLegend kSceneLegend = {
         {0, 0, {}, NULL, NULL},
     },
     3,
-    {"tap a scene launches it at the top of the next bar", "R2 back to pattern",
+    {"tap a scene launches it at the top of the next bar", "R4 back to pattern",
      "R5 + pad erase, R6 + pad + pad copy", NULL},
     3,
     {kLegendSceneColor, kLegendSceneColor, kLegendSceneColor, kLegendSceneColor,

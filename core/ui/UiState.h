@@ -13,31 +13,27 @@ static const uint16_t kNoSlot = 0xFFFF;
 // (or plays) what's there.
 static const uint32_t kTapMaxMs = 500;  // Circuit Tracks' short-press limit too
 
-// Tracks and patterns are shown a page at a time. B1..B8 address the tracks of the current
-// track page, and pattern mode shows those tracks (columns) against a page of patterns
-// (rows). In pattern mode the bottom row picks both: B1..B4 the track page and B5..B8 the
-// pattern page, with no modifier.
-// Note mode shows one page of steps on the top four rows; hold R3 and press B1..B8 for the rest.
+// Tracks are shown a page at a time: B1..B8 address the tracks of the current track page,
+// and Shift + B1..B8 picks the page. Patterns are not paged at all - pattern mode gives the
+// selected track's 64 patterns one pad each, which is the whole grid.
+// Note mode shows one page of steps on the top four rows; hold R1 and press B1..B8 for the rest.
 static const uint8_t kStepsPerPage = 32;
 static const uint8_t kNumStepPages =
     static_cast<uint8_t>((kMaxSteps + kStepsPerPage - 1) / kStepsPerPage);
 
 static const uint8_t kTracksPerPage = kGridCols;
-static const uint8_t kPatternsPerPage = kGridRows;
 static const uint8_t kNumTrackPages = (kNumTracks + kTracksPerPage - 1) / kTracksPerPage;
-static const uint8_t kNumPatternPages = (kNumPatterns + kPatternsPerPage - 1) / kPatternsPerPage;
 
 // UI state shared by every mode.
 struct UiState {
   uint8_t track;             // selected track
   uint8_t stepPage;          // steps shown in note mode
-  uint8_t trackPage;         // tracks on B1..B8 and the pattern mode columns
-  uint8_t patternPage;       // patterns on the pattern mode rows
+  uint8_t trackPage;         // tracks on B1..B8
   uint8_t projectPage;       // page shown in project mode
   uint8_t presetPage;        // page shown in preset mode, inside its window
   uint8_t presetWindow;      // which block of 8 pages preset mode is showing
   bool shiftHeld;            // Shift is held
-  bool noteHeld;             // R3 is held: in note mode a pad then ends the pattern there
+  bool noteHeld;             // R1 is held: in note mode a pad then ends the pattern there
   bool clearHeld;            // R5 is held
   bool duplicateHeld;        // R6 is held
   bool recordHeld;           // R7 is held: in scene mode it captures instead of launching

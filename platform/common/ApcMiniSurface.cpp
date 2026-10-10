@@ -342,6 +342,15 @@ Rgb ApcMiniSurface::ledColor(uint8_t channel, uint8_t velocity) {
   return shown;
 }
 
+// The message for a colour. Static, so the panel surface - the same hardware read another
+// way - lights a colour exactly as the grid does.
+uint16_t ApcMiniSurface::padCodeFor(Rgb color) {
+  uint8_t channel = 0;
+  uint8_t velocity = 0;
+  padCode(color, channel, velocity);
+  return static_cast<uint16_t>((channel << 8) | velocity);
+}
+
 // Encodes a colour, remembering the last few: a grid is mostly a handful of shades, so the
 // palette search runs a couple of dozen times rather than once per pad.
 uint16_t ApcMiniSurface::codeFor(Rgb color) {
@@ -350,10 +359,7 @@ uint16_t ApcMiniSurface::codeFor(Rgb color) {
   for (uint8_t i = 0; i < cacheUsed_; ++i) {
     if (cacheKey_[i] == key) return cacheCode_[i];
   }
-  uint8_t channel = 0;
-  uint8_t velocity = 0;
-  padCode(color, channel, velocity);
-  const uint16_t code = static_cast<uint16_t>((channel << 8) | velocity);
+  const uint16_t code = padCodeFor(color);
   cacheKey_[cacheNext_] = key;
   cacheCode_[cacheNext_] = code;
   cacheNext_ = static_cast<uint8_t>((cacheNext_ + 1) % kCacheSize);

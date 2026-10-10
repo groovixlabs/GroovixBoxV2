@@ -255,8 +255,12 @@ class Sequencer {
   const Pattern* patternAt(uint8_t track, uint8_t pattern) const;
   Pattern* writablePattern(uint8_t track, uint8_t pattern);
   const Pattern* currentPattern(uint8_t track) const;
+  // A step of the selected pattern, named rather than overloaded on constness: as an overload
+  // pair the writable one won every call inside a non-const member, whatever the variable it
+  // was assigned to said, and the writable one is null for the bank - which silently stopped
+  // playback reading a factory pattern while every const reader saw it perfectly well.
   const Step* stepAt(uint8_t track, uint16_t step) const;
-  Step* stepAt(uint8_t track, uint16_t step);
+  Step* writableStep(uint8_t track, uint16_t step);
   void advanceTick();
   // The first tick of a run: whichever clock gets there first calls it.
   void beginIfPending();

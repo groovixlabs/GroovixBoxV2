@@ -141,10 +141,21 @@ int run(const Options& options) {
   // with neither has simply never made one.
   config.load(app, gx::rigConfigPath(options.controlsPath, configDir, "controls.conf"),
               options.controlsPath != NULL || options.configDir != NULL);
+  // Where the clock and the transport may go is the sink's business, not the rig's, and the
+  // two are asked for separately: a port can be kept out of either without losing the other.
+  noteOutput.setTransportPorts(config.transportPorts());
+  noteOutput.setClockPorts(config.clockPorts());
   rig.setOutputName(config.outputName());
   rig.setInputName(config.value("midiin"));
+  // Which device plays which role, then the look for them: the roles decide which devices
+  // are opened at all, so they are set first.
+  rig.setRoleDevice(gx::MidiRig::kRoleGrid, config.gridDevice());
+  rig.setRoleDevice(gx::MidiRig::kRolePanel, config.panelDevice());
+  rig.setRoleDevice(gx::MidiRig::kRoleMixer, config.mixerDevice());
+  rig.openSurfaces();
   for (uint8_t port = 0; port < gx::kNumMidiPorts; ++port) {
     rig.setPortSpec(port, config.portSpec(port));
+    rig.setPortSocket(port, config.portSocket(port));
   }
   rig.wire();
   for (uint8_t port = 0; port < gx::kNumMidiPorts; ++port) {

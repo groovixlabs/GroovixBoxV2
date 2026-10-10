@@ -14,7 +14,7 @@
 <div class="page-narrow">
   <div id="topnav"></div>
   <main>
-        <h2>Step parameters <span class="ctl">R4</span></h2>
+        <h2>Step parameters <span class="ctl">R2</span></h2>
         <p class="section-intro">How hard each step hits, how long its notes last, and how many times it fires. The steps stay on top; velocity and gate each get two rows of 16 pads below them.</p>
         <figure>
           <div class="device-frame"><div class="device" id="fig-params"></div></div>
@@ -37,9 +37,9 @@
           <li>If a long note is still sounding when the same pitch plays again, it stops first.</li>
           <li><span class="ctl">R5</span> + step resets its velocity, gate and ratchet; <span class="ctl">R6</span> + step + step copies all three to another step.</li>
           <li id="ratchet"><strong>Hold <span class="ctl">SHIFT</span> and rows 7–8 become the ratchets</strong>, the same rows the gate uses: pad <em>n</em> makes the step fire <em>n</em> + 1 times, spread evenly across its own length. Two is 32nd notes, four is 64ths and eight is a roll — the pads past eight stay dark. Each hit lasts its own gate or the space to the next one, whichever is shorter, so a long gate rolls instead of blurring, and a short one gives a stutter of stabs. The probability is rolled once, so a ratcheted step plays whole or not at all, and the whole thing moves with the step's micro-timing. <span class="ctl">R5</span> + step puts velocity, gate <em>and</em> the ratchet back.</li>
-          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> changes the track page, so a track past the eighth can be edited without leaving this mode.</li>
-          <li><strong><span class="ctl">SHIFT</span> + the top pad row</strong> goes straight to that page of steps, as in <a href="note.html">Note</a> mode, and while <span class="ctl">SHIFT</span> is held the row shows which page you are on — green there, dim blue for a page holding steps, grey for empty. Tapping <span class="ctl">R4</span> on its own stays here — this is its mode. <span class="ctl">SHIFT</span> + <span class="ctl">R4</span> opens Preset mode; <span class="ctl">R3</span> returns to Note mode.</li>
-          <li>Probability has its own mode, <a href="probability.html"><span class="ctl">SHIFT</span> + <span class="ctl">R5</span></a>.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span> changes the track page, so a track past the eighth can be edited without leaving this mode.</li>
+          <li><strong><span class="ctl">SHIFT</span> + the top pad row</strong> goes straight to that page of steps, as in <a href="note.html">Note</a> mode, and while <span class="ctl">SHIFT</span> is held the row shows which page you are on — green there, dim blue for a page holding steps, grey for empty. Tapping <span class="ctl">R2</span> on its own stays here — this is its mode. <span class="ctl">SHIFT</span> + <span class="ctl">R2</span> opens Preset mode; <span class="ctl">R1</span> returns to Note mode.</li>
+          <li>Probability has its own mode, <a href="probability.html"><span class="ctl">R3</span></a> — the same layout with the other two lanes, so moving between them changes what the lower rows do and nothing else.</li>
         </ul>
   </main>
 </div>
@@ -70,7 +70,7 @@
         if (lanePad === 2) return { c: GATE, lit: true };
         return { c: g.dim(GATE, 0.05) };
       },
-      right: g.functionButtons(3, false, false),
+      right: g.functionButtons(1, false, false),
       bottom: g.trackButtons(0)
     });
   })();

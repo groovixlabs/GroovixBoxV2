@@ -14,8 +14,8 @@
 <div class="page-narrow">
   <div id="topnav"></div>
   <main>
-        <h2>Scale mode <span class="ctl">SHIFT</span> + <span class="ctl">R3</span></h2>
-        <p class="section-intro">Choose the key the note keyboard plays in. <span class="ctl">R3</span> returns to Note mode.</p>
+        <h2>Scale mode <span class="ctl">SHIFT</span> + <span class="ctl">R1</span></h2>
+        <p class="section-intro">Choose the key the note keyboard plays in. <span class="ctl">R1</span> returns to Note mode.</p>
         <div class="explorer">
           <figure>
             <h4>Scale mode <span class="where">tap any pad — the keyboard below follows</span></h4>
@@ -317,7 +317,7 @@
       g.surface("explore-scale", {
         pad: scalePad,
         onPad: tapScale,
-        right: g.functionButtons(2, false, false),  // R3 lights: scale mode sits behind NOTE
+        right: g.functionButtons(0, false, false),  // R1 lights: scale mode sits behind NOTE
         bottom: g.trackButtons(0)
       });
       g.surface("explore-keys", {

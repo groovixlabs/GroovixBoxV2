@@ -62,9 +62,10 @@ class DisplayWindow : public DisplaySurface {
   int draw(const char* text, int x, int y, uint8_t size, Rgb color, uint8_t alpha = 255);
   int draw(const std::string& text, int x, int y, uint8_t size, Rgb color, uint8_t alpha = 255);
   int width(const char* text, uint8_t size) const;
-  // Draws text clipped to `maxWidth`, ending in an ellipsis when it would not fit.
-  void drawClipped(const std::string& text, int x, int y, int maxWidth, uint8_t size, Rgb color,
-                   uint8_t alpha = 255);
+  // Draws text clipped to `maxWidth`, ending in an ellipsis when it would not fit, and
+  // returns how wide what it drew was - which is not `maxWidth` when the text fitted.
+  int drawClipped(const std::string& text, int x, int y, int maxWidth, uint8_t size, Rgb color,
+                  uint8_t alpha = 255);
 
   SDL_Window* window_;
   SDL_Renderer* renderer_;

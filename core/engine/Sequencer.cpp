@@ -533,7 +533,7 @@ const Step* Sequencer::stepAt(uint8_t track, uint16_t step) const {
   return (pattern && step < kMaxSteps) ? &pattern->steps[step] : nullptr;
 }
 
-Step* Sequencer::stepAt(uint8_t track, uint16_t step) {
+Step* Sequencer::writableStep(uint8_t track, uint16_t step) {
   if (track >= kNumTracks || step >= kMaxSteps) return nullptr;
   Pattern* pattern = writablePattern(track, project_.tracks[track].selectedPattern);
   return pattern ? &pattern->steps[step] : nullptr;
@@ -576,7 +576,7 @@ bool Sequencer::stepHasNote(uint8_t track, uint16_t step, uint8_t note) const {
 }
 
 void Sequencer::toggleStep(uint8_t track, uint16_t step) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   if (s->active) {
     s->active = 0;
@@ -594,7 +594,7 @@ void Sequencer::setStepNote(uint8_t track, uint16_t step, uint8_t note) {
 }
 
 void Sequencer::setStepChord(uint8_t track, uint16_t step, const uint8_t* notes, uint8_t count) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s || notes == nullptr) return;
   if (count > kMaxStepNotes) count = kMaxStepNotes;
   uint8_t written = 0;
@@ -609,7 +609,7 @@ void Sequencer::setStepChord(uint8_t track, uint16_t step, const uint8_t* notes,
 }
 
 void Sequencer::addStepNote(uint8_t track, uint16_t step, uint8_t note) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s || note > kMaxMidiValue) return;
   for (uint8_t n = 0; n < s->noteCount; ++n) {
     if (s->notes[n] == note) {
@@ -624,7 +624,7 @@ void Sequencer::addStepNote(uint8_t track, uint16_t step, uint8_t note) {
 }
 
 void Sequencer::removeStepNote(uint8_t track, uint16_t step, uint8_t note) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   uint8_t kept = 0;
   for (uint8_t n = 0; n < s->noteCount && n < kMaxStepNotes; ++n) {
@@ -641,7 +641,7 @@ uint8_t Sequencer::stepVelocity(uint8_t track, uint16_t step) const {
 }
 
 void Sequencer::setStepVelocity(uint8_t track, uint16_t step, uint8_t velocity) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   if (velocity < 1) velocity = 1;  // velocity 0 means note-off in MIDI
   if (velocity > kMaxMidiValue) velocity = kMaxMidiValue;
@@ -654,7 +654,7 @@ uint8_t Sequencer::stepProbability(uint8_t track, uint16_t step) const {
 }
 
 void Sequencer::setStepProbability(uint8_t track, uint16_t step, uint8_t probability) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   if (probability < 1) probability = 1;
   if (probability > kMaxProbability) probability = kMaxProbability;
@@ -672,7 +672,7 @@ uint8_t Sequencer::stepRatchet(uint8_t track, uint16_t step) const {
 }
 
 void Sequencer::setStepRatchet(uint8_t track, uint16_t step, uint8_t hits) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   if (hits < 1) hits = 1;
   if (hits > kMaxRatchet) hits = kMaxRatchet;
@@ -680,7 +680,7 @@ void Sequencer::setStepRatchet(uint8_t track, uint16_t step, uint8_t hits) {
 }
 
 void Sequencer::setStepNudge(uint8_t track, uint16_t step, int8_t ticks) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   if (ticks < kMinNudge) ticks = kMinNudge;
   if (ticks > kMaxNudge) ticks = kMaxNudge;
@@ -693,7 +693,7 @@ uint8_t Sequencer::stepGate(uint8_t track, uint16_t step) const {
 }
 
 void Sequencer::setStepGate(uint8_t track, uint16_t step, uint8_t ticks) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   if (ticks < 1) ticks = 1;
   if (ticks > kMaxGateUnits) ticks = kMaxGateUnits;
@@ -701,7 +701,7 @@ void Sequencer::setStepGate(uint8_t track, uint16_t step, uint8_t ticks) {
 }
 
 void Sequencer::clearStep(uint8_t track, uint16_t step) {
-  Step* s = stepAt(track, step);
+  Step* s = writableStep(track, step);
   if (!s) return;
   s->active = 0;
   s->noteCount = 0;
@@ -713,7 +713,7 @@ void Sequencer::clearStep(uint8_t track, uint16_t step) {
 
 void Sequencer::copyStep(uint8_t track, uint16_t fromStep, uint16_t toStep) {
   const Step* from = stepAt(track, fromStep);
-  Step* to = stepAt(track, toStep);
+  Step* to = writableStep(track, toStep);
   if (from && to) *to = *from;
 }
 

@@ -445,33 +445,33 @@
     <div class="buttons">
 
       <div class="btn" style="--led: var(--led-white)">
-        <div class="btn-top"><b>R1</b><span>Project</span></div>
-        <p>Opens Project mode. Hold it and press <kbd>B1</kbd>–<kbd>B8</kbd> to jump to project page 1–8, from any mode.</p>
-        <p class="shifted"><b>SHIFT + R1</b> → Global settings</p>
-      </div>
-
-      <div class="btn" style="--led: var(--led-white)">
-        <div class="btn-top"><b>R2</b><span>Pattern</span></div>
-        <p>Opens Pattern mode, and returns to it from Scenes.</p>
-        <p class="shifted"><b>SHIFT + R2</b> → Scenes, from any mode, Pattern included</p>
-      </div>
-
-      <div class="btn" style="--led: var(--led-white)">
-        <div class="btn-top"><b>R3</b><span>Note</span></div>
+        <div class="btn-top"><b>R1</b><span>Note</span></div>
         <p>Opens Note mode, and returns from Scale. SHIFT + the top pad row picks its page of 32 steps.</p>
-        <p class="shifted"><b>SHIFT + R3</b> → Scale mode</p>
+        <p class="shifted"><b>SHIFT + R1</b> → Scale mode</p>
       </div>
 
       <div class="btn" style="--led: var(--led-white)">
-        <div class="btn-top"><b>R4</b><span>Params</span></div>
+        <div class="btn-top"><b>R2</b><span>Params</span></div>
         <p>Opens Step parameters for the selected track. SHIFT + the top pad row picks its step page.</p>
-        <p class="shifted"><b>SHIFT + R4</b> → Preset mode, where holding R4 picks the preset page instead</p>
+        <p class="shifted"><b>SHIFT + R2</b> → Preset mode, where holding R2 picks the preset page instead</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-white)">
+        <div class="btn-top"><b>R3</b><span>Probability</span></div>
+        <p>Opens Probability mode: the same step grid as Note and Step parameters, with the chance and micro-timing lanes below it. R1, R2 and R3 are the three modes that draw that grid, side by side.</p>
+        <p class="shifted"><b>SHIFT + R3</b> → Global settings</p>
+      </div>
+
+      <div class="btn" style="--led: var(--led-white)">
+        <div class="btn-top"><b>R4</b><span>Pattern</span></div>
+        <p>Opens Pattern mode, and returns to it from Scenes.</p>
+        <p class="shifted"><b>SHIFT + R4</b> → Scenes, from any mode, Pattern included</p>
       </div>
 
       <div class="btn" style="--led: var(--led-orange)">
         <div class="btn-top"><b>R5</b><span>Clear</span></div>
         <p>Hold and tap a pad to clear that step, pattern, project, scene or song step. Orange while held. There is no undo.</p>
-        <p class="shifted"><b>SHIFT + R5</b> → Probability</p>
+        <p class="shifted"><b>SHIFT + R5</b> → Project</p>
       </div>
 
       <div class="btn" style="--led: var(--led-blue)">
@@ -502,7 +502,7 @@
 
       <!-- Note -->
       <article class="mode">
-        <header><h3>Note</h3><span class="chip">R3</span></header>
+        <header><h3>Note</h3><span class="chip">R1</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-green)"></i>
@@ -522,7 +522,7 @@
         <ul class="gest">
           <li><span>tap step</span><span>Switches an empty step on. Tapping never switches one <em>off</em> — R5 + step does.</span></li>
           <li><span>hold + keys</span><span>Hold a step and tap keys to give it that chord, up to 4 notes. Or hold keys and tap steps.</span></li>
-          <li><span>R3 + step</span><span>Hold R3, tap a step: it becomes the pattern's last. Turns red, the steps after go dark.</span></li>
+          <li><span>R1 + step</span><span>Hold R1, tap a step: it becomes the pattern's last. Turns red, the steps after go dark.</span></li>
           <li><span>SHIFT + key</span><span>Top-left key up an octave, bottom-left key down — the way the notes run. Both light white while SHIFT is held.</span></li>
           <li><span>SHIFT + top row</span><span>Pad 1–8 goes straight to that page of 32 steps, and the row shows which page you are on while SHIFT is held — green there, dim blue for a page with steps, grey for empty.</span></li>
         </ul>
@@ -549,15 +549,16 @@
         </div>
         <ul class="gest">
           <li><span>tap pad</span><span>Adds that note to the step, or takes it out. Hold to hear it without changing anything.</span></li>
-          <li><span>SHIFT + arrows</span><span>Left (8,6), down (8,7), right (8,8), up (7,7) — an inverted T. Up and down move the notes, left and right the steps, 4 at a time. Dark where there's nowhere to go.</span></li>
-          <li><span>R3 + pad</span><span>Makes its step the pattern's last. SHIFT does nothing to any pad but the four arrows.</span></li>
+          <li><span>SHIFT + arrows</span><span>Left (8,6), down (8,7), right (8,8), up (7,7) — an inverted T. Up and down move the notes, left and right the steps, <b>1 at a time</b>. Dark where there's nowhere to go.</span></li>
+          <li><span>panel arrows</span><span>A <a href="index.html#page-panel">page panel</a>'s first four buttons do the same, by the same amount, with no SHIFT. Dark when no roll is on screen.</span></li>
+          <li><span>R1 + pad</span><span>Makes its step the pattern's last. SHIFT does nothing to any pad but the four arrows.</span></li>
           <li><span>note</span><span>One of three ways to use the grid — it replaces chords, and pairs with Drums or Own&nbsp;scale.</span></li>
         </ul>
       </article>
 
       <!-- Scale -->
       <article class="mode">
-        <header><h3>Scale</h3><span class="chip">SHIFT + R3</span></header>
+        <header><h3>Scale</h3><span class="chip">SHIFT + R1</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-grey)" class="half"></i>
@@ -585,7 +586,7 @@
 
       <!-- Step parameters -->
       <article class="mode">
-        <header><h3>Step parameters</h3><span class="chip">R4</span></header>
+        <header><h3>Step parameters</h3><span class="chip">R2</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-green)"></i>
@@ -613,7 +614,7 @@
 
       <!-- Probability -->
       <article class="mode">
-        <header><h3>Probability</h3><span class="chip">SHIFT + R5</span></header>
+        <header><h3>Probability</h3><span class="chip">R3</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-green)"></i>
@@ -641,38 +642,37 @@
 
       <!-- Pattern -->
       <article class="mode">
-        <header><h3>Pattern</h3><span class="chip">R2</span></header>
+        <header><h3>Pattern</h3><span class="chip">R4</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-green)"></i>
             <i style="--t: var(--led-blue)"></i>
             <i style="--t: var(--led-blue)"></i>
-            <i style="--t: var(--led-grey)" class="half"></i>
-            <i style="--t: var(--led-grey)" class="half"></i>
-            <i style="--t: var(--led-grey)" class="half"></i>
-            <i style="--t: var(--led-grey)" class="half"></i>
-            <i style="--t: var(--led-grey)" class="half"></i>
+            <i style="--t: var(--led-blue)"></i>
+            <i style="--t: #964600"></i>
+            <i style="--t: #964600"></i>
+            <i style="--t: #964600"></i>
+            <i style="--t: #964600"></i>
           </div>
           <ul class="bands">
-            <li style="--t: var(--led-green)"><b>cols</b> the 8 tracks of the track page</li>
-            <li style="--t: var(--led-blue)"><b>rows</b> the 8 patterns of the pattern page</li>
-            <li style="--t: var(--led-green)"><b>green</b> one per column: the pattern that track plays</li>
-            <li style="--t: #964600"><b>amber</b> pages 5–8: the built-in bank, read-only</li>
+            <li style="--t: var(--led-blue)"><b>1–4</b> patterns 1–32 of the selected track</li>
+            <li style="--t: #964600"><b>5–8</b> patterns 33–64: the built-in bank, read-only</li>
+            <li style="--t: var(--led-green)"><b>green</b> the one pattern that track plays</li>
           </ul>
         </div>
         <ul class="gest">
-          <li><span>tap pad</span><span>That track plays that pattern at once, keeping the playhead. It selects the track too.</span></li>
-          <li><span>B1–B8</span><span>Page the tracks — the columns — all eight pages. No SHIFT needed, and SHIFT changes nothing.</span></li>
-          <li><span>SHIFT + row 1</span><span>The top pad row becomes the pattern pages — the rows — and shows which one you are on.</span></li>
-          <li><span>pages 5–8</span><span>The built-in bank, lit amber: drums on track 1, bass 2, chords 3, arp 4, fills 5, repeating every 8 tracks. Read-only — R6 copies one down to pages 1–4 to edit.</span></li>
-          <li><span>SHIFT + row 8</span><span>The bottom pad row becomes the mutes. A muted track's whole column dims.</span></li>
-          <li><span>R6</span><span>Copies a pattern, also to another track or page.</span></li>
+          <li><span>tap pad</span><span>The track plays that pattern at once, keeping the playhead. Pad 1 is pattern 1, the last pad pattern 64 — all 64 at once, so nothing pages the patterns.</span></li>
+          <li><span>B1–B8</span><span>Pick the track, staying in the mode — as in Note mode. SHIFT + B1–B8 is the track page.</span></li>
+          <li><span>SHIFT</span><span>Takes no pad row here: every pad is still a pattern. On the buttons it means what it means everywhere else.</span></li>
+          <li><span>rows 5–8</span><span>The built-in bank, lit amber: drums on track 1, bass 2, chords 3, arp 4, fills 5, repeating every 8 tracks. Read-only — R6 copies one up to rows 1–4 to edit.</span></li>
+          <li><span>turning one off</span><span>R5 cannot empty the bank and a track always plays one pattern, so tap a grey pad in rows 1–4 instead — an empty pattern of your own, saved with the project. Or mute the track from the mixer's MUTE row, which dims the whole grid.</span></li>
+          <li><span>R6</span><span>Copies a pattern. Press B1–B8 between the two taps to copy it to another track.</span></li>
         </ul>
       </article>
 
       <!-- Scenes -->
       <article class="mode">
-        <header><h3>Scenes</h3><span class="chip">SHIFT + R2</span></header>
+        <header><h3>Scenes</h3><span class="chip">SHIFT + R4</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-green)"></i>
@@ -693,7 +693,7 @@
           <li><span>tap scene</span><span>Launches it at the top of the next bar. It blinks until it lands; tap again to change your mind.</span></li>
           <li><span>R7 + pad</span><span>Captures what you are hearing into that pad. The scene pads turn red while R7 is held.</span></li>
           <li><span>holds</span><span>Which tracks are silent, and which pattern each track plays. Saved with the project.</span></li>
-          <li><span>R2</span><span>Returns to Pattern mode. Mutes stay put as you flip between the two.</span></li>
+          <li><span>R4</span><span>Returns to Pattern mode. Mutes stay put as you flip between the two.</span></li>
         </ul>
       </article>
 
@@ -726,7 +726,7 @@
 
       <!-- Project -->
       <article class="mode">
-        <header><h3>Project</h3><span class="chip">R1</span></header>
+        <header><h3>Project</h3><span class="chip">SHIFT + R5</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-green)"></i>
@@ -745,7 +745,7 @@
         </div>
         <ul class="gest">
           <li><span>tap slot</span><span>Opens that project, saving the open one first. An empty slot starts a new project there.</span></li>
-          <li><span>pages</span><span><em>SHIFT + B1–B8</em>, or hold <em>R1 + B1–B8</em> from any other mode to open straight onto a page.</span></li>
+          <li><span>pages</span><span><em>SHIFT + B1–B8</em>, inside the mode. No R button opens this mode, so there is none to hold for pages.</span></li>
           <li><span>R5 + slot</span><span>Clears it. The file is not deleted — it moves to <em>trash/&lt;date&gt;_&lt;time&gt;/</em> in the data folder.</span></li>
           <li><span>R6</span><span>Copies a project, across pages too. Copying the open one includes unsaved changes.</span></li>
         </ul>
@@ -753,7 +753,7 @@
 
       <!-- Preset -->
       <article class="mode">
-        <header><h3>Preset</h3><span class="chip">SHIFT + R4</span></header>
+        <header><h3>Preset</h3><span class="chip">SHIFT + R2</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-grey)" class="half"></i>
@@ -772,9 +772,10 @@
         </div>
         <ul class="gest">
           <li><span>tap pad</span><span>Sends that voice: Bank Select CC 0, then CC 32, then the Program Change that latches them.</span></li>
-          <li><span>order</span><span>Pick the track with <em>B1–B8</em> first, then SHIFT + R4. A tap of R4 here goes on to Step parameters.</span></li>
-          <li><span>pages</span><span>Hold <em>SHIFT</em> or <em>R4</em> and press B1–B8 — 64 voices each.</span></li>
+          <li><span>order</span><span>Pick the track with <em>B1–B8</em> first, then SHIFT + R2. A tap of R2 here goes on to Step parameters.</span></li>
+          <li><span>pages</span><span>Hold <em>SHIFT</em> or <em>R2</em> and press B1–B8 — 64 voices each.</span></li>
           <li><span>SHIFT + row 8</span><span>Picks the window: 512 voices each, 8 of them. Green is the window on screen, blue holds voices, grey is past the end of the list.</span></li>
+          <li><span>panel windows</span><span>A <a href="index.html#page-panel">page panel</a>'s window row picks any of the eight in one press, on the row above its preset pages. Dark and deaf past the end of the list, so General MIDI lights only the first.</span></li>
           <li><span>the list</span><span><em>voices.conf</em> names a CSV per device — the maker's own list. Slot 1.01 is its first voice. No list means General MIDI, 128 voices.</span></li>
           <li><span>note</span><span>R5 and R6 do nothing here. A patch lives in the synth, not in the sequencer.</span></li>
         </ul>
@@ -782,7 +783,7 @@
 
       <!-- Global settings -->
       <article class="mode">
-        <header><h3>Global settings</h3><span class="chip">SHIFT + R1</span></header>
+        <header><h3>Global settings</h3><span class="chip">SHIFT + R3</span></header>
         <div class="map">
           <div class="dev" aria-hidden="true">
             <i style="--t: var(--led-green)"></i>
@@ -805,7 +806,7 @@
           <li><span>MIDI</span><span>Rows 3–4 channels 1–16 · row 5 ports P1–P8 · rows 6–7 instruments I1–I16. A track uses one or the other.</span></li>
           <li><span>devices</span><span>Row 3 the gear · row 5 the ports that found something · row 7 INT / AUTO / EXT · row 8 pad 1 REFRESH.</span></li>
           <li><span>arp</span><span>Row 3 the mode · row 5 the rate, down to 1/64T · row 7 how many octaves.</span></li>
-          <li><span>B1–B8</span><span>The one mode where they only move the selection, so you can set each track in turn.</span></li>
+          <li><span>B1–B8</span><span>Move the selection without leaving, as in Pattern mode, so you can set each track in turn.</span></li>
         </ul>
       </article>
 
@@ -821,15 +822,15 @@
           <tr><th>Gesture</th><th>Where</th><th>Changes</th></tr>
         </thead>
         <tbody>
-          <tr><td>SHIFT + B1–B8</td><td>Note, Scale, Params, Probability, Scenes, Global</td><td>Track page — which tracks B1–B8 select. Your position is kept: track 4 becomes track 12. Eight pages of eight is all 64 tracks.</td></tr>
-          <tr><td>B1–B8</td><td>Pattern</td><td>Track page — the columns. They need no modifier and ignore SHIFT, so the pages stay reachable while it is held for the mutes.</td></tr>
-          <tr><td>SHIFT + top pad row</td><td>Note, Params, Probability, Pattern</td><td>Step page in the step modes, pattern page in Pattern mode — one press, and while SHIFT is held that row <em>is</em> the map: green for the page on screen, blue for one holding something, grey for empty, the playing step page blinking.</td></tr>
-          <tr><td>hold R3 + B1–B8</td><td>Note, on a piano roll track</td><td>Step page. Every pad of the roll is a note, so there is no row to give the pages.</td></tr>
-          <tr><td>SHIFT + the roll's arrows</td><td>Note, on a piano roll track</td><td>Scrolls rather than pages: left (8,6), down (8,7), right (8,8), up (7,7), 4 at a time.</td></tr>
-          <tr><td>hold R4 + B1–B8</td><td>any mode</td><td>Step page, opening Step parameters.</td></tr>
-          <tr><td>hold R1 + B1–B8</td><td>any mode</td><td>Project page, opening Project mode.</td></tr>
-          <tr><td>hold R4 or SHIFT + B</td><td>Preset</td><td>Preset page.</td></tr>
-          <tr><td>mixer A2 1–8</td><td>any mode</td><td>The same pages, and it shows them without anything held: green is the page you are on, brighter blue a page holding something.</td></tr>
+          <tr><td>SHIFT + B1–B8</td><td>Note, Pattern, Scale, Params, Probability, Scenes, Global</td><td>Track page — which tracks B1–B8 select. Your position is kept: track 4 becomes track 12. Eight pages of eight is all 64 tracks.</td></tr>
+          <tr><td>nothing</td><td>Pattern</td><td><strong>Patterns do not page.</strong> A track has 64 and the grid is 64 pads, so the whole of its choice is on screen at once.</td></tr>
+          <tr><td>SHIFT + top pad row</td><td>Note, Params, Probability</td><td>Step page — one press, and while SHIFT is held that row <em>is</em> the map: green for the page on screen, blue for one holding something, grey for empty, the playing page blinking.</td></tr>
+          <tr><td>hold R1 + B1–B8</td><td>Note, on a piano roll track</td><td>Step page. Every pad of the roll is a note, so there is no row to give the pages.</td></tr>
+          <tr><td>SHIFT + the roll's arrows</td><td>Note, on a piano roll track</td><td>Scrolls rather than pages: left (8,6), down (8,7), right (8,8), up (7,7), 1 at a time.</td></tr>
+          <tr><td>the panel's arrows</td><td>Note, on a piano roll track</td><td>Scrolls the same roll by the same amount, with no modifier. Dark when no roll is on screen.</td></tr>
+          <tr><td>SHIFT + B</td><td>Project</td><td>Project page. The only paging gesture there — no R button opens the mode, so none holds for pages.</td></tr>
+          <tr><td>hold R2 or SHIFT + B</td><td>Preset</td><td>Preset page.</td></tr>
+          <tr><td>the panel's pads</td><td>any mode</td><td>Every kind at once, one row each — steps, tracks, projects from the top, then the preset windows and the preset pages on the bottom two — shown the whole time with nothing held, and one pad a page to switch. Rows left over in the middle are spare and dark.</td></tr>
         </tbody>
       </table>
     </div>
@@ -847,7 +848,7 @@
           <li><span>K1–K3</span><span>Knob rows: Cutoff (74), Resonance (71) and Pan (10, centred) by default.</span></li>
           <li><span>fader</span><span>Volume (CC 7), on the strip's track channel and port.</span></li>
           <li><span>MUTE</span><span>Mutes the track at once. <em>Mixer SHIFT + MUTE</em> solos instead; several tracks can be soloed.</span></li>
-          <li><span>A2</span><span>The page row — REC ARM on a MIDI Mix. It mirrors B1–B8, so in Pattern mode it is the track pages.</span></li>
+          <li><span>A2</span><span>REC ARM on a MIDI Mix. Nothing yet: it lights while held and nothing acts on it.</span></li>
           <li><span>M1–M3</span><span>Nothing yet.</span></li>
         </ul>
       </div>

@@ -37,7 +37,7 @@ class SlotGridMode : public Mode {
   virtual void copy(UiState& state, uint16_t from, uint16_t to);
 };
 
-// R1: each pad is a project slot on the page chosen with R1 + B1..B8.
+// Shift + R5: each pad is a project slot on the page chosen with Shift + B1..B8.
 class ProjectMode : public SlotGridMode {
  public:
   explicit ProjectMode(Library& library);
@@ -56,16 +56,17 @@ class ProjectMode : public SlotGridMode {
   Library& library_;
 };
 
-// R2: columns are the tracks of the track page, rows the patterns of the pattern page
-// (top row first). Shift + a pad on the bottom row mutes that column's track, and a muted
-// track's whole column dims, so it is plain why it isn't sounding while you try patterns
-// against a scene. Tapping a pattern also selects its track: the bottom row pages the grid
-// here (B1..B4 the tracks, B5..B8 the patterns) instead of picking tracks.
+// R4: every pad is one of the selected track's patterns, 1..64 reading left to right and top
+// down, so the whole of a track's choice is on screen with nothing to page. The bottom half
+// is the built-in bank, in amber. B1..B8 pick the track and Shift + B1..B8 the track page,
+// exactly as in note mode, so walking the tracks is the same gesture wherever you are.
+// A muted track's whole grid dims, so it is plain why it isn't sounding while you try
+// patterns against a scene; the mutes themselves are the mixer's MUTE row and scene mode's
+// bottom pad row, both a bare press.
 class PatternMode : public SlotGridMode {
  public:
   explicit PatternMode(Sequencer& sequencer);
 
-  void handlePad(UiState& state, uint8_t pad, bool pressed) override;
   void renderPads(const UiState& state, LedFrame& frame) const override;
   const ModeLegend* legend(const UiState& state) const override;
 
@@ -82,7 +83,7 @@ class PatternMode : public SlotGridMode {
   Sequencer& sequencer_;
 };
 
-// R4: each pad is one voice of the selected track's device, on the page chosen with R4 + B1..B8
+// Shift + R2: each pad is one voice of the selected track's device, on the page chosen with R2 + B1..B8
 // or Shift + B1..B8. Tapping one sends its Bank Select and Program Change; the slots hold
 // nothing of ours.
 //
@@ -102,10 +103,17 @@ class PresetMode : public SlotGridMode {
   void renderPads(const UiState& state, LedFrame& frame) const override;
   const char* padLabel(const UiState& state, uint8_t pad) const override;
   const ModeLegend* legend(const UiState& state) const override;
+  // The bottom band of a screen: which window and page are on the grid, and which voice the
+  // track is on. The grid alone cannot say it - a window and a page are a pad each in a row
+  // of eight identical pads, and the voice is a number the device's own list counts.
+  uint8_t displayValues(const UiState& state, DisplayValue* values) const override;
 
   // Which window and page a slot sits in, for opening the mode on the track's own voice.
   static uint8_t windowOf(uint16_t slot);
   static uint8_t pageInWindow(uint16_t slot);
+  // Whether a window reaches any of the device's voices. Public because a page panel offers
+  // the windows as buttons of their own and must light and refuse them the same way.
+  bool windowHasVoices(const UiState& state, uint8_t window) const;
 
  protected:
   bool slotsHoldData() const override { return false; }
@@ -116,7 +124,6 @@ class PresetMode : public SlotGridMode {
  private:
   // How many slots the selected track's device offers, or 0 when nothing has said.
   uint16_t slotCount(const UiState& state) const;
-  bool windowHasVoices(const UiState& state, uint8_t window) const;
 
   Sequencer& sequencer_;
   const PresetCatalog* catalog_;

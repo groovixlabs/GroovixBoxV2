@@ -14,17 +14,17 @@
 <div class="page-narrow">
   <div id="topnav"></div>
   <main>
-        <h2>Project mode <span class="ctl">R1</span></h2>
+        <h2>Project mode <span class="ctl">SHIFT</span> + <span class="ctl">R5</span></h2>
         <p class="section-intro">A project holds every track, pattern, preset choice and the tempo. There are 8 pages of 64 project slots.</p>
         <figure>
           <div class="device-frame"><div class="device" id="fig-project"></div></div>
-          <figcaption><span class="ctl">R1</span> held: the pads show page 1, where slot 1 is open (green) and four slots hold projects. The bottom row shows project pages: page 1 is shown and page 3 has projects.</figcaption>
+          <figcaption><span class="ctl">SHIFT</span> held: the pads show page 1, where slot 1 is open (green) and four slots hold projects. The bottom row shows project pages: page 1 is shown and page 3 has projects.</figcaption>
         </figure>
         <ul>
           <li><strong>Tap a slot</strong> to open that project. The open project is saved first. Tapping an empty slot starts a new, empty project there.</li>
           <li>Opening Project mode shows the page that contains the open project.</li>
           <li><strong>Hold <span class="ctl">SHIFT</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> to go to page 1–8, the same way <span class="ctl">SHIFT</span> + <span class="ctl">B</span> changes the track page in Note and Pattern mode. The buttons are labelled PG1–PG8 in the simulator.</li>
-          <li><strong>Hold <span class="ctl">R1</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> does the same. This also works from any other mode: hold <span class="ctl">R1</span>, press <span class="ctl">B3</span> and Project mode opens on page 3.</li>
+          <li><strong>That is the only way to page here</strong>, and it is deliberate: Project mode used to have a bare button of its own, which paged while it was held. It has none now — no <span class="ctl">R</span> button opens Project mode, so there is none to hold here. One gesture for the mode, one for the page.</li>
           <li><span class="ctl">R6</span> + source + destination copies a project, also across pages (change page between the two taps). Copying the open project includes unsaved changes.</li>
           <li><span class="ctl">R5</span> + slot clears that project straight away — there is no undo on the device. Clearing the open project leaves you with an empty one.</li>
           <li><strong>The file isn't deleted, though.</strong> It is moved into <code>trash/&lt;date&gt;_&lt;time&gt;/</code> inside the data folder, so a mis-tap can be put right by copying the file back into place. Two clears in the same second share a folder and never overwrite one another. See <a href="index.html#trash">Saving</a>.</li>
@@ -46,11 +46,14 @@
         return saved.indexOf(i) >= 0 ? { c: g.C.blue, lit: true } : { c: "#4b4d55" };
       },
       right: function (i) {
-        var spec = g.functionButtons(0, false, false)(i);
-        if (i === 0) spec.held = true;
+        // No R button opens Project mode; it lights R5, the button its Shift layer sits on.
+        var spec = g.functionButtons(-1, false, false)(i);
+        if (i === 4) spec = { c: "#ff6a14" };
         return spec;
       },
-      bottom: g.pageMap(0, [2])
+      bottom: g.pageMap(0, [2]),
+      shift: g.C.white,
+      shiftHeld: true
     });
   })();
 </script>

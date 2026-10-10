@@ -39,6 +39,11 @@ class ApcMiniSurface : public ControlSurface {
   // What the device shows for a pad message: the palette colour at the channel's brightness.
   // The surface picks the pair whose result is nearest the colour the UI asked for.
   static Rgb ledColor(uint8_t channel, uint8_t velocity);
+  // The other direction: the message for a colour, packed as (channel << 8) | velocity, with
+  // 0 for black. Public because the APC in its other role - ApcMiniPanelSurface - is the same
+  // hardware and must light a colour identically, and because a device's colour scheme is one
+  // thing however many ways the device is read.
+  static uint16_t padCodeFor(Rgb color);
   void show(const LedFrame& frame) override;
   // Turns every LED off at once.
   void clearLeds();

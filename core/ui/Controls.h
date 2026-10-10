@@ -28,6 +28,24 @@ static const uint8_t kNumMixSideButtons = kKnobRows + 1;
 // button to solo that track instead.
 static const uint8_t kMixShiftButton = kNumMixSideButtons - 1;
 
+// A page panel: a grid of pads that does nothing but show which page of each kind is open
+// and switch to another, one row per kind of page and one column per page. It plays no notes
+// and edits nothing, so it needs no part of the grid's layout - an APC Key 25, whose 5x8 pads
+// hold the four kinds of page by the eight pages each has, with no row to spare.
+static const uint8_t kNumPageKinds = 4;   // see UiController::PageKind
+static const uint8_t kPagesPerKind = 8;
+static const uint8_t kNumPagePads = kNumPageKinds * kPagesPerKind;
+// Preset mode's pages sit inside a window of 512 voices and the model has eight of them. The
+// panel gives the windows a pad row of their own, so all eight are there - a row of eight is
+// the whole model, where the four buttons this used to live on were half of it.
+static const uint8_t kNumPanelWindows = kPagesPerKind;
+// The panel's mode buttons: the five modes that need Shift on the APC, each on a button of
+// its own so the panel reaches them in one press. They light to show which one is open.
+static const uint8_t kNumPanelModes = 5;
+// And four arrow buttons. They scroll the piano roll, which otherwise needs Shift and a pad
+// cluster; the count is RollScroll's, which is where their order comes from too.
+static const uint8_t kNumPanelArrows = 4;
+
 enum ControlGroup {
   kGroupPad = 0,
   kGroupRight,
@@ -40,6 +58,10 @@ enum ControlGroup {
   kGroupMixSide,      // the right-hand column: knob rows 1..3, then the A1 row
   kGroupMixFader,     // index 0..kNumMixStrips-1
   kGroupMixMaster,    // index is always 0
+  kGroupPage,          // a page panel's pads, index pagePadIndex(row, page)
+  kGroupPresetWindow,  // a page panel's window buttons, index 0..kNumPanelWindows-1
+  kGroupPanelMode,     // a page panel's mode buttons, index 0..kNumPanelModes-1
+  kGroupPanelArrow,    // a page panel's arrows, index 0..kNumPanelArrows-1 in RollScroll order
 };
 
 // A press or release of a pad or button, or a fader's new position. Pads are indexed
@@ -72,6 +94,52 @@ inline uint8_t knobIndex(uint8_t row, uint8_t strip) {
 }
 inline uint8_t mixButtonIndex(uint8_t row, uint8_t strip) {
   return static_cast<uint8_t>(row * kNumMixStrips + strip);
+}
+
+// Page panel pads are indexed by row then page, so a row is a run of eight. The row is the
+// panel's own top-to-bottom order, which is the player's layout rather than the order the
+// kinds happen to be declared in - UiController maps between the two.
+inline uint8_t pagePadIndex(uint8_t row, uint8_t page) {
+  return static_cast<uint8_t>(row * kPagesPerKind + page);
+}
+
+// Rows a panel needs: one per kind of page, and one for the preset windows.
+static const uint8_t kNumPanelRows = kNumPageKinds + 1;
+
+// What a row of a panel's pads does. The jobs, and where they sit, are settled here rather
+// than in each surface, because two devices with different numbers of pad rows have to lay
+// the panel out the same way or they are not the same instrument.
+//
+// The first kinds hang from the TOP, where they have always been, so they do not move when a
+// kind is added or taken away. The LAST kind - the preset pages - sits on the BOTTOM row with
+// the window row directly above it: a window holds exactly eight preset pages, so the two
+// rows read downward as a row of tabs over what the open tab shows. Rows left in between are
+// spare, dark, and report nothing.
+enum PanelRowJob {
+  kPanelRowSpare = 0,
+  kPanelRowPages,
+  kPanelRowWindows,
+};
+
+// Which of a device's pad rows the panel's pages and windows sit on, row 0 being the TOP one.
+inline uint8_t panelPageRowAt(uint8_t padRows, uint8_t pageRow) {
+  return pageRow + 1 < kNumPageKinds ? pageRow : static_cast<uint8_t>(padRows - 1);
+}
+inline uint8_t panelWindowRowAt(uint8_t padRows) { return static_cast<uint8_t>(padRows - 2); }
+
+// And the inverse, for a press: what the device's row does, with pageRow set when it is a row
+// of pages. Checked from the bottom up, because that is the end the pair is anchored to.
+inline uint8_t panelRowJobAt(uint8_t padRows, uint8_t rowFromTop, uint8_t& pageRow) {
+  if (rowFromTop + 1 == padRows) {
+    pageRow = kNumPageKinds - 1;
+    return kPanelRowPages;
+  }
+  if (rowFromTop + 2 == padRows) return kPanelRowWindows;
+  if (rowFromTop + 1 < kNumPageKinds) {
+    pageRow = rowFromTop;
+    return kPanelRowPages;
+  }
+  return kPanelRowSpare;
 }
 
 }  // namespace gx

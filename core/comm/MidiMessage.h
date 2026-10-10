@@ -45,4 +45,29 @@ inline MidiMessage midiNoteOff(uint8_t channel, uint8_t note, uint8_t port = 0) 
   return m;
 }
 
+// How many bytes a message is on a wire, 0 for one we never send (SysEx and system common).
+// A program change and channel pressure carry one data byte; the realtime bytes carry none.
+inline uint8_t midiMessageLength(uint8_t status) {
+  if (status >= 0xF8) return 1;  // clock, start, stop and the rest of the realtime bytes
+  if (status >= 0xF0) return 0;  // system common: not sent through MidiMessage
+  switch (status & 0xF0) {
+    case 0xC0:  // program change
+    case 0xD0:  // channel pressure
+      return 2;
+    default:
+      return 3;
+  }
+}
+
+// Lays a message out as the bytes a DIN cable would carry, standalone - no running status,
+// since consecutive messages here may be going to different places. Returns how many bytes
+// were written, 0 for a message that is not sent, and `out` must have room for three.
+inline uint8_t midiMessageBytes(const MidiMessage& message, uint8_t* out) {
+  const uint8_t length = midiMessageLength(message.status);
+  if (length >= 1) out[0] = message.status;
+  if (length >= 2) out[1] = static_cast<uint8_t>(message.data1 & 0x7F);
+  if (length >= 3) out[2] = static_cast<uint8_t>(message.data2 & 0x7F);
+  return length;
+}
+
 }  // namespace gx

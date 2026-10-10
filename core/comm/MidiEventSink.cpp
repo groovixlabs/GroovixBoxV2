@@ -16,7 +16,11 @@ const VoiceTable kBuiltInVoices;
 }  // namespace
 
 MidiEventSink::MidiEventSink(MidiOutput& output)
-    : output_(output), instruments_(NULL), voices_(NULL), clockPorts_(0xFF) {
+    : output_(output),
+      instruments_(NULL),
+      voices_(NULL),
+      clockPorts_(0xFF),
+      transportPorts_(0xFF) {
   for (uint8_t t = 0; t < kNumTracks; ++t) {
     channels_[t] = defaultMidiChannel(t);
     ports_[t] = defaultMidiPort(t);
@@ -24,18 +28,19 @@ MidiEventSink::MidiEventSink(MidiOutput& output)
   }
 }
 
-// Realtime messages belong to no track, so they go out of every port that wants the clock.
-void MidiEventSink::sendRealtime(uint8_t status) {
+// Realtime messages belong to no track, so they go out of every port in the mask for their
+// kind: the clock and the transport are asked for separately.
+void MidiEventSink::sendRealtime(uint8_t status, uint8_t ports) {
   for (uint8_t port = 0; port < kNumMidiPorts; ++port) {
-    if (clockPorts_ & (1u << port)) output_.send(midiRealtime(status, port));
+    if (ports & (1u << port)) output_.send(midiRealtime(status, port));
   }
 }
 
-void MidiEventSink::clockTick() { sendRealtime(kMidiClock); }
+void MidiEventSink::clockTick() { sendRealtime(kMidiClock, clockPorts_); }
 
-void MidiEventSink::transportStarted() { sendRealtime(kMidiStart); }
+void MidiEventSink::transportStarted() { sendRealtime(kMidiStart, transportPorts_); }
 
-void MidiEventSink::transportStopped() { sendRealtime(kMidiStop); }
+void MidiEventSink::transportStopped() { sendRealtime(kMidiStop, transportPorts_); }
 
 uint8_t MidiEventSink::instrumentFor(uint8_t track) const {
   return track < kNumTracks ? instruments_slots_[track] : kNoInstrument;

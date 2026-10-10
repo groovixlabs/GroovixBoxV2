@@ -14,7 +14,7 @@ settings/
 | Tab | |
 |---|---|
 | **Controls** | every fader and knob, with the CC it sends and its sweep. Controls that aren't named in the file are greyed and show the value they inherit — from their row, or from the instrument's own default — so you can see the whole surface at once rather than guessing what the file leaves out. |
-| **MIDI routing** | `midiout`, `midiin` and `p1`–`p8`, each with a **dropdown of what is actually plugged in** — no guessing at names. The first entry is the default (follow `midiout`, or find one by itself). Behind every dropdown is the text field that actually gets submitted, so a device that isn't on the bench right now can still be typed in, and the form works with scripting off. |
+| **MIDI routing** | `midiout`, `midiin` and `p1`–`p8`, each with a **dropdown of what is actually plugged in** — no guessing at names. The first entry is the default (follow `midiout`, or find one by itself). Behind every dropdown is the text field that actually gets submitted, so a device that isn't on the bench right now can still be typed in, and the form works with scripting off. Each port also has two tickboxes: **Hold back Start and Stop** (`p<n>.transport = off`), for gear with a sequencer of its own — a Volca reads Start as *play your own pattern*, and the clock still goes out so it keeps following the tempo — and **Hold back the clock** (`p<n>.clock = off`) for gear that keeps its own time. Independent: either, both or neither. Above the ports are three **role dropdowns** — `surface.grid`, `surface.panel` and `surface.mixer` — which say *which device does which job*: the sequencer grid, the page panel (the pages, mode buttons, arrows and **SHIFT**) and the mixer. Each lists only the devices that can actually play that role, so the page will not offer you a MIDI Mix as a grid. The first entry, *whichever is plugged in*, is the default, and choosing it takes the line back out of the file. |
 | **Instruments** | `instruments.conf` as text, checked before it is saved. |
 | **Files** | what's in the config and data directories, how many projects and presets are saved, how many folders are in the trash, and an **Undo the last save** button. |
 
@@ -146,5 +146,5 @@ when it wires ports automatically, so they are rarely what you want on a `P` por
 ## After saving
 
 `controls.conf` is read at startup. Restarting GroovixBox picks up everything; for the MIDI
-routing alone, **REFRESH** on the devices page (`SHIFT` + `R1`, pad 4) rewires the ports
+routing alone, **REFRESH** on the devices page (`SHIFT` + `R4`, pad 4) rewires the ports
 without stopping playback.

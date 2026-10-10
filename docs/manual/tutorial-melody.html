@@ -19,11 +19,11 @@
         <p class="section-intro">The bottom half of the grid is a keyboard in the key of the song. This tutorial puts a bassline on track 5, then shapes how the notes hit and how long they ring. Still no paging: one track page, one screenful of steps.</p>
 
         <h3>Pick the key</h3>
-        <p>Press <span class="ctl">B5</span> for track 5, then hold <span class="ctl">SHIFT</span> and press <span class="ctl">R3</span> for <a href="scale.html">Scale mode</a>.</p>
+        <p>Press <span class="ctl">B5</span> for track 5, then hold <span class="ctl">SHIFT</span> and press <span class="ctl">R1</span> for <a href="scale.html">Scale mode</a>.</p>
         <ol>
           <li>The <strong>top two rows are a piano</strong>, black keys above white. Tap <strong>A</strong> for the root.</li>
           <li>The <strong>scale list starts on row 5</strong>, Major first. Tap the <strong>second pad of row 5</strong>, Minor. It turns green.</li>
-          <li>Press <span class="ctl">R3</span> to go back to Note mode.</li>
+          <li>Press <span class="ctl">R1</span> to go back to Note mode.</li>
         </ol>
         <p>The key belongs to the project and sets the keyboard for every track, so the bass and the lead can’t drift out of the song. A single track can be given its own scale later with the bottom-right pad, and the simulator prints each pad’s name, which is the quickest way to learn the list.</p>
 
@@ -55,24 +55,24 @@
         </ol>
 
         <h3>Shape the notes</h3>
-        <p>Press <span class="ctl">R4</span> for <a href="params.html">Step parameters</a>. The steps stay in the top four rows; below them are two lanes of 16 pads.</p>
+        <p>Press <span class="ctl">R2</span> for <a href="params.html">Step parameters</a>. The steps stay in the top four rows; below them are two lanes of 16 pads.</p>
         <ul>
           <li><strong>Tap a step</strong> to select it — it turns green and the lanes show its values. <strong>Hold several steps</strong> to set them all at once.</li>
           <li><strong>Rows 5–6, velocity:</strong> 16 levels from 8 to 127, left to right. The steps above glow brighter the harder they hit, so the accents of a whole pattern are visible at a glance. Put the downbeats high and the notes in between low.</li>
           <li><strong>Rows 7–8, gate:</strong> how long the note lasts, one pad per length, shortest on the left. The first five pads are parts of a step — pad 1 is the shortest stab there is — pad 6 is one step, and it carries on to 16 steps on the last pad. One tap is one length; see <a href="params.html">Step parameters</a> for the whole ramp.</li>
           <li><span class="ctl">R5</span> + a step puts its velocity and gate back to normal; <span class="ctl">R6</span> + step + step copies both.</li>
         </ul>
-        <p>Press <span class="ctl">R3</span> to return to Note mode.</p>
+        <p>Press <span class="ctl">R1</span> to return to Note mode.</p>
 
         <h3>Keep it from repeating</h3>
-        <p>Hold <span class="ctl">SHIFT</span> and press <span class="ctl">R5</span> for <a href="probability.html">Probability</a>. Select a step and pick a level on rows 5–6: 16 levels from 6% up to 100%, which is where every step starts. Set a couple of ghost notes to a third or a half and the loop stops sounding quite the same each time round. Hold <span class="ctl">R5</span> and tap a step to put it back to certain.</p>
+        <p>Press <span class="ctl">R3</span> for <a href="probability.html">Probability</a>. Select a step and pick a level on rows 5–6: 16 levels from 6% up to 100%, which is where every step starts. Set a couple of ghost notes to a third or a half and the loop stops sounding quite the same each time round. Hold <span class="ctl">R5</span> and tap a step to put it back to certain.</p>
 
         <h3>What you learned</h3>
         <ul>
-          <li><span class="ctl">SHIFT</span> + <span class="ctl">R3</span> sets the key; the keyboard then plays only notes that fit.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">R1</span> sets the key; the keyboard then plays only notes that fit.</li>
           <li>Hold a step and tap keys, or hold keys and tap a step — up to four notes each.</li>
           <li>Holding a step shows what is in it; <span class="ctl">SHIFT</span> + an outer key shifts the octave.</li>
-          <li><span class="ctl">R7</span> records what you play; <span class="ctl">R4</span> and <span class="ctl">SHIFT</span> + <span class="ctl">R5</span> shape it afterwards.</li>
+          <li><span class="ctl">R7</span> records what you play; <span class="ctl">R2</span> and <span class="ctl">R3</span> shape it afterwards.</li>
         </ul>
 
         <div id="pager"></div>
@@ -101,7 +101,7 @@
         if (CHORD.indexOf(n) >= 0) return { c: g.C.green, lit: true, t: g.noteName(n) };
         return { c: n % 12 === 9 ? g.dim(T, 0.35) : g.C.grey, t: g.noteName(n) };
       },
-      right: g.functionButtons(2, false, false),
+      right: g.functionButtons(0, false, false),
       bottom: g.trackButtons(4)
     });
   })();

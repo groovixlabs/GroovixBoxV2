@@ -6,8 +6,9 @@
 
 namespace gx {
 
-// Projects and presets are browsed a page at a time, one pad per slot. Pages are chosen
-// with B1..B8 while R1 (projects) or R4 (presets) is held.
+// Projects and presets are browsed a page at a time, one pad per slot. Pages are chosen with
+// Shift + B1..B8 inside the mode, or by holding R2 in preset mode - the button that mode is
+// reached from.
 static const uint8_t kNumPages = kNumBottomButtons;
 static const uint16_t kSlotsPerPage = kNumPads;
 static const uint16_t kNumLibrarySlots = kNumPages * kSlotsPerPage;

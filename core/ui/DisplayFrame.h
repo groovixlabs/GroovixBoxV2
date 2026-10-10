@@ -30,12 +30,23 @@ struct DisplayBand {
   const char* text;   // what they do
 };
 
+// No MIDI port: a track playing an internal instrument, or a value that is not a voice.
+static const uint8_t kNoDisplayPort = 0xFF;
+
 // A value worth spelling out: either a number or a word, never both.
 struct DisplayValue {
   const char* key;    // "VELOCITY"
   const char* text;   // the value as a word ("1/2 step", "off"), or NULL to use `number`
   uint16_t number;
   const char* suffix; // " step", " steps", or NULL - drawn smaller after the number
+  // When `number` is a voice slot rather than a plain number, the MIDI port whose list names
+  // it: a screen holding that device's voice list can print the name beside the number. Core
+  // has no names of its own - they come from a CSV the platform reads - so asking for one is
+  // all it can do. kNoDisplayPort, which is what every value starts as, means "not a voice".
+  //
+  // `number` is the slot as the surface counts it, from 1, so the list's own index is
+  // `number - 1`. Everything in this struct is 1-based for the reader; only the lookup is not.
+  uint8_t voicePort;
 };
 
 static const uint8_t kMaxDisplayBands = 6;
@@ -45,11 +56,11 @@ static const uint8_t kMaxDisplayValues = 5;
 // What a mode says about itself. All of it is static: a mode returns a pointer to its own
 // constant, and nothing is copied or built at runtime.
 struct ModeLegend {
-  const char* key;   // the button that opens it: "R4", "SHIFT + R5"
+  const char* key;   // the button that opens it: "R2", "SHIFT + R5"
   const char* name;  // "Step parameters"
   DisplayBand bands[kMaxDisplayBands];
   uint8_t numBands;
-  const char* mods[kMaxDisplayMods];  // "hold R4 + B1-B8 step page"
+  const char* mods[kMaxDisplayMods];  // "hold R1 + B1-B8 step page"
   uint8_t numMods;
   Rgb rowColor[kGridRows];  // the miniature grid drawn beside the lines
 };
@@ -67,8 +78,6 @@ struct DisplayTrack {
   bool soloed;
   uint8_t activity;    // 0..255, how much this track has played lately
 };
-
-static const uint8_t kNoDisplayPort = 0xFF;
 
 struct DisplayFrame {
   // ---- the top band, the same whatever is happening ----

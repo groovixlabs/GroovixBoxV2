@@ -133,9 +133,9 @@ void NoteMode::handleStep(UiState& state, uint8_t pad, bool pressed) {
 
   uint16_t from = kNoSlot;
   if (state.noteHeld) {
-    // R3 held + a step ends the pattern there. Shift used to do this, but Shift on the top
+    // R1 held + a step ends the pattern there. Shift used to do this, but Shift on the top
     // row now picks a step page, and paging happens constantly while a length is set once -
-    // so the frequent gesture gets the easy modifier and this one takes R3.
+    // so the frequent gesture gets the easy modifier and this one takes R1.
     sequencer_.setTrackLength(state.track, static_cast<uint16_t>(step + 1));
   } else if (state.shiftHeld) {
     // Shift alone on a step does nothing now: better inert than toggling a step because a
@@ -275,7 +275,7 @@ void NoteMode::renderPads(const UiState& state, LedFrame& frame) const {
   const bool playing = sequencer_.playing();
   const uint16_t playhead = sequencer_.playhead(track);
 
-  // The top four rows show one page of steps; hold R3 and press B1..B8 for another page.
+  // The top four rows show one page of steps; hold R1 and press B1..B8 for another page.
   const uint16_t firstStep = static_cast<uint16_t>(state.stepPage * kStepsPerPage);
   uint16_t heldStep = kNoStep;
   for (uint8_t pad = 0; pad < kNumStepPads; ++pad) {
@@ -291,7 +291,7 @@ void NoteMode::renderPads(const UiState& state, LedFrame& frame) const {
     } else if (playing && step == playhead) {
       frame.pads[pad] = playheadColor(sequencer_.recording(), active);
     } else if (step + 1 == length) {
-      frame.pads[pad] = kLastStepColor;  // R3 held + a step moves the end here
+      frame.pads[pad] = kLastStepColor;  // R1 held + a step moves the end here
     } else {
       frame.pads[pad] = active ? color : dim(color, kEmptyStepLevel);
     }
@@ -368,18 +368,18 @@ const Rgb kKeysColor = {0, 215, 200};
 const Rgb kOctaveColor = {255, 189, 108};
 
 const ModeLegend kNoteLegend = {
-    "R3",
+    "R1",
     "Note",
     {
         {1, 4, kStepsColor, "rows 1-4", "the 32 steps - R5 + step removes one"},
         {5, 8, kKeysColor, "rows 5-8", "the keyboard, from the root at left"},
-        {0, 0, kLastStepColor, "R3 + step", "makes it the pattern's last step"},
+        {0, 0, kLastStepColor, "R1 + step", "makes it the pattern's last step"},
         {0, 0, kOctaveColor, "SHIFT key", "top left up, bottom left down an octave"},
         {0, 0, kSelectedColor, "SHIFT top", "row picks the page of 32 steps"},
         {0, 0, {}, NULL, NULL},
     },
     5,
-    {"hold step + key give it that chord", "SHIFT + R3 scale", NULL, NULL},
+    {"hold step + key give it that chord", "SHIFT + R1 scale", NULL, NULL},
     2,
     {kStepsColor, kStepsColor, kStepsColor, kStepsColor,
      kKeysColor, kKeysColor, kKeysColor, kKeysColor},
@@ -387,18 +387,18 @@ const ModeLegend kNoteLegend = {
 
 // The same mode showing a track as a piano roll: one grid, not two halves.
 const ModeLegend kRollLegend = {
-    "R3",
+    "R1",
     "Note - piano roll",
     {
         {1, 8, kKeysColor, "the grid", "8 steps across, 8 scale notes up"},
-        {0, 0, kLastStepColor, "R3 + pad", "makes that step the pattern's last"},
-        {0, 0, shiftHintColor(), "SHIFT arrow", "bottom right: scrolls the view by 4"},
+        {0, 0, kLastStepColor, "R1 + pad", "makes that step the pattern's last"},
+        {0, 0, shiftHintColor(), "SHIFT arrow", "bottom right: scrolls the view by 1"},
         {0, 0, {}, NULL, NULL},
         {0, 0, {}, NULL, NULL},
         {0, 0, {}, NULL, NULL},
     },
     3,
-    {"tap a pad add or remove that note", "hold R3 + B1-B8 step page", "SHIFT + R3 scale", NULL},
+    {"tap a pad add or remove that note", "hold R1 + B1-B8 step page", "SHIFT + R1 scale", NULL},
     3,
     {kKeysColor, kKeysColor, kKeysColor, kKeysColor,
      kKeysColor, kKeysColor, kKeysColor, kKeysColor},

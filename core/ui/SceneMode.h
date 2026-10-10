@@ -7,7 +7,7 @@
 
 namespace gx {
 
-// Shift + R2 opens scene mode; R2 returns to pattern mode.
+// Shift + R4 opens scene mode; R4 returns to pattern mode.
 //
 // A scene is a song section — intro, verse, drop — remembered as which tracks are silent.
 //  - the top four rows are 32 scene pads: tap one to launch it

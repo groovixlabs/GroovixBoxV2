@@ -20,7 +20,10 @@
 #include <algorithm>
 #include <initializer_list>
 
+#include "common/ApcKey25Surface.h"
+#include "common/ApcMiniPanelSurface.h"
 #include "common/ApcMiniSurface.h"
+#include "common/LaunchpadXSurface.h"
 
 #include "app/GroovixApp.h"
 #include "comm/MidiParser.h"
@@ -34,6 +37,8 @@
 #include "comm/InstrumentOutput.h"
 #include "comm/MidiEventSink.h"
 #include "common/FileStorage.h"
+#include "common/LogMidiOutput.h"
+#include "common/MidiInstrumentOutput.h"
 #include "common/VoiceLibrary.h"
 #include "engine/FactoryPatterns.h"
 #include "engine/Sequencer.h"
@@ -251,7 +256,7 @@ void tapWithShift(FakeSurface& surface, uint8_t button) {
   surface.release(gx::kGroupShift, 0);
 }
 
-// R3 held over a pad: in note mode that ends the pattern at its step. Shift used to do it,
+// R1 held over a pad: in note mode that ends the pattern at its step. Shift used to do it,
 // but Shift on the step rows walks the pages now - the gesture done constantly gets the easy
 // modifier, and the one done once a pattern takes the held button.
 void tapWithNoteHeld(FakeSurface& surface, uint8_t pad) {
@@ -1013,6 +1018,42 @@ void testVoiceTable() {
   CHECK(midi.sent[0].data2 == 0 && midi.sent[1].data2 == 0 && midi.sent[2].data1 == 40);
 }
 
+// The bytes a message becomes on a wire. Shared by the ALSA output and the UDP one, so a
+// mistake here would be a mistake on every port at once.
+void testMidiMessageBytes() {
+  uint8_t out[3] = {0, 0, 0};
+
+  // Three bytes for the channel messages that carry two data bytes.
+  CHECK(gx::midiMessageBytes(gx::midiNoteOn(0, 36, 100), out) == 3);
+  CHECK(out[0] == 0x90 && out[1] == 36 && out[2] == 100);
+  CHECK(gx::midiMessageBytes(gx::midiNoteOff(2, 60), out) == 3);
+  CHECK(out[0] == 0x82 && out[1] == 60 && out[2] == 0);
+  const gx::MidiMessage cc = {gx::kMidiControlChange | 2, 7, 127, 0};
+  CHECK(gx::midiMessageBytes(cc, out) == 3);
+  CHECK(out[0] == 0xB2 && out[1] == 7 && out[2] == 127);
+
+  // Two for a program change: one data byte, and the third is not written.
+  out[2] = 0xEE;
+  const gx::MidiMessage program = {gx::kMidiProgramChange, 5, 0, 0};
+  CHECK(gx::midiMessageBytes(program, out) == 2);
+  CHECK(out[0] == 0xC0 && out[1] == 5 && out[2] == 0xEE);
+
+  // One for the realtime bytes, which carry no data at all.
+  CHECK(gx::midiMessageBytes(gx::midiRealtime(gx::kMidiClock), out) == 1 && out[0] == 0xF8);
+  CHECK(gx::midiMessageBytes(gx::midiRealtime(gx::kMidiStart), out) == 1 && out[0] == 0xFA);
+  CHECK(gx::midiMessageBytes(gx::midiRealtime(gx::kMidiStop), out) == 1 && out[0] == 0xFC);
+
+  // Nothing for what we never send: system common, including SysEx.
+  const gx::MidiMessage sysex = {0xF0, 0, 0, 0};
+  CHECK(gx::midiMessageBytes(sysex, out) == 0);
+  CHECK(gx::midiMessageLength(0xF7) == 0 && gx::midiMessageLength(0xF2) == 0);
+
+  // Data bytes are masked to seven bits, so a bad value cannot be mistaken for a status.
+  const gx::MidiMessage wild = {gx::kMidiControlChange, 0xFF, 0xFF, 0};
+  CHECK(gx::midiMessageBytes(wild, out) == 3);
+  CHECK(out[1] == 0x7F && out[2] == 0x7F);
+}
+
 void testMidiEventSink() {
   RecordingMidi midi;
   gx::MidiEventSink sink(midi);
@@ -1088,6 +1129,104 @@ void testMidiEventSink() {
   sink.trackInstrumentChanged(2, gx::kNoInstrument);
   sink.noteOn(2, 62, 80);
   CHECK(midi.sent.size() == 1 && instruments.events.size() == 3);
+}
+
+// The instruments played over MIDI instead of by an audio engine: what a build with no synth
+// of its own puts behind InstrumentOutput, so an instrument-routed track is heard rather than
+// dropped.
+void testMidiInstrumentOutput() {
+  RecordingMidi midi;
+  gx::MidiInstrumentOutput instruments(midi);
+
+  // P8 unless told otherwise: the port that can be pointed at a socket server.
+  CHECK(instruments.port() == gx::kNumMidiPorts - 1);
+
+  // Instrument In plays on channel n. I1 is channel 1, which is status nibble 0.
+  instruments.noteOn(0, 60, 100);
+  CHECK(midi.sent.size() == 1);
+  CHECK(midi.sent[0].status == 0x90 && midi.sent[0].data1 == 60 && midi.sent[0].data2 == 100);
+  CHECK(midi.sent[0].port == 7);
+
+  // I6 is channel 6, and a note off is a note off rather than a velocity-0 note on.
+  midi.sent.clear();
+  instruments.noteOn(5, 64, 90);
+  instruments.noteOff(5, 64);
+  CHECK(midi.sent.size() == 2);
+  CHECK(midi.sent[0].status == 0x95 && midi.sent[1].status == 0x85);
+  CHECK(midi.sent[1].data1 == 64);
+
+  // The last instrument reaches the last channel: I16 is channel 16, nibble 0x0F.
+  midi.sent.clear();
+  instruments.noteOn(15, 36, 127);
+  CHECK(midi.sent.size() == 1 && midi.sent[0].status == 0x9F);
+
+  // A CC carries the instrument's channel too.
+  midi.sent.clear();
+  instruments.controlChange(2, 74, 64);
+  CHECK(midi.sent.size() == 1 && midi.sent[0].status == 0xB2);
+  CHECK(midi.sent[0].data1 == 74 && midi.sent[0].data2 == 64 && midi.sent[0].port == 7);
+
+  // A preset is both halves of Bank Select and then the program, as a hardware track's is.
+  // With no voice list that is the built-in General MIDI one: bank 0, program == slot.
+  midi.sent.clear();
+  instruments.presetChanged(3, 9);
+  CHECK(midi.sent.size() == 3);
+  CHECK(midi.sent[0].status == 0xB3 && midi.sent[0].data1 == 0 && midi.sent[0].data2 == 0);
+  CHECK(midi.sent[1].status == 0xB3 && midi.sent[1].data1 == 32 && midi.sent[1].data2 == 0);
+  CHECK(midi.sent[2].status == 0xC3 && midi.sent[2].data1 == 9);
+
+  // A slot the far end has no voice for sends nothing, rather than a guess.
+  midi.sent.clear();
+  instruments.presetChanged(3, 128);
+  CHECK(midi.sent.empty());
+
+  // Given the destination's voice list, a preset sends that list's row.
+  const gx::VoiceAddress list[2] = {{0, 0, 0}, {2, 5, 41}};
+  OneListSource voices(list, 2, 7);
+  instruments.setVoices(&voices);
+  midi.sent.clear();
+  instruments.presetChanged(1, 1);
+  CHECK(midi.sent.size() == 3);
+  CHECK(midi.sent[0].data2 == 2 && midi.sent[1].data2 == 5 && midi.sent[2].data1 == 41);
+
+  // The port is settable, and a port that does not exist is ignored rather than sent to.
+  instruments.setPort(2);
+  CHECK(instruments.port() == 2);
+  instruments.setPort(gx::kNumMidiPorts);
+  CHECK(instruments.port() == 2);
+  midi.sent.clear();
+  instruments.noteOn(0, 60, 100);
+  CHECK(midi.sent.size() == 1 && midi.sent[0].port == 2);
+
+  // An instrument outside I1..I16 is dropped: nothing is sent on a wrapped-around channel.
+  midi.sent.clear();
+  instruments.noteOn(gx::kNumInstruments, 60, 100);
+  instruments.noteOff(gx::kNumInstruments, 60);
+  instruments.controlChange(gx::kNoInstrument, 74, 1);
+  instruments.presetChanged(gx::kNoInstrument, 0);
+  CHECK(midi.sent.empty());
+
+  // The whole point, through the sink: a track on an instrument is silent with nothing
+  // attached, and plays MIDI on the instrument's channel once this is.
+  RecordingMidi trackMidi;
+  gx::MidiEventSink sink(trackMidi);
+  gx::MidiInstrumentOutput bridge(trackMidi);
+  sink.trackInstrumentChanged(0, 4);  // track 1 on I5
+  sink.noteOn(0, 48, 110);
+  CHECK(trackMidi.sent.empty());
+
+  sink.setInstruments(&bridge);
+  sink.noteOn(0, 48, 110);
+  CHECK(trackMidi.sent.size() == 1);
+  CHECK(trackMidi.sent[0].status == 0x94 && trackMidi.sent[0].data1 == 48);
+  CHECK(trackMidi.sent[0].port == 7);
+
+  // And the track's own channel and port are not what it used: those are still track 1's.
+  sink.trackInstrumentChanged(0, gx::kNoInstrument);
+  trackMidi.sent.clear();
+  sink.noteOn(0, 48, 110);
+  CHECK(trackMidi.sent.size() == 1);
+  CHECK(trackMidi.sent[0].status == 0x90 && trackMidi.sent[0].port == 0);
 }
 
 // ---- Audio ----
@@ -1406,6 +1545,81 @@ void testMidiClock() {
   midiSink.setClockPorts(0x05);  // ports 1 and 3 only
   midiSink.clockTick();
   CHECK(midi.sent.size() == 2 && midi.sent[0].port == 0 && midi.sent[1].port == 2);
+
+  // The transport has a mask of its own, and clearing a port there leaves its clock alone:
+  // what a Volca needs is the tempo without being told to play.
+  RecordingMidi quiet;
+  gx::MidiEventSink quietSink(quiet);
+  quietSink.setTransportPorts(0xFB);  // every port but port 3
+  quietSink.clockTick();
+  CHECK(quiet.sent.size() == gx::kNumMidiPorts);  // the clock still goes everywhere
+  bool clockReachedPort3 = false;
+  for (size_t i = 0; i < quiet.sent.size(); ++i) {
+    if (quiet.sent[i].port == 2) clockReachedPort3 = quiet.sent[i].status == gx::kMidiClock;
+  }
+  CHECK(clockReachedPort3);
+  quiet.sent.clear();
+  quietSink.transportStarted();
+  quietSink.transportStopped();
+  // One Start and one Stop for each of the other seven, and nothing at all for port 3.
+  CHECK(quiet.sent.size() == 2u * (gx::kNumMidiPorts - 1));
+  for (size_t i = 0; i < quiet.sent.size(); ++i) CHECK(quiet.sent[i].port != 2);
+  CHECK(quietSink.clockPorts() == 0xFF);  // untouched by setTransportPorts
+
+  // And the masks do not read each other: a port kept off the clock is still told to play
+  // unless the transport mask says otherwise, so neither line is a shorthand for both.
+  quiet.sent.clear();
+  quietSink.setClockPorts(0x01);
+  quietSink.setTransportPorts(0xFF);
+  quietSink.clockTick();
+  quietSink.transportStarted();
+  CHECK(quiet.sent.size() == 1u + gx::kNumMidiPorts);
+}
+
+// What --midi-log puts on screen. The clock is left out of it: 24 bytes a beat on every port
+// would bury every line worth reading, and each one says the same thing anyway.
+void testMidiLog() {
+  std::FILE* file = std::tmpfile();
+  CHECK(file != NULL);
+  if (!file) return;
+  gx::LogMidiOutput log(file);
+
+  log.send(gx::midiRealtime(gx::kMidiStart, 0));
+  for (int i = 0; i < 24; ++i) log.send(gx::midiRealtime(gx::kMidiClock, 0));
+  gx::MidiMessage note;
+  note.status = static_cast<uint8_t>(gx::kMidiNoteOn);
+  note.data1 = 60;
+  note.data2 = 100;
+  note.port = 0;
+  log.send(note);
+  for (int i = 0; i < 24; ++i) log.send(gx::midiRealtime(gx::kMidiClock, 3));
+  log.send(gx::midiRealtime(gx::kMidiStop, 0));
+
+  std::rewind(file);
+  std::string text;
+  char buffer[256];
+  size_t read = 0;
+  while ((read = std::fread(buffer, 1, sizeof(buffer), file)) > 0) text.append(buffer, read);
+  std::fclose(file);
+
+  // Not one of the 48 clocks reached the page, on any port, in hex or by name.
+  CHECK(text.find("F8") == std::string::npos);
+  CHECK(text.find("clock") == std::string::npos);
+  // Three lines: what went in, less the clock.
+  size_t lines = 0;
+  for (size_t i = 0; i < text.size(); ++i) {
+    if (text[i] == '\n') ++lines;
+  }
+  CHECK(lines == 3);
+  // The note is still there, and so are the two that bracket it - named, since a realtime
+  // byte has no channel and the hex form reads as a message on channel 9 that it is not.
+  CHECK(text.find("note on   60 vel 100") != std::string::npos);
+  CHECK(text.find("MIDI P1 start\n") != std::string::npos);
+  CHECK(text.find("MIDI P1 stop\n") != std::string::npos);
+  CHECK(text.find("FA") == std::string::npos && text.find("FC") == std::string::npos);
+  // Start before the note, stop after: dropping the clock has not reordered what is left.
+  CHECK(text.find("start") < text.find("note on"));
+  CHECK(text.find("note on") < text.find("stop"));
 }
 
 // ---- App + UI ----
@@ -1434,7 +1648,7 @@ void testTrackButtonsReturnToNoteMode() {
   Fixture& f = *fOwner;
   f.app.begin();
 
-  tapWithShift(f.surface, gx::kButtonParams);  // Shift + R4: preset mode
+  tapWithShift(f.surface, gx::kButtonParams);  // Shift + R2: preset mode
   f.surface.tap(gx::kGroupBottom, 4);  // B5
   f.app.update(0);
   CHECK(f.app.ui().mode() == gx::kModeNote && f.app.ui().selectedTrack() == 4);
@@ -1458,6 +1672,99 @@ void testShiftLightsWhileHeld() {
   f.surface.release(gx::kGroupShift, 0);
   f.app.update(1);
   CHECK(gx::isLit(f.surface.frame.shift) && !sameColor(f.surface.frame.shift, gx::kWhite));
+}
+
+// What R1..R4 do, and what Shift makes of them. The row is ordered by how often a hand
+// reaches for it - note first - and each button's Shift layer travels with the button.
+void testRightButtonLayout() {
+  typedef gx::UiController Ui;
+  MemoryStorage storage;
+  std::unique_ptr<Fixture> fOwner(new Fixture(storage));
+  Fixture& f = *fOwner;
+  f.app.begin();
+  const gx::LedFrame& frame = f.surface.frame;
+
+  // R1..R4 and the mode each opens, bare and with Shift held.
+  struct Row {
+    uint8_t button;
+    uint8_t mode;       // bare press
+    uint8_t shiftMode;  // Shift + the same button
+    const char* name;
+    const char* shiftName;
+  };
+  const Row kRows[4] = {
+      {gx::kButtonNote, gx::kModeNote, gx::kModeScale, "NOTE", "SCALE"},
+      {gx::kButtonParams, gx::kModeStepParams, gx::kModePreset, "PARAMS", "PRESET"},
+      {gx::kButtonProbability, gx::kModeProbability, gx::kModeGlobal, "PROB", "GLOBAL"},
+      {gx::kButtonPattern, gx::kModePattern, gx::kModeScene, "PATTERN", "SCENE"},
+  };
+
+  // The buttons are R1, R2, R3, R4 in that order - the point of the whole arrangement, and
+  // R1..R3 are the three modes that draw the same page of steps, side by side.
+  for (uint8_t i = 0; i < 4; ++i) CHECK(kRows[i].button == i);
+
+  for (uint8_t i = 0; i < 4; ++i) {
+    const Row& row = kRows[i];
+
+    // Bare press: the mode opens, and its own button is the lit one.
+    f.surface.tapButton(row.button);
+    f.app.update(100u + i);
+    CHECK(f.app.ui().mode() == row.mode);
+    CHECK(sameColor(frame.right[row.button], gx::kWhite));
+    for (uint8_t other = 0; other < 4; ++other) {
+      if (other != row.button) CHECK(!sameColor(frame.right[other], gx::kWhite));
+    }
+
+    // Shift + the same button opens that button's second mode, and the button stays the lit
+    // one - the mode is reached from there, so that is where it is shown.
+    f.surface.press(gx::kGroupShift, 0);
+    f.surface.tapButton(row.button);
+    f.surface.release(gx::kGroupShift, 0);
+    f.app.update(110u + i);
+    CHECK(f.app.ui().mode() == row.shiftMode);
+    CHECK(sameColor(frame.right[row.button], gx::kWhite));
+    for (uint8_t other = 0; other < 4; ++other) {
+      if (other != row.button) CHECK(!sameColor(frame.right[other], gx::kWhite));
+    }
+
+    // And the labels, which is what the screen and the simulator print.
+    CHECK(std::string(f.app.ui().rightButtonLabel(row.button)) == row.name);
+    f.surface.press(gx::kGroupShift, 0);
+    f.app.update(120u + i);
+    CHECK(std::string(f.app.ui().rightButtonLabel(row.button)) == row.shiftName);
+    f.surface.release(gx::kGroupShift, 0);
+    f.app.update(130u + i);
+  }
+
+  // R5..R8 kept their places, so the reorder stopped where it was meant to.
+  CHECK(gx::kButtonClear == 4 && gx::kButtonDuplicate == 5);
+  CHECK(gx::kButtonRecord == 6 && gx::kButtonPlay == 7);
+  CHECK(std::string(Ui::buttonName(gx::kButtonPlay)) == "PLAY");
+
+  // R5 is the one button whose two layers are unrelated: Clear held over a pad, and Shift +
+  // R5 for project mode - the mode that gave up its bare button so probability could have
+  // one. A bare tap must not open it, or Clear would change mode every time it was used.
+  f.surface.tapButton(gx::kButtonNote);
+  f.surface.tapButton(gx::kButtonClear);
+  f.app.update(140);
+  CHECK(f.app.ui().mode() == gx::kModeNote);
+  CHECK(std::string(f.app.ui().rightButtonLabel(gx::kButtonClear)) == "CLEAR");
+
+  tapWithShift(f.surface, gx::kButtonClear);
+  f.app.update(141);
+  CHECK(f.app.ui().mode() == gx::kModeProject);
+  // Project mode lights R5, the button it is now reached from, in Clear's own orange.
+  CHECK(frame.right[gx::kButtonClear].r == 255 && frame.right[gx::kButtonClear].g == 90);
+  f.surface.press(gx::kGroupShift, 0);
+  f.app.update(142);
+  CHECK(std::string(f.app.ui().rightButtonLabel(gx::kButtonClear)) == "PROJECT");
+  f.surface.release(gx::kGroupShift, 0);
+  f.app.update(143);
+
+  // And probability no longer sits on R5's Shift layer at all.
+  tapWithShift(f.surface, gx::kButtonClear);
+  f.app.update(144);
+  CHECK(f.app.ui().mode() == gx::kModeProject);
 }
 
 void testNoteMode() {
@@ -1517,7 +1824,7 @@ void testProjectMode() {
     f.app.begin();
     const gx::Sequencer& seq = f.app.sequencer();
     f.surface.tapPad(5);  // project 1 gets a step
-    f.surface.tapButton(gx::kButtonProject);
+    tapWithShift(f.surface, gx::kButtonClear);  // Shift + R5: project mode
     f.surface.tapPad(3);  // open project 4: project 1 is saved first
     f.app.update(0);
     CHECK(f.app.ui().mode() == gx::kModeProject);
@@ -1567,15 +1874,18 @@ void testProjectPages() {
     f.app.begin();
     f.surface.tapPad(5);  // project 1.01 gets a step
 
-    // From note mode, hold R1 and press B3: project mode on page 3.
-    f.surface.press(gx::kGroupRight, gx::kButtonProject);
+    // From note mode: Shift + R5 opens project mode, and Shift + B3 then pages to page 3.
+    // One gesture for the mode and one for the page, where holding one R button used to do
+    // both - no R button opens project mode now, so there is none to hold here.
+    tapWithShift(f.surface, gx::kButtonClear);
+    f.surface.press(gx::kGroupShift, 0);
     f.surface.tap(gx::kGroupBottom, 2);
     f.app.update(0);
     CHECK(f.app.ui().mode() == gx::kModeProject && f.app.ui().selectedTrack() == 0);
     CHECK(sameColor(f.surface.frame.bottom[2], gx::kSelectedColor));  // B LEDs show pages
     CHECK(sameColor(f.surface.frame.pads[0], gx::kEmptyColor));  // project 1.01 isn't here
 
-    f.surface.release(gx::kGroupRight, gx::kButtonProject);
+    f.surface.release(gx::kGroupShift, 0);
     f.surface.tapPad(7);  // open project 3.08
     f.app.update(1);
     CHECK(f.app.currentProject() == slot308);
@@ -1583,7 +1893,7 @@ void testProjectPages() {
     CHECK(sameColor(f.surface.frame.pads[7], gx::kSelectedColor));
     CHECK(sameColor(f.surface.frame.bottom[0], gx::trackColor(0)));  // B LEDs show tracks again
 
-    // Shift + B2 in project mode also picks a page, and stays in project mode.
+    // Another Shift + B picks another page, and stays in project mode.
     f.surface.press(gx::kGroupShift, 0);
     f.surface.tap(gx::kGroupBottom, 1);
     f.app.update(1);
@@ -1603,28 +1913,29 @@ void testProjectPages() {
     CHECK(f.app.ui().mode() == gx::kModePreset);
     CHECK(sameColor(f.surface.frame.bottom[3], gx::kSelectedColor));
     f.surface.release(gx::kGroupShift, 0);
-    f.surface.tapButton(gx::kButtonProject);
+    tapWithShift(f.surface, gx::kButtonClear);
     f.app.update(1);
 
-    // Duplicate across pages: pick 1.01 as the source, paste into 8.64.
+    // Duplicate across pages: pick 1.01 as the source, paste into 8.64. Duplicate is held
+    // throughout and Shift pages underneath it, so the two modifiers have to coexist.
     f.surface.press(gx::kGroupRight, gx::kButtonDuplicate);
-    f.surface.holdAndTapTrack(gx::kButtonProject, 0);
+    tapWithShiftAndButton(f.surface, gx::kGroupBottom, 0);
     f.surface.tapPad(0);
-    f.surface.holdAndTapTrack(gx::kButtonProject, 7);
+    tapWithShiftAndButton(f.surface, gx::kGroupBottom, 7);
     f.surface.tapPad(63);
     f.surface.release(gx::kGroupRight, gx::kButtonDuplicate);
-    f.surface.press(gx::kGroupRight, gx::kButtonProject);
+    f.surface.press(gx::kGroupShift, 0);
     f.app.update(2);
     CHECK(f.app.projectHasData(8 * gx::kSlotsPerPage - 1));
     CHECK(sameColor(f.surface.frame.bottom[7], gx::kSelectedColor));
     CHECK(sameColor(f.surface.frame.bottom[0], gx::kFilledColor));
     CHECK(sameColor(f.surface.frame.bottom[1], gx::kEmptyColor));
-    f.surface.release(gx::kGroupRight, gx::kButtonProject);
+    f.surface.release(gx::kGroupShift, 0);
 
     // Returning to project mode shows the open project's page again.
     f.surface.tapButton(gx::kButtonNote);
     f.surface.tapPad(9);  // give project 3.08 a step so it is saved
-    f.surface.tapButton(gx::kButtonProject);
+    tapWithShift(f.surface, gx::kButtonClear);
     f.app.update(3);
     CHECK(sameColor(f.surface.frame.pads[7], gx::kSelectedColor));
     CHECK(f.app.saveProject());
@@ -1646,25 +1957,28 @@ void testPatternMode() {
 
   f.surface.tapPad(4);  // track 1, pattern 1 gets a step (note mode)
   f.surface.tapButton(gx::kButtonPattern);
-  f.surface.tapPad(gx::padIndex(2, 1));  // track 2 plays pattern 3
+  f.surface.tap(gx::kGroupBottom, 1);  // B2: track 2
+  f.surface.tapPad(2);                 // which plays pattern 3
   f.app.update(0);
   CHECK(seq.selectedPattern(1) == 2);
-  CHECK(sameColor(f.surface.frame.pads[gx::padIndex(2, 1)], gx::kSelectedColor));
-  CHECK(sameColor(f.surface.frame.pads[gx::padIndex(0, 1)], gx::kEmptyColor));
-  CHECK(sameColor(f.surface.frame.pads[gx::padIndex(0, 0)], gx::kSelectedColor));
+  CHECK(sameColor(f.surface.frame.pads[2], gx::kSelectedColor));
+  CHECK(sameColor(f.surface.frame.pads[0], gx::kEmptyColor));  // track 2's pattern 1: empty
+  f.surface.tap(gx::kGroupBottom, 0);  // back to track 1
+  f.app.update(1);
+  CHECK(sameColor(f.surface.frame.pads[0], gx::kSelectedColor));
 
   f.surface.press(gx::kGroupRight, gx::kButtonDuplicate);
-  f.surface.tapPad(gx::padIndex(0, 0));
-  f.surface.tapPad(gx::padIndex(5, 0));
+  f.surface.tapPad(0);
+  f.surface.tapPad(5);
   f.surface.release(gx::kGroupRight, gx::kButtonDuplicate);
-  f.app.update(1);
+  f.app.update(2);
   CHECK(seq.patternHasData(0, 5));
-  CHECK(sameColor(f.surface.frame.pads[gx::padIndex(5, 0)], gx::kFilledColor));
+  CHECK(sameColor(f.surface.frame.pads[5], gx::kFilledColor));
 
   f.surface.press(gx::kGroupRight, gx::kButtonClear);
-  f.surface.tapPad(gx::padIndex(0, 0));
+  f.surface.tapPad(0);
   f.surface.release(gx::kGroupRight, gx::kButtonClear);
-  f.app.update(2);
+  f.app.update(3);
   CHECK(!seq.patternHasData(0, 0) && seq.patternHasData(0, 5));
 }
 
@@ -1678,7 +1992,7 @@ void testPresetMode() {
   f.app.begin();
 
   f.surface.tap(gx::kGroupBottom, 2);  // B3
-  tapWithShift(f.surface, gx::kButtonParams);  // Shift + R4: preset mode
+  tapWithShift(f.surface, gx::kButtonParams);  // Shift + R2: preset mode
   f.surface.tapPad(9);
   f.app.update(0);
   CHECK(f.app.sequencer().trackPreset(2) == 9);
@@ -1728,7 +2042,7 @@ void testDisplayFrame() {
   CHECK(!frame.showTracks && frame.numTracks == 0);
   CHECK(!frame.playing && !frame.recording);
   CHECK(frame.legend != NULL);
-  CHECK(std::string(frame.legend->key) == "R3");
+  CHECK(std::string(frame.legend->key) == "R1");  // note mode is R1, the nearest button
   CHECK(std::string(frame.legend->name) == "Note");
   CHECK(frame.contextTrack == 3);
   // Four rows of steps, four of keyboard: the miniature grid says so before a word is read.
@@ -1762,15 +2076,85 @@ void testDisplayFrame() {
   CHECK(frame.values[3].text != NULL && std::string(frame.values[3].text) == "off");
 
   // Probability is the same class with other lanes, and says so.
-  f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonClear);
-  f.surface.release(gx::kGroupShift, 0);
+  f.surface.tapButton(gx::kButtonProbability);
   f.app.update(2);
   f.app.ui().fillDisplay(frame);
   CHECK(std::string(frame.legend->name) == "Probability");
-  CHECK(std::string(frame.legend->key) == "SHIFT + R5");
+  CHECK(std::string(frame.legend->key) == "R3");
+
+  // Preset mode spells out where in the voice list you are, which the grid cannot: a window
+  // and a page are each one pad among eight identical ones. All three are 1-based, and the
+  // preset is the whole voice number - what a device's own list counts by - not the pad's
+  // place on its page.
+  tapWithShift(f.surface, gx::kButtonParams);
+  f.app.update(2);
+  f.app.ui().fillDisplay(frame);
+  CHECK(std::string(frame.legend->name) == "Preset");
+  CHECK(frame.numValues == 3);
+  CHECK(std::string(frame.values[0].key) == "WINDOW" && frame.values[0].number == 1);
+  CHECK(std::string(frame.values[1].key) == "PAGE" && frame.values[1].number == 1);
+  CHECK(std::string(frame.values[2].key) == "PRESET" && frame.values[2].number == 1);
+  for (uint8_t i = 0; i < 3; ++i) CHECK(frame.values[i].text == NULL);  // numbers, not words
+
+  // Tapping a pad picks that voice, and the bottom band counts it the way the list does:
+  // pad 5 of page 1 of window 1 is voice 5.
+  f.surface.tapPad(4);
+  f.app.update(2);
+  f.app.ui().fillDisplay(frame);
+  CHECK(frame.values[2].number == 5);
+
+  // Page 3 of window 2 starts at 512 + 2*64 = voice 641, so its first pad is 641 - and the
+  // three numbers stay the address of that one voice, read from the outside in.
+  f.surface.tap(gx::kGroupPresetWindow, 1);
+  tapWithShiftAndButton(f.surface, gx::kGroupBottom, 2);
+  f.surface.tapPad(0);
+  f.app.update(2);
+  f.app.ui().fillDisplay(frame);
+  CHECK(frame.values[0].number == 2 && frame.values[1].number == 3);
+  CHECK(frame.values[2].number == 641);
+
+  // Paging away leaves the voice alone: the green pad goes off screen, the number does not.
+  tapWithShiftAndButton(f.surface, gx::kGroupBottom, 5);
+  f.app.update(2);
+  f.app.ui().fillDisplay(frame);
+  CHECK(frame.values[1].number == 6 && frame.values[2].number == 641);
+
+  // A number is no use for picking a sound, so the PRESET value asks the screen to name the
+  // voice from the device's own list - the CSV the platform reads - by naming the track's
+  // port. Core has no names of its own, so asking is all it can do. The window and the page
+  // are plain numbers and ask for nothing.
+  gx::Sequencer& seq = const_cast<gx::Sequencer&>(f.app.sequencer());
+  const uint8_t voiceTrack = f.app.ui().selectedTrack();  // the preset shown is this track's
+  const uint8_t wasPort = seq.trackMidiPort(voiceTrack);
+  seq.setTrackMidiPort(voiceTrack, 2);
+  f.app.update(2);
+  f.app.ui().fillDisplay(frame);
+  CHECK(frame.values[2].voicePort == 2);
+  CHECK(frame.values[0].voicePort == gx::kNoDisplayPort);
+  CHECK(frame.values[1].voicePort == gx::kNoDisplayPort);
+
+  // A track on an internal instrument has no device and no list, so it gets the number and
+  // nothing else rather than a name looked up on a port it is not using.
+  seq.setTrackInstrument(voiceTrack, 3);
+  f.app.update(2);
+  f.app.ui().fillDisplay(frame);
+  CHECK(frame.values[2].voicePort == gx::kNoDisplayPort);
+  seq.setTrackInstrument(voiceTrack, gx::kNoInstrument);
+  seq.setTrackMidiPort(voiceTrack, wasPort);
+
+  // And every other mode's values are plain numbers: nothing else asks to be named, so a
+  // screen never looks up a step or a velocity in a voice list.
+  f.surface.tapButton(gx::kButtonParams);
+  f.surface.tapPad(0);
+  f.app.update(2);
+  f.app.ui().fillDisplay(frame);
+  CHECK(frame.numValues > 0);
+  for (uint8_t i = 0; i < frame.numValues; ++i) {
+    CHECK(frame.values[i].voicePort == gx::kNoDisplayPort);
+  }
 
   // Playing: the track page instead, and no legend values.
+  f.surface.tapButton(gx::kButtonNote);
   f.surface.tapButton(gx::kButtonPlay);
   f.app.update(3);
   f.app.ui().fillDisplay(frame);
@@ -1782,11 +2166,8 @@ void testDisplayFrame() {
   CHECK(sameColor(frame.tracks[0].color, gx::trackColor(0)));
 
   // A muted track says so and shows no activity. Muting goes through the surface the way a
-  // player does it: pattern mode, Shift and the bottom pad row.
-  f.surface.tapButton(gx::kButtonPattern);
-  f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapPad(static_cast<uint8_t>((gx::kGridRows - 1) * gx::kGridCols + 1));
-  f.surface.release(gx::kGroupShift, 0);
+  // player does it: the mixer's MUTE row, one press and no modifier.
+  f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(0, 1));
   f.app.update(4);
   f.app.ui().fillDisplay(frame);
   CHECK(frame.tracks[1].muted && frame.tracks[1].activity == 0);
@@ -1829,7 +2210,7 @@ void testStepPageRow() {
   const Open opens[] = {
       {"NOTE", gx::kButtonNote, false},
       {"PARAMS", gx::kButtonParams, false},
-      {"PROB", gx::kButtonClear, true},
+      {"PROB", gx::kButtonProbability, false},
   };
 
   uint32_t now = 0;
@@ -1867,7 +2248,7 @@ void testStepPageRow() {
   // ends the pattern there, and it must not fall through to switching the step on.
   f.surface.tapButton(gx::kButtonNote);
   tapWithShiftAndPad(f.surface, 0);
-  tapWithNoteHeld(f.surface, gx::padIndex(1, 7));  // R3 + step 16 sets the length
+  tapWithNoteHeld(f.surface, gx::padIndex(1, 7));  // R1 + step 16 sets the length
   f.app.update(++now);
   CHECK(f.app.sequencer().trackLength(0) == 16);
   const bool wasActive = f.app.sequencer().stepActive(0, 11);
@@ -1887,7 +2268,7 @@ void testStepPageRow() {
   CHECK(f.app.sequencer().trackLength(0) == 3 * gx::kStepsPerPage + 8);
 
   // Clear is not a navigation key, and neither are B1-B8.
-  tapWithShift(f.surface, gx::kButtonClear);
+  f.surface.tapButton(gx::kButtonProbability);
   f.app.update(++now);
   CHECK(f.app.ui().mode() == gx::kModeProbability);
   f.surface.press(gx::kGroupRight, gx::kButtonClear);
@@ -1956,7 +2337,7 @@ void testShiftShowsWhatItDoes() {
   const Open steppers[] = {
       {"NOTE", gx::kButtonNote, false},
       {"PARAMS", gx::kButtonParams, false},
-      {"PROB", gx::kButtonClear, true},
+      {"PROB", gx::kButtonProbability, false},
   };
   uint32_t when = 10;
   for (size_t i = 0; i < sizeof(steppers) / sizeof(steppers[0]); ++i) {
@@ -2025,7 +2406,7 @@ void testShiftShowsWhatItDoes() {
   }
 
   // A pad that is not an arrow still does nothing under Shift: the length is unchanged and
-  // the note is not toggled in. R3 + the same pad is what ends the pattern.
+  // the note is not toggled in. R1 + the same pad is what ends the pattern.
   const uint16_t rollLength = f.app.sequencer().trackLength(0);
   tapWithShiftAndPad(f.surface, kRollBottom);
   f.app.update(6);
@@ -2044,8 +2425,8 @@ void testTrackPagingEverywhereItMatters() {
   struct Open { const char* name; uint8_t button; bool shift; };
   const Open opens[] = {
       {"NOTE", gx::kButtonNote, false},       {"SCALE", gx::kButtonNote, true},
-      {"PARAMS", gx::kButtonParams, false},   {"PROB", gx::kButtonClear, true},
-      {"SCENE", gx::kButtonPattern, true},    {"GLOBAL", gx::kButtonProject, true},
+      {"PARAMS", gx::kButtonParams, false},   {"PROB", gx::kButtonProbability, false},
+      {"SCENE", gx::kButtonPattern, true},    {"GLOBAL", gx::kButtonProbability, true},
   };
 
   uint32_t now = 0;
@@ -2090,7 +2471,7 @@ void testTrackPagingEverywhereItMatters() {
   f.surface.tap(gx::kGroupBottom, 0);
   f.app.update(++now);
   CHECK(f.app.ui().selectedTrack() == 0);
-  f.surface.tapButton(gx::kButtonProject);
+  tapWithShift(f.surface, gx::kButtonClear);
   tapWithShiftAndButton(f.surface, gx::kGroupBottom, 1);
   f.app.update(++now);
   CHECK(f.app.ui().selectedTrack() == 0);  // the track page did not move
@@ -2106,10 +2487,10 @@ void testEveryModeDescribesItself() {
   struct Open { const char* name; uint8_t button; bool shift; };
   const Open opens[] = {
       {"Note", gx::kButtonNote, false},      {"Step parameters", gx::kButtonParams, false},
-      {"Probability", gx::kButtonClear, true}, {"Pattern", gx::kButtonPattern, false},
+      {"Probability", gx::kButtonProbability, false}, {"Pattern", gx::kButtonPattern, false},
       {"Scenes", gx::kButtonPattern, true},  {"Song", gx::kButtonPlay, true},
-      {"Project", gx::kButtonProject, false}, {"Preset", gx::kButtonParams, true},
-      {"Scale", gx::kButtonNote, true},      {"Global settings", gx::kButtonProject, true},
+      {"Project", gx::kButtonClear, true},   {"Preset", gx::kButtonParams, true},
+      {"Scale", gx::kButtonNote, true},      {"Global settings", gx::kButtonProbability, true},
   };
 
   gx::DisplayFrame frame;
@@ -2223,8 +2604,8 @@ void testPresetPages() {
   Fixture& f = *fOwner;
   f.app.begin();
 
-  // Preset mode is Shift + R4; R4 held there picks the page, and a tap of it goes on to the
-  // step parameters, which is what R4 means everywhere else.
+  // Preset mode is Shift + R2; R2 held there picks the page, and a tap of it goes on to the
+  // step parameters, which is what R2 means everywhere else.
   tapWithShift(f.surface, gx::kButtonParams);
   f.surface.press(gx::kGroupRight, gx::kButtonParams);
   f.surface.tap(gx::kGroupBottom, 1);  // page 2
@@ -2244,7 +2625,7 @@ void testPresetPages() {
   CHECK(f.app.sequencer().trackPreset(0) == gx::kSlotsPerPage + 9);
   CHECK(f.sink.contains(kPreset, 0, gx::kSlotsPerPage + 9));
 
-  // A tap of R4 that picked no page leaves for the step parameters.
+  // A tap of R2 that picked no page leaves for the step parameters.
   f.surface.tapButton(gx::kButtonParams);
   f.app.update(3);
   CHECK(f.app.ui().mode() == gx::kModeStepParams);
@@ -2283,8 +2664,12 @@ gx::Rgb unusedPageColor(uint8_t numPages, uint8_t page) {
 }
 
 
-void testPatternPages() {
-  CHECK(gx::kNumTrackPages >= 2 && gx::kNumPatternPages >= 2);  // uses two pages of each
+// Pattern mode is one track at a time: the whole grid is that track's patterns, and the
+// bottom buttons walk the tracks exactly as they do in note mode - bare for a track of this
+// page, Shift for the page. Nothing pages the patterns, because they all fit at once.
+void testPatternGrid() {
+  CHECK(gx::kNumTrackPages >= 2);           // uses two track pages
+  CHECK(gx::kNumPatterns == gx::kNumPads);  // the whole grid is the whole choice
   MemoryStorage storage;
   std::unique_ptr<Fixture> fOwner(new Fixture(storage));
   Fixture& f = *fOwner;
@@ -2294,81 +2679,474 @@ void testPatternPages() {
 
   f.surface.tapPad(4);  // track 1, pattern 1 gets a step (note mode)
   f.surface.tapButton(gx::kButtonPattern);
-  // The grid pages both ways, from two places: B1..B4 are the tracks it shows - no Shift, so
-  // Shift + R keeps its modes here - and Shift + the top pad row the patterns.
-  f.surface.tap(gx::kGroupBottom, 1);       // B2: tracks 9-16
-  tapWithShiftAndPad(f.surface, 1);         // pattern page 2: patterns 9-16
   f.app.update(0);
   CHECK(f.app.ui().mode() == gx::kModePattern);
-  CHECK(f.app.ui().shownPage(gx::UiController::kPagePatterns) == 1);
-  CHECK(sameColor(frame.bottom[1], gx::kSelectedColor));  // B1..B4: track pages
-  CHECK(sameColor(frame.bottom[0], gx::kFilledColor));    // tracks 1-8 have data
-  CHECK(sameColor(frame.bottom[2], unusedPageColor(gx::kNumTrackPages, 2)));
-  // The buttons the pattern pages used to sit on are a track page or nothing, never both.
-  for (uint8_t button = 0; button < gx::kNumBottomButtons; ++button) {
-    CHECK(sameColor(frame.bottom[button],
-                    button == 1 ? gx::kSelectedColor
-                    : button == 0 ? gx::kFilledColor
-                                  : unusedPageColor(gx::kNumTrackPages, button)));
-  }
+  // Pad N is pattern N+1 of the selected track, reading left to right and top down.
+  CHECK(sameColor(frame.pads[0], gx::kSelectedColor));  // pattern 1, the one it plays
+  CHECK(sameColor(frame.pads[1], gx::kEmptyColor));
+  f.surface.tapPad(9);  // pattern 10, two rows down
+  f.app.update(1);
+  CHECK(seq.selectedPattern(0) == 9);
+  CHECK(sameColor(frame.pads[9], gx::kSelectedColor));
+  CHECK(sameColor(frame.pads[0], gx::kFilledColor));  // pattern 1 still holds the step
   CHECK(sameColor(frame.right[gx::kButtonPattern], gx::kWhite));  // R LEDs keep their functions
 
-  // Hold Shift and the top row is the pattern pages, showing which one the grid is on.
-  f.surface.press(gx::kGroupShift, 0);
-  f.app.update(0);
-  CHECK(sameColor(frame.pads[1], gx::kSelectedColor));
-  CHECK(sameColor(frame.pads[0], gx::kEmptyColor));  // patterns 1-8 of tracks 9-16: empty
-  CHECK(sameColor(frame.pads[2], unusedPageColor(gx::kNumPatternPages, 2)));
-  f.surface.release(gx::kGroupShift, 0);
-  f.app.update(0);
-
-  f.surface.tapPad(gx::padIndex(0, 3));  // track 12 plays pattern 9
-  f.app.update(1);
-  CHECK(seq.selectedPattern(11) == 8);
-  CHECK(sameColor(frame.pads[gx::padIndex(0, 3)], gx::kSelectedColor));
-  CHECK(f.app.ui().selectedTrack() == 11);  // the column you touch is the track you selected
-
-  // Duplicate across pages: track 1 pattern 1 -> track 12 pattern 10.
-  f.surface.press(gx::kGroupRight, gx::kButtonDuplicate);
-  f.surface.tap(gx::kGroupBottom, 0);  // tracks 1-8
-  tapWithShiftAndPad(f.surface, 0);    // patterns 1-8
-  f.surface.tapPad(gx::padIndex(0, 0));
-  f.surface.tap(gx::kGroupBottom, 1);  // tracks 9-16
-  tapWithShiftAndPad(f.surface, 1);    // patterns 9-16
-  f.surface.tapPad(gx::padIndex(1, 3));
-  f.surface.release(gx::kGroupRight, gx::kButtonDuplicate);
+  // B1..B8 pick a track of this page and keep you in the mode: the whole point is giving one
+  // track after another a pattern without the mode changing under your hand.
+  f.surface.tap(gx::kGroupBottom, 2);
   f.app.update(2);
-  CHECK(seq.patternHasData(11, 9));
+  CHECK(f.app.ui().mode() == gx::kModePattern && f.app.ui().selectedTrack() == 2);
+  CHECK(sameColor(frame.bottom[2], gx::trackColor(2)));   // lit for the track selected
+  CHECK(sameColor(frame.pads[0], gx::kSelectedColor));    // track 3 is on its pattern 1
+  CHECK(sameColor(frame.pads[9], gx::kEmptyColor));       // and the grid is its own, not track 1's
 
-  // Shift does three things here and they do not collide: the top pad row is the pattern
-  // pages, the bottom pad row the mutes, and the bottom buttons go on paging the tracks, so
-  // every page is one press away with a hand on the mutes.
-  f.surface.press(gx::kGroupShift, 0);
-  f.surface.tap(gx::kGroupBottom, 0);  // tracks 1-8
-  f.surface.press(gx::kGroupPad, 0);
-  f.surface.release(gx::kGroupPad, 0);  // patterns 1-8, Shift already down
+  // Shift + B1..B8 is the track page, as in every other mode that works on one track.
+  tapWithShiftAndButton(f.surface, gx::kGroupBottom, 1);  // tracks 9-16
   f.app.update(3);
-  CHECK(sameColor(frame.bottom[0], gx::kSelectedColor));
-  CHECK(f.app.ui().shownPage(gx::UiController::kPagePatterns) == 0);
-  f.surface.tapPad(gx::padIndex(7, 2));  // and the bottom pad row still mutes, here track 3
-  f.app.update(4);
-  CHECK(seq.trackMuted(2));
-  f.surface.tap(gx::kGroupBottom, 1);  // back to tracks 9-16
-  f.surface.press(gx::kGroupPad, 1);
-  f.surface.release(gx::kGroupPad, 1);  // and patterns 9-16
+  CHECK(f.app.ui().shownPage(gx::UiController::kPageTracks) == 1);
+  CHECK(f.app.ui().mode() == gx::kModePattern && f.app.ui().selectedTrack() == 10);
+  f.surface.press(gx::kGroupShift, 0);
+  f.app.update(3);
+  CHECK(sameColor(frame.bottom[1], gx::kSelectedColor));  // the page map, while Shift is down
+  CHECK(sameColor(frame.bottom[0], gx::kFilledColor));    // tracks 1-8 hold something
+  CHECK(sameColor(frame.bottom[2], unusedPageColor(gx::kNumTrackPages, 2)));
   f.surface.release(gx::kGroupShift, 0);
-  f.app.update(5);
-  f.surface.tapPad(gx::padIndex(1, 3));  // the pages moved with it: track 12, pattern 10
-  f.app.update(6);
-  CHECK(seq.selectedPattern(11) == 9);
+  f.app.update(4);
 
-  // R3 opens note mode on the track whose column was last touched.
-  f.surface.tapButton(gx::kButtonNote);
+  // Shift takes no pad row here: both rows the other modes claim are still patterns, so a
+  // hand on Shift for the pages never changes what a pad does.
+  f.surface.tapPad(9);  // track 11 on pattern 10, so launching pattern 1 is a real change
+  f.app.update(4);
+  CHECK(seq.selectedPattern(10) == 9);
+  tapWithShiftAndPad(f.surface, 0);  // the top row: a pattern, not a page
+  f.app.update(5);
+  CHECK(seq.selectedPattern(10) == 0);
+  tapWithShiftAndPad(f.surface, gx::padIndex(7, 0));  // the bottom row: pattern 57, not a mute
+  f.app.update(6);
+  CHECK(seq.selectedPattern(10) == 56);
+  CHECK(!seq.trackMuted(10));
+
+  // Duplicate across tracks: the source keeps its own track, so B1..B8 between the two taps
+  // moves the destination without losing it. Track 1 pattern 1 -> track 11 pattern 2.
+  f.surface.press(gx::kGroupRight, gx::kButtonDuplicate);
+  tapWithShiftAndButton(f.surface, gx::kGroupBottom, 0);  // tracks 1-8
+  f.surface.tap(gx::kGroupBottom, 0);                     // track 1
+  f.surface.tapPad(0);                                    // its pattern 1: the source
+  tapWithShiftAndButton(f.surface, gx::kGroupBottom, 1);  // tracks 9-16
+  f.surface.tap(gx::kGroupBottom, 2);                     // track 11
+  f.surface.tapPad(1);                                    // its pattern 2: the destination
+  f.surface.release(gx::kGroupRight, gx::kButtonDuplicate);
   f.app.update(7);
-  CHECK(f.app.ui().mode() == gx::kModeNote && f.app.ui().selectedTrack() == 11);
+  CHECK(seq.patternHasData(10, 1));
+  CHECK(seq.patternHasData(0, 0));  // the source is untouched
+
+  // A muted track's whole grid dims: nothing it plays is heard, so no pattern should look
+  // like it is sounding. The mutes themselves are elsewhere - this only reports them.
+  const gx::Rgb lit = frame.pads[1];
+  CHECK(!sameColor(lit, gx::kBlack));
+  f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(0, 2));  // MUTE, track 11's strip
+  f.app.update(8);
+  CHECK(seq.trackMuted(10));
+  const gx::Rgb dimmed = frame.pads[1];
+  CHECK(!sameColor(dimmed, lit) && !sameColor(dimmed, gx::kBlack));
+  CHECK(dimmed.r <= lit.r && dimmed.g <= lit.g && dimmed.b <= lit.b);
+  f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(0, 2));
+
+  // R1 opens note mode on the track the buttons left selected.
+  f.surface.tapButton(gx::kButtonNote);
+  f.app.update(9);
+  CHECK(f.app.ui().mode() == gx::kModeNote && f.app.ui().selectedTrack() == 10);
 }
 
-// The built-in pattern bank on pages 5-8: there in every project, read-only, and free.
+// The panel's rows, top to bottom. This is the layout the player asked for, not the order
+// PageKind happens to declare, and the test below holds the two together.
+enum PanelRow { kRowSteps = 0, kRowTracks, kRowProjects, kRowPresets };
+
+// Where the panel's rows sit on a device, which Controls.h settles for every panel so that
+// two devices with different numbers of pad rows cannot lay the panel out differently. The
+// shape is the same on both: the first kinds from the top, then the preset WINDOWS, then the
+// preset PAGES on the bottom row - a window over its eight pages, like a tab strip over what
+// the open tab shows. Any rows left over are the gap in the middle.
+void testPanelRowLayout() {
+  // The Key 25's five rows are exactly the five jobs, so it has no spare row at all.
+  const uint8_t kFive = 5;
+  CHECK(gx::kNumPanelRows == kFive);
+  CHECK(gx::panelPageRowAt(kFive, 0) == 0);
+  CHECK(gx::panelPageRowAt(kFive, 1) == 1);
+  CHECK(gx::panelPageRowAt(kFive, 2) == 2);
+  CHECK(gx::panelWindowRowAt(kFive) == 3);
+  CHECK(gx::panelPageRowAt(kFive, gx::kNumPageKinds - 1) == 4);  // the bottom row
+
+  // The APC mini's eight put three spare rows in the middle, and move nothing else.
+  const uint8_t kEight = 8;
+  CHECK(gx::panelPageRowAt(kEight, 0) == 0);
+  CHECK(gx::panelPageRowAt(kEight, 2) == 2);
+  CHECK(gx::panelWindowRowAt(kEight) == 6);
+  CHECK(gx::panelPageRowAt(kEight, gx::kNumPageKinds - 1) == 7);
+
+  // And the inverse agrees with it, row for row, on both - which is what stops a press
+  // landing somewhere the LEDs are not.
+  const uint8_t kRowCounts[2] = {kFive, kEight};
+  for (uint8_t i = 0; i < 2; ++i) {
+    const uint8_t rows = kRowCounts[i];
+    bool seen[gx::kNumPageKinds] = {false};
+    uint8_t windows = 0;
+    uint8_t spares = 0;
+    for (uint8_t row = 0; row < rows; ++row) {
+      uint8_t pageRow = 0xFF;
+      const uint8_t job = gx::panelRowJobAt(rows, row, pageRow);
+      if (job == gx::kPanelRowPages) {
+        CHECK(pageRow < gx::kNumPageKinds && !seen[pageRow]);
+        CHECK(gx::panelPageRowAt(rows, pageRow) == row);  // and back again
+        seen[pageRow] = true;
+      } else if (job == gx::kPanelRowWindows) {
+        ++windows;
+        CHECK(gx::panelWindowRowAt(rows) == row);
+      } else {
+        ++spares;
+      }
+    }
+    for (uint8_t kind = 0; kind < gx::kNumPageKinds; ++kind) CHECK(seen[kind]);
+    CHECK(windows == 1);
+    CHECK(spares == rows - gx::kNumPanelRows);
+  }
+
+  // The window row is a row, so it holds every window the model has - not the four a pair of
+  // spare buttons could carry.
+  CHECK(gx::kNumPanelWindows == gx::kPagesPerKind);
+}
+
+// A page panel: a pad for every page of every kind, all visible at once whatever mode is
+// open, and one press to switch. It is not part of the grid, so it needs no modifier and
+// takes nothing away from the pads.
+void testPagePanel() {
+  typedef gx::UiController Ui;
+  MemoryStorage storage;
+  std::unique_ptr<Fixture> fOwner(new Fixture(storage));
+  Fixture& f = *fOwner;
+  f.app.begin();
+  const gx::LedFrame& frame = f.surface.frame;
+  const gx::Sequencer& seq = f.app.sequencer();
+
+  // Which row is which kind. Each row is paged to its second page in turn and only its own
+  // kind must move - that is what pins the layout, rather than trusting an index to line up.
+  const uint8_t kRowKind[gx::kNumPageKinds] = {Ui::kPageSteps, Ui::kPageTracks,
+                                               Ui::kPageProjects, Ui::kPagePresets};
+  for (uint8_t row = 0; row < gx::kNumPageKinds; ++row) {
+    uint8_t before[gx::kNumPageKinds];
+    for (uint8_t k = 0; k < gx::kNumPageKinds; ++k) before[k] = f.app.ui().shownPage(k);
+    f.surface.tap(gx::kGroupPage, gx::pagePadIndex(row, 1));
+    f.app.update(row + 1u);
+    CHECK(f.app.ui().shownPage(kRowKind[row]) == 1);
+    // Nothing else moved, except that paging the tracks selects another track and so may
+    // clamp the step page - the one coupling there is, and it only ever clamps to zero.
+    for (uint8_t k = 0; k < gx::kNumPageKinds; ++k) {
+      if (k == kRowKind[row]) continue;
+      const bool clamped = k == Ui::kPageSteps && f.app.ui().shownPage(k) == 0;
+      CHECK(f.app.ui().shownPage(k) == before[k] || clamped);
+    }
+  }
+
+  // Back to the first page of everything, and the panel says so.
+  for (uint8_t row = 0; row < gx::kNumPageKinds; ++row) {
+    f.surface.tap(gx::kGroupPage, gx::pagePadIndex(row, 0));
+  }
+  f.app.update(10);
+  CHECK(f.app.ui().mode() == gx::kModeNote);  // it only pages: no mode was opened
+  for (uint8_t row = 0; row < gx::kNumPageKinds; ++row) {
+    CHECK(sameColor(frame.pages[gx::pagePadIndex(row, 0)], gx::kSelectedColor));
+  }
+
+  // The pads read exactly as the page buttons do: the open page, then whether a page holds
+  // anything. Track page 1 gets a step; page 3 has nothing.
+  f.surface.tapPad(gx::padIndex(0, 0));
+  f.surface.tap(gx::kGroupPage, gx::pagePadIndex(kRowTracks, 1));
+  f.app.update(11);
+  CHECK(sameColor(frame.pages[gx::pagePadIndex(kRowTracks, 0)], gx::kFilledColor));
+  CHECK(sameColor(frame.pages[gx::pagePadIndex(kRowTracks, 1)], gx::kSelectedColor));
+  CHECK(sameColor(frame.pages[gx::pagePadIndex(kRowTracks, 2)], gx::kEmptyColor));
+
+  // A release does nothing of its own, so a pad held down does not keep switching.
+  f.surface.press(gx::kGroupPage, gx::pagePadIndex(kRowTracks, 2));
+  f.app.update(12);
+  CHECK(f.app.ui().shownPage(Ui::kPageTracks) == 2);
+  f.surface.release(gx::kGroupPage, gx::pagePadIndex(kRowTracks, 0));
+  f.app.update(13);
+  CHECK(f.app.ui().shownPage(Ui::kPageTracks) == 2);
+
+  // A pad past the end of a kind's pages is dark and does nothing when pressed. A full build
+  // fills every row - 64 tracks, 64 patterns, 256 steps and eight library pages are eight
+  // pages each - so this bites only in a build configured smaller, where GX_NUM_TRACKS=32
+  // leaves four track pages and the other four pads of that row unused.
+  for (uint8_t row = 0; row < gx::kNumPageKinds; ++row) {
+    const uint8_t kind = kRowKind[row];
+    for (uint8_t page = f.app.ui().pageCount(kind); page < gx::kPagesPerKind; ++page) {
+      const uint8_t before = f.app.ui().shownPage(kind);
+      CHECK(sameColor(frame.pages[gx::pagePadIndex(row, page)], gx::kBlack));
+      f.surface.tap(gx::kGroupPage, gx::pagePadIndex(row, page));
+      f.app.update(14);
+      CHECK(f.app.ui().shownPage(kind) == before);
+    }
+  }
+
+  // An index past the panel is ignored rather than reaching into another row's pages.
+  const uint8_t track = f.app.ui().shownPage(Ui::kPageTracks);
+  f.surface.tap(gx::kGroupPage, gx::kNumPagePads);
+  f.app.update(15);
+  CHECK(f.app.ui().shownPage(Ui::kPageTracks) == track);
+
+  // The window buttons beside the preset row move preset mode's 512-voice window, which is
+  // the one row whose eight pads are not the whole list. With no catalog read, every window
+  // is open - so window 1 is the one we are on and the rest are there to go to.
+  CHECK(sameColor(frame.pageWindows[0], gx::kSelectedColor));
+  for (uint8_t w = 1; w < gx::kNumPanelWindows; ++w) {
+    CHECK(sameColor(frame.pageWindows[w], gx::kFilledColor));
+  }
+  f.surface.tap(gx::kGroupPresetWindow, 2);
+  f.app.update(16);
+  CHECK(sameColor(frame.pageWindows[2], gx::kSelectedColor));
+  CHECK(sameColor(frame.pageWindows[0], gx::kFilledColor));
+  // It is a window, not a page: the preset row still shows which page of it is open.
+  CHECK(sameColor(frame.pages[gx::pagePadIndex(kRowPresets, 0)], gx::kSelectedColor));
+
+  // An index past the four buttons is ignored rather than wrapping onto a real window.
+  f.surface.tap(gx::kGroupPresetWindow, gx::kNumPanelWindows);
+  f.app.update(17);
+  CHECK(sameColor(frame.pageWindows[2], gx::kSelectedColor));
+
+  // KR1..KR5 open the five modes that need Shift on the APC, one press each, and light to
+  // say which is open. That is the point: these are reachable without the APC's Shift.
+  const uint8_t kPanelModes[gx::kNumPanelModes] = {gx::kModeScale, gx::kModeProject,
+                                                   gx::kModeScene, gx::kModeGlobal,
+                                                   gx::kModePreset};
+  for (uint8_t button = 0; button < gx::kNumPanelModes; ++button) {
+    f.surface.tap(gx::kGroupPanelMode, button);
+    f.app.update(30u + button);
+    CHECK(f.app.ui().mode() == kPanelModes[button]);
+    // Exactly one button is lit, and it is the one pressed.
+    for (uint8_t other = 0; other < gx::kNumPanelModes; ++other) {
+      CHECK(sameColor(frame.panelModes[other],
+                      other == button ? gx::kSelectedColor : gx::kEmptyColor));
+    }
+  }
+
+  // A mode opened from the APC lights the panel button too - the buttons report the mode,
+  // they do not own it.
+  f.surface.tapButton(gx::kButtonNote);
+  f.app.update(40);
+  CHECK(f.app.ui().mode() == gx::kModeNote);
+  for (uint8_t other = 0; other < gx::kNumPanelModes; ++other) {
+    CHECK(sameColor(frame.panelModes[other], gx::kEmptyColor));  // note is not one of them
+  }
+  f.surface.press(gx::kGroupShift, 0);
+  f.surface.tapButton(gx::kButtonNote);  // SHIFT + R1 on the APC: scale, which is KR1
+  f.surface.release(gx::kGroupShift, 0);
+  f.app.update(41);
+  CHECK(f.app.ui().mode() == gx::kModeScale);
+  CHECK(sameColor(frame.panelModes[0], gx::kSelectedColor));
+
+  // An index past the five is ignored rather than opening whatever is next in ModeId.
+  f.surface.tap(gx::kGroupPanelMode, gx::kNumPanelModes);
+  f.app.update(42);
+  CHECK(f.app.ui().mode() == gx::kModeScale);
+
+  // KB1..KB4 are the arrows. They move a piano roll and nothing else, so outside one they are
+  // dark and inert - note mode on an ordinary track included.
+  f.surface.tapButton(gx::kButtonNote);
+  f.app.update(50);
+  const uint8_t rollTrack = f.app.ui().selectedTrack();  // the rows above moved the track
+  CHECK(f.app.ui().mode() == gx::kModeNote && !seq.trackPianoRoll(rollTrack));
+  for (uint8_t arrow = 0; arrow < gx::kNumPanelArrows; ++arrow) {
+    CHECK(sameColor(frame.panelArrows[arrow], gx::kBlack));
+  }
+
+  // And pressing them here must not quietly move the roll's view behind the scenes. Nothing
+  // would show it at the time - the roll is not on screen - but the view would be somewhere
+  // unexpected the moment the track became a roll, which is the worst kind of wrong.
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollRight);
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollRight);
+  f.app.update(50);
+
+  // Turn that track into a roll, the way scale mode does.
+  tapWithShift(f.surface, gx::kButtonNote);  // scale mode
+  f.surface.tapPad(gx::padIndex(7, 0));      // bottom row pad 1: the piano roll
+  f.surface.tapButton(gx::kButtonNote);      // back to note, now a roll
+  f.app.update(51);
+  CHECK(seq.trackPianoRoll(rollTrack));
+  // It opens at the beginning: the arrows pressed while it was dark moved nothing.
+  CHECK(!gx::isLit(frame.panelArrows[gx::kRollLeft]));
+
+  // Now they light where there is somewhere to go. The view opens at step 1 with the scale
+  // either side, so left is the dead end and the other three are live - the same rule the
+  // roll's own pad cluster follows, because it is the same question being asked.
+  CHECK(gx::isLit(frame.panelArrows[gx::kRollUp]));
+  CHECK(gx::isLit(frame.panelArrows[gx::kRollDown]));
+  CHECK(gx::isLit(frame.panelArrows[gx::kRollRight]));
+  CHECK(!gx::isLit(frame.panelArrows[gx::kRollLeft]));
+
+  // Put notes on the roll, so the view has something in it and - just as important - so that
+  // different offsets look different. An empty roll looks the same wherever it is pointed,
+  // and so do two windows that both happen to be empty, which is how an earlier version of
+  // this test passed while measuring nothing. Two notes spaced four apart are what let a
+  // one-step move tell itself apart from a four-step one.
+  f.surface.tapPad(gx::padIndex(7, 2));  // bottom row: step 3 of the view
+  f.surface.tapPad(gx::padIndex(7, 6));  // and step 7, four along from it
+  f.app.update(52);
+  gx::Rgb before[gx::kNumPads];
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) before[pad] = frame.pads[pad];
+
+  // Right then left, with no Shift anywhere, and the view comes back to where it started.
+  CHECK(!gx::isLit(frame.panelArrows[gx::kRollLeft]));  // nothing to the left of step 1
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollRight);
+  f.app.update(53);
+  bool moved = false;
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    if (!sameColor(frame.pads[pad], before[pad])) moved = true;
+  }
+  CHECK(moved);
+  CHECK(gx::isLit(frame.panelArrows[gx::kRollLeft]));  // there is a way back now
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollLeft);
+  f.app.update(54);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));
+  }
+  CHECK(!gx::isLit(frame.panelArrows[gx::kRollLeft]));
+
+  // A press is ONE step, and the two notes placed above are what proves it. The view opens on
+  // step 1, so they sit at columns 3 and 7; one step right puts them at 2 and 6, where a jump
+  // of four would carry the first off the left edge and leave only the second, at column 3.
+  // Reading three pads tells those two apart, which comparing whole frames cannot.
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollRight);
+  f.app.update(60);
+  const gx::Rgb note = before[gx::padIndex(7, 2)];
+  CHECK(sameColor(frame.pads[gx::padIndex(7, 1)], note));   // moved one, not four
+  CHECK(sameColor(frame.pads[gx::padIndex(7, 5)], note));   // and so did the other
+  CHECK(!sameColor(frame.pads[gx::padIndex(7, 2)], note));  // it really left column 3
+  gx::Rgb afterOneStep[gx::kNumPads];
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) afterOneStep[pad] = frame.pads[pad];
+
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollLeft);
+  f.app.update(61);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));  // home again
+  }
+
+  // And the roll's own pad cluster moves by exactly as much. One Shift + pad press has to
+  // land on the very same view as one button press: the amount belongs to the roll, not to
+  // whichever arrow was reached for, so the two gestures are interchangeable. This is the
+  // check that fails if the pads ever go back to jumping four.
+  tapWithShiftAndPad(f.surface, gx::padIndex(7, 7));  // the roll's own right arrow
+  f.app.update(62);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], afterOneStep[pad]));
+  }
+  tapWithShiftAndPad(f.surface, gx::padIndex(7, 5));  // and its left arrow, back home
+  f.app.update(63);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));
+  }
+
+  // Neither arrow may step off the left edge. From step 2 - one nudge in, an offset no jump
+  // of four could ever produce - a press left must stop at the start rather than run off the
+  // bottom of an unsigned step number, whichever of the two arrows is pressed.
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollRight);
+  f.app.update(64);
+  CHECK(gx::isLit(frame.panelArrows[gx::kRollLeft]));
+  tapWithShiftAndPad(f.surface, gx::padIndex(7, 5));  // the roll's left arrow
+  f.app.update(65);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));
+  }
+  CHECK(!gx::isLit(frame.panelArrows[gx::kRollLeft]));
+  // A dark left arrow means a dead end for the pads too, not just for the buttons.
+  tapWithShiftAndPad(f.surface, gx::padIndex(7, 5));
+  f.app.update(66);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));
+  }
+
+  // Up and down move it too, and come back.
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollUp);
+  f.app.update(55);
+  moved = false;
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    if (!sameColor(frame.pads[pad], before[pad])) moved = true;
+  }
+  CHECK(moved);
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollDown);
+  f.app.update(56);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));
+  }
+
+  // A direction with nowhere to go does nothing when pressed - the dark arrow is honest.
+  f.surface.tap(gx::kGroupPanelArrow, gx::kRollLeft);
+  f.app.update(57);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));
+  }
+
+  // An index past the four is ignored rather than scrolling some other direction.
+  f.surface.tap(gx::kGroupPanelArrow, gx::kNumPanelArrows);
+  f.app.update(58);
+  for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+    CHECK(sameColor(frame.pads[pad], before[pad]));
+  }
+
+  // Now with a catalog, which is what the rig has and what the checks above did NOT have.
+  // A window is 512 slots, so a device on the built-in General MIDI list - 128 voices, which
+  // is every port until voices.conf names a device - has only the first window. The other
+  // seven are dark and refuse to be pressed: the panel telling the truth, not failing.
+  FakeCatalog generalMidi(128);
+  f.app.ui().setPresetCatalog(&generalMidi);
+  f.surface.tap(gx::kGroupPresetWindow, 0);
+  f.app.update(18);
+  CHECK(f.app.ui().presetWindow() == 0);
+  CHECK(sameColor(frame.pageWindows[0], gx::kSelectedColor));
+  for (uint8_t w = 1; w < gx::kNumPanelWindows; ++w) {
+    CHECK(sameColor(frame.pageWindows[w], gx::kEmptyColor));
+    f.surface.tap(gx::kGroupPresetWindow, w);
+    f.app.update(19u + w);
+    CHECK(f.app.ui().presetWindow() == 0);  // refused: there is nothing there to show
+  }
+
+  // A device with a list long enough to need them - a PSR-SX920 has 1650 voices - fills as
+  // many windows as its voices reach and leaves the rest dark. 2000 voices is four windows.
+  const uint16_t kSlotsPerWindow = gx::kNumPages * gx::kSlotsPerPage;
+  FakeCatalog bigDevice(2000);
+  f.app.ui().setPresetCatalog(&bigDevice);
+  f.app.update(24);
+  const uint8_t kReached = 4;  // 2000 voices over 512 a window, rounded up
+  for (uint8_t w = 1; w < kReached; ++w) {
+    CHECK(sameColor(frame.pageWindows[w], gx::kFilledColor));
+  }
+  for (uint8_t w = kReached; w < gx::kNumPanelWindows; ++w) {
+    CHECK(sameColor(frame.pageWindows[w], gx::kEmptyColor));
+    f.surface.tap(gx::kGroupPresetWindow, w);
+    f.app.update(30u + w);
+    CHECK(f.app.ui().presetWindow() != w);  // refused, as the dark ones above were
+  }
+  f.surface.tap(gx::kGroupPresetWindow, kReached - 1);
+  f.app.update(25);
+  CHECK(f.app.ui().presetWindow() == kReached - 1);
+
+  // And a row of eight reaches the whole model, where the four buttons this used to live on
+  // could only ever show half of it: a device with every voice the windows can address lights
+  // all eight, and the last one can be picked.
+  FakeCatalog hugeDevice(static_cast<uint16_t>(gx::kNumPanelWindows * kSlotsPerWindow - 1));
+  f.app.ui().setPresetCatalog(&hugeDevice);
+  f.app.update(26);
+  for (uint8_t w = 0; w < gx::kNumPanelWindows; ++w) {
+    CHECK(!sameColor(frame.pageWindows[w], gx::kEmptyColor));
+  }
+  f.surface.tap(gx::kGroupPresetWindow, gx::kNumPanelWindows - 1);
+  f.app.update(27);
+  CHECK(f.app.ui().presetWindow() == gx::kNumPanelWindows - 1);
+  CHECK(sameColor(frame.pageWindows[gx::kNumPanelWindows - 1], gx::kSelectedColor));
+}
+
+// The built-in pattern bank, patterns 33-64 - the grid's bottom half in pattern mode: there
+// in every project, read-only, and free.
 void testFactoryPatterns() {
   MemoryStorage storage;
   std::unique_ptr<Fixture> fOwner(new Fixture(storage));
@@ -2422,13 +3200,12 @@ void testFactoryPatterns() {
   seq.clearPattern(0, kFirst);
   CHECK(seq.patternHasData(0, kFirst) && seq.trackLength(0) == length);
 
-  // Clear + the pad, from the surface, is refused the same way.
+  // Clear + the pad, from the surface, is refused the same way. The bank needs no paging to
+  // reach: pattern 33 is pad 32, the start of the grid's bottom half.
   f.surface.tapButton(gx::kButtonPattern);
-  tapWithShiftAndPad(f.surface, 4);  // pattern page 5
   f.app.update(0);
-  CHECK(f.app.ui().shownPage(gx::UiController::kPagePatterns) == 4);
   f.surface.press(gx::kGroupRight, gx::kButtonClear);
-  f.surface.tapPad(0);  // track 1, pattern 33
+  f.surface.tapPad(kFirst);  // track 1, pattern 33
   f.surface.release(gx::kGroupRight, gx::kButtonClear);
   f.app.update(1);
   CHECK(seq.patternHasData(0, kFirst));
@@ -2436,9 +3213,12 @@ void testFactoryPatterns() {
   // The bank's pads are amber, not the blue of your own work, because they behave
   // differently - and a track without a bank shows an empty slot, not a filled one.
   f.app.update(2);
-  CHECK(sameColor(frame.pads[gx::padIndex(1, 0)], gx::kFactoryColor));
-  CHECK(!sameColor(frame.pads[gx::padIndex(1, 0)], gx::kFilledColor));
-  CHECK(sameColor(frame.pads[gx::padIndex(1, 6)], gx::kEmptyColor));  // track 7: no bank
+  CHECK(sameColor(frame.pads[kFirst + 1], gx::kFactoryColor));
+  CHECK(!sameColor(frame.pads[kFirst + 1], gx::kFilledColor));
+  f.surface.tap(gx::kGroupBottom, 6);  // track 7: no bank
+  f.app.update(3);
+  CHECK(sameColor(frame.pads[kFirst + 1], gx::kEmptyColor));
+  f.surface.tap(gx::kGroupBottom, 0);  // back to track 1
 
   // Duplicate is how one becomes yours: copy out, edit the copy, the bank is untouched.
   seq.copyPattern(0, kFirst, 0, 1);
@@ -2476,6 +3256,24 @@ void testFactoryPatterns() {
   seq.selectPattern(0, 0);
   seq.launchScene(3);
   CHECK(seq.selectedPattern(0) == kFirst + 2);
+
+  // And it PLAYS. Everything above reads the bank through a const getter, which is how a
+  // factory pattern could look perfectly right on the pads - lit, named, full of steps - and
+  // still send not one note: playback reaches its steps from a non-const member, where the
+  // writable overload used to win and return null for the bank. So this checks the only thing
+  // those getters cannot: that notes actually leave the sequencer.
+  f.sink.events.clear();
+  seq.selectPattern(0, kFirst);  // FOUR FLOOR, a bar of sixteenths on track 1
+  seq.play();
+  for (uint32_t ms = 0; ms <= 1000; ms += 5) f.app.update(ms);
+  size_t played = 0;
+  for (size_t i = 0; i < f.sink.events.size(); ++i) {
+    if (f.sink.events[i].type == kNoteOn && f.sink.events[i].track == 0) ++played;
+  }
+  // Eight active steps a bar, a bar is two seconds at 120 BPM: a second is four or more.
+  CHECK(played >= 4);
+  CHECK(f.sink.is(0, kNoteOn, 0, 36));  // and the first of them is the kick it draws
+  seq.stop();
 }
 
 void testTrackPagesInNoteMode() {
@@ -2555,7 +3353,7 @@ void testStepPagesAndLength() {
 
   CHECK(seq.trackLength(0) == gx::kDefaultPatternLength);  // new patterns are one page
   f.surface.tapPad(4);
-  tapWithNoteHeld(f.surface, 11);  // R3 + step 12 ends the pattern there
+  tapWithNoteHeld(f.surface, 11);  // R1 + step 12 ends the pattern there
   f.app.update(0);
   CHECK(seq.trackLength(0) == 12);
   CHECK(sameColor(frame.pads[11], kRed));           // the last step is red
@@ -2566,10 +3364,15 @@ void testStepPagesAndLength() {
   // to lengthen it, which is why the walk covers every page and not only the ones in use.
   tapWithShiftAndPad(f.surface, 1);  // Shift + the top row's 2nd pad: step page 2
   f.app.update(1);
-  const uint8_t kA2page1 = gx::mixButtonIndex(1, 0);
-  const uint8_t kA2page2 = gx::mixButtonIndex(1, 1);
-  CHECK(sameColor(frame.mixButtons[kA2page2], gx::kSelectedColor));  // page 2 is shown
-  CHECK(gx::isLit(frame.mixButtons[kA2page1]));                      // page 1 holds steps
+  CHECK(f.app.ui().shownPage(gx::UiController::kPageSteps) == 1);
+  // Shift held, that same row shows the pages: the one on screen green, the first still lit
+  // because it holds steps.
+  f.surface.press(gx::kGroupShift, 0);
+  f.app.update(1);
+  CHECK(sameColor(frame.pads[1], gx::kSelectedColor));  // page 2 is shown
+  CHECK(gx::isLit(frame.pads[0]));                      // page 1 holds steps
+  f.surface.release(gx::kGroupShift, 0);
+  f.app.update(1);
   tapWithNoteHeld(f.surface, 7);  // step 40
   f.surface.tapPad(3);  // step 36 on
   f.app.update(2);
@@ -2578,15 +3381,16 @@ void testStepPagesAndLength() {
   CHECK(sameColor(frame.pads[7], kRed));
   CHECK(sameColor(frame.pads[0], gx::kEmptyColor) == false);  // step 33 is a normal step
 
-  // While playing, the page holding the playhead blinks on the mixer's A2 row, which is where
-  // the step pages live now that holding R3 no longer shows them.
+  // While playing, the page holding the playhead blinks white on the page row, so where the
+  // music is can be seen while Shift is held to go there.
   f.surface.tapButton(gx::kButtonPlay);
+  f.surface.press(gx::kGroupShift, 0);
   f.app.update(3);
-  const uint8_t kA2 = gx::mixButtonIndex(1, 0);
-  CHECK(sameColor(frame.mixButtons[kA2], gx::kWhite));  // playhead on page 1, blink on
+  CHECK(sameColor(frame.pads[0], gx::kWhite));  // playhead on page 1, blink on
   f.app.update(3 + 250);
-  // Blink off: page 1 holds steps, so it goes back to the dim blue the A2 row uses for them.
-  CHECK(!sameColor(frame.mixButtons[kA2], gx::kWhite) && gx::isLit(frame.mixButtons[kA2]));
+  // Blink off: page 1 holds steps, so it goes back to the dim blue a page with data shows.
+  CHECK(!sameColor(frame.pads[0], gx::kWhite) && gx::isLit(frame.pads[0]));
+  f.surface.release(gx::kGroupShift, 0);
   f.app.update(600);
   CHECK(f.app.ui().mode() == gx::kModeNote);
 }
@@ -2760,7 +3564,7 @@ void testStepParamsMode() {
 
   f.surface.tapPad(0);  // steps 1 and 2 on, in note mode
   f.surface.tapPad(1);
-  f.surface.tapButton(gx::kButtonParams);  // R4: the step parameters, not a modifier
+  f.surface.tapButton(gx::kButtonParams);  // R2: the step parameters, not a modifier
   f.app.update(0);
   CHECK(f.app.ui().mode() == gx::kModeStepParams);
   CHECK(sameColor(frame.right[gx::kButtonParams], gx::kWhite));
@@ -2853,7 +3657,7 @@ void testStepParamsMode() {
   CHECK(sentVelocity);
   f.surface.tapButton(gx::kButtonPlay);
 
-  // Shift + the step area's bottom-left pad walks to the next step page; R4 on its own stays
+  // Shift + the step area's bottom-left pad walks to the next step page; R2 on its own stays
   // here, since this is its mode.
   tapWithShiftAndPad(f.surface, 1);  // Shift + the top row's 2nd pad: step page 2
   f.app.update(11);
@@ -2862,11 +3666,11 @@ void testStepParamsMode() {
   f.surface.tapButton(gx::kButtonParams);
   f.app.update(12);
   CHECK(f.app.ui().mode() == gx::kModeStepParams);
-  tapWithShift(f.surface, gx::kButtonParams);  // Shift + R4 is the presets
+  tapWithShift(f.surface, gx::kButtonParams);  // Shift + R2 is the presets
   f.app.update(13);
   CHECK(f.app.ui().mode() == gx::kModePreset);
 
-  // R4 opens the step parameters from any mode, pattern mode included: its bottom row pages
+  // R2 opens the step parameters from any mode, pattern mode included: its bottom row pages
   // the grid, so nothing there is in the way.
   f.surface.tapButton(gx::kButtonPattern);
   f.surface.tapButton(gx::kButtonParams);
@@ -2935,14 +3739,15 @@ void testProbabilityMode() {
   const uint8_t kProbabilityRow = 4;  // rows 5-6
 
   f.surface.tapPad(0);  // step 1 on, in note mode
-  f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonClear);  // Shift + R5
-  f.surface.release(gx::kGroupShift, 0);
+  f.surface.tapButton(gx::kButtonProbability);  // R3
   f.app.update(0);
   CHECK(f.app.ui().mode() == gx::kModeProbability);
-  CHECK(frame.right[gx::kButtonClear].r == 255 && frame.right[gx::kButtonClear].g == 90);
+  // R3 is the lit button now, and R5 stays dark: no modifier was touched to get here, which
+  // is the whole gain of the move.
+  CHECK(sameColor(frame.right[gx::kButtonProbability], gx::kWhite));
+  CHECK(frame.right[gx::kButtonClear].r < 255);
 
-  // Select the step (Shift + R5 didn't leave Clear held), then 50%: pad 8 of row 5.
+  // Select the step, then 50%: pad 8 of row 5.
   f.surface.tapPad(0);
   f.surface.tapPad(gx::padIndex(kProbabilityRow, 7));
   f.app.update(1);
@@ -2979,11 +3784,9 @@ void testProbabilityMode() {
   f.app.update(5);
   CHECK(seq.stepActive(0, 0) && seq.stepProbability(0, 0) == gx::kMaxProbability);
 
-  // Shift + R5 opens probability from pattern mode too.
+  // R3 opens probability from pattern mode too.
   f.surface.tapButton(gx::kButtonPattern);
-  f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonClear);
-  f.surface.release(gx::kGroupShift, 0);
+  f.surface.tapButton(gx::kButtonProbability);
   f.app.update(6);
   CHECK(f.app.ui().mode() == gx::kModeProbability);
 }
@@ -3119,8 +3922,8 @@ void testControlCc() {
 
   // Global settings takes no fader of its own: the tempo is set with the pads, so fader 1
   // sends its CC there as it does everywhere else and never moves the tempo by surprise.
-  f.surface.press(gx::kGroupShift, 0);  // Shift + R1
-  f.surface.tapButton(gx::kButtonProject);
+  f.surface.press(gx::kGroupShift, 0);  // Shift + R3
+  f.surface.tapButton(gx::kButtonProbability);
   f.surface.release(gx::kGroupShift, 0);
   f.surface.tapPad(0);  // pick the tempo
   const uint16_t bpmBefore = f.app.sequencer().bpm();
@@ -3161,6 +3964,73 @@ void testControlCc() {
   const char* wrong = "p9 = Nowhere\n";
   uint16_t badLine = 0;
   CHECK(!f.app.loadControlConfig(wrong, std::strlen(wrong), &badLine) && badLine == 1);
+
+  // A port sent to a socket server is one of those lines too. It matters that the map steps
+  // over it rather than stopping: a rejected line takes every control line after it with it,
+  // so one unknown key at the top would quietly cost you the whole mapping.
+  const char* socketRig =
+      "p8.socket = 192.168.1.50:5000\n"
+      "P3.SOCKET = 10.0.0.2:9000\n"
+      "faderrow = 11\n"
+      "mixmaster = 64\n";
+  CHECK(f.app.loadControlConfig(socketRig, std::strlen(socketRig)));
+  // ... and the lines after it really were applied, which is the part that silently failed.
+  f.sink.events.clear();
+  f.surface.moveFader(gx::kGroupMixMaster, 0, gx::kFaderMax);
+  f.app.update(8);
+  CHECK(f.sink.events.size() == 1 && f.sink.is(0, kControl, f.app.ui().selectedTrack(), 64));
+  const char* notAPort = "p9.socket = 10.0.0.2:9000\n";
+  CHECK(!f.app.loadControlConfig(notAPort, std::strlen(notAPort), &badLine) && badLine == 1);
+  const char* notASocket = "p8.sockets = 10.0.0.2:9000\n";
+  CHECK(!f.app.loadControlConfig(notASocket, std::strlen(notASocket), &badLine) && badLine == 1);
+
+  // So are the two that silence a port - .transport for Start and Stop, .clock for the clock
+  // - and the one that names the screen's font. All are read by the platform, so the map must
+  // step over them for the same reason.
+  const char* transportRig =
+      "p3.transport = off\n"
+      "P4.TRANSPORT = ON\n"
+      "p4.clock = off\n"
+      "P5.CLOCK = on\n"
+      "displayfont = DejaVuSansMono.ttf\n"
+      "mixmaster = 42\n";
+  CHECK(f.app.loadControlConfig(transportRig, std::strlen(transportRig)));
+  f.sink.events.clear();
+  f.surface.moveFader(gx::kGroupMixMaster, 0, 600);
+  f.app.update(9);
+  CHECK(f.sink.events.size() == 1 && f.sink.is(0, kControl, f.app.ui().selectedTrack(), 42));
+  const char* notATransport = "p3.transports = off\n";
+  CHECK(!f.app.loadControlConfig(notATransport, std::strlen(notATransport), &badLine) &&
+        badLine == 1);
+  const char* notAClock = "p3.clocks = off\n";
+  CHECK(!f.app.loadControlConfig(notAClock, std::strlen(notAClock), &badLine) && badLine == 1);
+
+  // And the three that say which device plays which role. The map knows nothing about what a
+  // device id means - that is the rig's business - but it must step over the lines, because a
+  // line it calls a mistake takes every control line after it down with it.
+  const char* surfaceRig =
+      "surface.grid = apcmini\n"
+      "SURFACE.PANEL = apckey25\n"
+      "surface.mixer = auto\n"
+      "mixmaster = 51\n";
+  CHECK(f.app.loadControlConfig(surfaceRig, std::strlen(surfaceRig)));
+  f.sink.events.clear();
+  f.surface.moveFader(gx::kGroupMixMaster, 0, 700);
+  f.app.update(10);
+  CHECK(f.sink.events.size() == 1 && f.sink.is(0, kControl, f.app.ui().selectedTrack(), 51));
+  // A value the rig will not know is still a line the map steps over: it is reported where it
+  // is understood, at startup, rather than by condemning the whole file here.
+  const char* oddDevice = "surface.grid = banana\nmixmaster = 52\n";
+  CHECK(f.app.loadControlConfig(oddDevice, std::strlen(oddDevice)));
+  const char* notARole = "surface.grids = apcmini\n";
+  CHECK(!f.app.loadControlConfig(notARole, std::strlen(notARole), &badLine) && badLine == 1);
+  const char* notASurface = "surfaces.grid = apcmini\n";
+  CHECK(!f.app.loadControlConfig(notASurface, std::strlen(notASurface), &badLine) &&
+        badLine == 1);
+
+  const char* restore = "mixmaster = 7\n";
+  CHECK(f.app.loadControlConfig(restore, std::strlen(restore)));
+  f.sink.events.clear();  // leave the sink as this block found it
   f.surface.moveFader(gx::kGroupMixMaster, 0, 900);
   f.app.update(9);
   // The master faders follow the selected track rather than a strip.
@@ -3198,54 +4068,44 @@ void testMixer() {
   CHECK(ui.mixFaderPosition(3) == 900 && ui.mixFaderPosition(gx::kNumMixStrips) == 0);
   CHECK(ui.mixMasterPosition() == gx::kFaderMax);
 
-  // The A2 row picks pages: in Note mode, the pages of steps. The page you are on is green
-  // and the row sends no MIDI of its own.
+  // The A2 row (REC ARM on a MIDI Mix) does nothing at all. It used to pick the pages of the
+  // open mode; that is gone, so a press must not move the page, open anything, or send MIDI -
+  // it only lights while it is held, dim enough the hardware's on-or-off LED stays dark.
   const size_t eventsBefore = f.sink.events.size();  // the moves above sent their CCs
   const uint8_t a2 = gx::mixButtonIndex(1, 2);
   CHECK(ui.pageKind() == gx::UiController::kPageSteps);
-  CHECK(sameColor(frame.mixButtons[gx::mixButtonIndex(1, 0)], gx::kSelectedColor));
-  f.surface.tap(gx::kGroupMixButton, a2);
+  const uint8_t pageBefore = ui.shownPage(gx::UiController::kPageSteps);
+  f.surface.press(gx::kGroupMixButton, a2);
   f.app.update(2);
-  CHECK(sameColor(frame.mixButtons[a2], gx::kSelectedColor));  // page 3 now
-  CHECK(!sameColor(frame.mixButtons[gx::mixButtonIndex(1, 0)], gx::kSelectedColor));
+  CHECK(sameColor(frame.mixButtons[a2], gx::kWhite));  // held: lit
+  CHECK(ui.shownPage(gx::UiController::kPageSteps) == pageBefore);
+  f.surface.release(gx::kGroupMixButton, a2);
+  f.app.update(3);
+  CHECK(gx::isLit(frame.mixButtons[a2]) && !sameColor(frame.mixButtons[a2], gx::kWhite));
+  CHECK(ui.shownPage(gx::UiController::kPageSteps) == pageBefore);
   CHECK(ui.mode() == gx::kModeNote && ui.selectedTrack() == 0);
   CHECK(f.sink.events.size() == eventsBefore);
-  f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(1, 0));  // back to page 1
-  f.app.update(2);
 
-  // In pattern mode the row mirrors the APC's bottom row, which is now one kind of page the
-  // whole way across: the track pages. The pattern pages are on the pad row under Shift, so
-  // the panel no longer has half a row for them.
-  f.surface.tapButton(gx::kButtonPattern);
-  f.app.update(2);
-  CHECK(ui.pageKind() == gx::UiController::kPageTracks);
-  f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(1, 1));  // A2 2: tracks 9-16
-  f.app.update(2);
-  CHECK(sameColor(frame.mixButtons[gx::mixButtonIndex(1, 1)], gx::kSelectedColor));
-  CHECK(!sameColor(frame.mixButtons[gx::mixButtonIndex(1, 0)], gx::kSelectedColor));
-  for (uint8_t page = 0; page < gx::kNumBottomButtons; ++page) {  // the APC agrees, button
-    const bool onPanel =                                         // for button
-        sameColor(frame.mixButtons[gx::mixButtonIndex(1, page)], gx::kSelectedColor);
-    CHECK(onPanel == sameColor(frame.bottom[page], gx::kSelectedColor));
+  // The same in every other mode that has pages of its own, since each read the row before.
+  struct Open { uint8_t button; bool shift; };
+  const Open modes[] = {{gx::kButtonPattern, false}, {gx::kButtonClear, true}};
+  for (size_t i = 0; i < sizeof(modes) / sizeof(modes[0]); ++i) {
+    if (modes[i].shift) {
+      tapWithShift(f.surface, modes[i].button);
+    } else {
+      f.surface.tapButton(modes[i].button);
+    }
+    f.app.update(4);
+    const uint8_t kind = ui.pageKind();
+    const uint8_t shown = ui.shownPage(kind);
+    const uint16_t project = f.app.currentProject();
+    f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(1, 3));
+    f.app.update(5);
+    CHECK(ui.shownPage(kind) == shown);         // no page moved
+    CHECK(f.app.currentProject() == project);   // and nothing was opened
   }
-  tapWithShiftAndPad(f.surface, 1);  // pattern page 2, from the pad row
-  f.surface.tapPad(0);               // the grid moved with them: track 9's pattern 9
-  f.app.update(2);
-  CHECK(f.app.sequencer().selectedPattern(8) == 8);
-  f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(1, 0));  // back to tracks 1-8
-  tapWithShiftAndPad(f.surface, 0);                              // and patterns 1-8
-  f.app.update(2);
-  f.surface.tapButton(gx::kButtonProject);
-  f.app.update(2);
-  CHECK(ui.pageKind() == gx::UiController::kPageProjects);
-  f.surface.tap(gx::kGroupMixButton, gx::mixButtonIndex(1, 3));
-  f.app.update(2);
-  CHECK(f.app.currentProject() / gx::kSlotsPerPage != 3);  // paging doesn't open anything
-  f.surface.tapPad(0);                                     // but the pads now show page 4
-  f.app.update(2);
-  CHECK(f.app.currentProject() == 3 * gx::kSlotsPerPage);
   f.surface.tapButton(gx::kButtonNote);
-  f.app.update(2);
+  f.app.update(6);
 
   // The side buttons light white while held.
   f.surface.press(gx::kGroupMixSide, 1);
@@ -3481,7 +4341,7 @@ void testSwing() {
   gx::Sequencer& seq = const_cast<gx::Sequencer&>(f.app.sequencer());
 
   f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonProject);  // Shift + R1
+  f.surface.tapButton(gx::kButtonProbability);  // Shift + R3
   f.surface.release(gx::kGroupShift, 0);
   f.surface.tapPad(2);                      // pad 3: swing
   f.app.update(0);
@@ -3590,9 +4450,7 @@ void testMicroTiming() {
   gx::Sequencer& seq = const_cast<gx::Sequencer&>(f.app.sequencer());
 
   f.surface.tapPad(0);  // step 1 on
-  f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonClear);  // Shift + R5: probability
-  f.surface.release(gx::kGroupShift, 0);
+  f.surface.tapButton(gx::kButtonProbability);  // R3: probability
   f.surface.tapPad(0);  // select the step
   f.app.update(0);
   CHECK(f.app.ui().mode() == gx::kModeProbability);
@@ -3656,8 +4514,8 @@ void testSendAllControls() {
   f.surface.moveFader(gx::kGroupKnob, gx::knobIndex(1, 0), 900);
   f.app.update(0);
 
-  f.surface.press(gx::kGroupShift, 0);  // Shift + R1: global settings
-  f.surface.tapButton(gx::kButtonProject);
+  f.surface.press(gx::kGroupShift, 0);  // Shift + R3: global settings
+  f.surface.tapButton(gx::kButtonProbability);
   f.surface.release(gx::kGroupShift, 0);
   f.app.update(1);
   CHECK(f.app.ui().mode() == gx::kModeGlobal);
@@ -3918,38 +4776,31 @@ void testScenes() {
   const bool mutedBefore = seq.trackMuted(1);
   CHECK(mutedBefore);
 
-  // In pattern mode a muted track's whole column is dimmer than the same pad on a track that
-  // plays, so it is clear why nothing is coming out of it.
-  f.surface.tapPad(gx::padIndex(0, 0));  // track 1 pattern 1, so both columns show the same
+  // In pattern mode a muted track's whole grid is dimmer than the same pattern on a track
+  // that plays, so it is clear why nothing is coming out of it.
+  f.surface.tap(gx::kGroupBottom, 0);  // track 1, which plays
+  f.surface.tapPad(0);                 // its pattern 1
   f.app.update(11);
-  const gx::Rgb playing = frame.pads[gx::padIndex(1, 0)];
-  const gx::Rgb silent = frame.pads[gx::padIndex(1, 1)];
+  const gx::Rgb playing = frame.pads[0];
+  f.surface.tap(gx::kGroupBottom, 1);  // track 2, which the scene muted
+  f.app.update(12);
+  const gx::Rgb silent = frame.pads[0];
   CHECK(gx::isLit(playing) && !sameColor(playing, silent));
 
-  // Shift + the bottom row mutes a track from here, and the row shows the mutes while held.
-  f.surface.press(gx::kGroupShift, 0);
-  f.app.update(12);
-  CHECK(sameColor(frame.pads[gx::padIndex(7, 0)], gx::trackColor(0)));   // track 1 plays
-  CHECK(!sameColor(frame.pads[gx::padIndex(7, 1)], gx::trackColor(1)));  // track 2 is muted
-  f.surface.tapPad(gx::padIndex(7, 0));  // Shift + bottom row: mute track 1
-  f.surface.tapPad(gx::padIndex(7, 1));  // and unmute track 2
-  f.surface.release(gx::kGroupShift, 0);
+  // Pattern mode holds no mute gesture of its own: the bottom pad row is patterns 57-64 like
+  // every other row, Shift or no Shift, so the mutes come from the mixer's MUTE row or from
+  // scene mode and nothing here can change them by accident.
+  tapWithShiftAndPad(f.surface, gx::padIndex(7, 0));
   f.app.update(13);
-  CHECK(seq.trackMuted(0) && !seq.trackMuted(1));
-  CHECK(seq.selectedPattern(0) == 0);  // the pads under Shift didn't also pick a pattern
-  f.surface.tapPad(gx::padIndex(7, 0));  // without Shift the same pad picks pattern 8
-  f.app.update(14);
-  CHECK(seq.selectedPattern(0) == 7 && seq.trackMuted(0));
-
-  // Put it back the way the scene had it.
-  f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapPad(gx::padIndex(7, 0));
+  CHECK(seq.trackMuted(1) == mutedBefore);  // still muted: nothing was toggled
+  CHECK(seq.selectedPattern(1) == 56);      // the pad launched pattern 57 instead
   f.surface.tapPad(gx::padIndex(7, 1));
-  f.surface.release(gx::kGroupShift, 0);
+  f.app.update(14);
+  CHECK(seq.selectedPattern(1) == 57 && seq.trackMuted(1) == mutedBefore);
+
+  f.surface.tap(gx::kGroupBottom, 0);  // back to track 1
+  f.surface.tapPad(1);                 // which plays its pattern 2
   f.app.update(15);
-  CHECK(!seq.trackMuted(0) && seq.trackMuted(1));
-  f.surface.tapPad(gx::padIndex(1, 0));  // track 1 plays its pattern 2
-  f.app.update(12);
   CHECK(seq.selectedPattern(0) == 1 && seq.trackMuted(1) == mutedBefore);
   tapWithShift(f.surface, gx::kButtonPattern);  // back to scenes
   f.app.update(13);
@@ -4207,11 +5058,11 @@ void testGlobalMode() {
   const gx::Rgb kAmber = {255, 140, 0};
 
   f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonProject);  // Shift + R1
+  f.surface.tapButton(gx::kButtonProbability);  // Shift + R3
   f.surface.release(gx::kGroupShift, 0);
   f.app.update(0);
   CHECK(f.app.ui().mode() == gx::kModeGlobal);
-  CHECK(sameColor(frame.right[gx::kButtonProject], gx::kWhite));
+  CHECK(sameColor(frame.right[gx::kButtonProbability], gx::kWhite));
   CHECK(gx::isLit(frame.pads[0]) && !sameColor(frame.pads[0], gx::kSelectedColor));
 
   // Until a setting is picked, the steppers do nothing and no value is shown.
@@ -4305,8 +5156,8 @@ void testGlobalMode() {
   f.app.update(6);
   CHECK(seq.bpm() == 160);
 
-  // R1 goes to project mode, where the tempo is left alone too.
-  f.surface.tapButton(gx::kButtonProject);
+  // Shift + R5 goes to project mode, where the tempo is left alone too.
+  tapWithShift(f.surface, gx::kButtonClear);
   f.app.update(7);
   CHECK(f.app.ui().mode() == gx::kModeProject);
   f.surface.moveFader(gx::kGroupFader, 0, gx::kFaderMax);
@@ -4315,15 +5166,15 @@ void testGlobalMode() {
 
   // The tempo is still picked on the next visit.
   f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonProject);
+  f.surface.tapButton(gx::kButtonProbability);
   f.surface.release(gx::kGroupShift, 0);
   f.app.update(9);
   CHECK(f.app.ui().mode() == gx::kModeGlobal && sameColor(frame.pads[0], gx::kSelectedColor));
 
-  // Shift + R1 opens global settings from pattern mode too.
+  // Shift + R3 opens global settings from pattern mode too.
   f.surface.tapButton(gx::kButtonPattern);
   f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonProject);
+  f.surface.tapButton(gx::kButtonProbability);
   f.surface.release(gx::kGroupShift, 0);
   f.app.update(10);
   CHECK(f.app.ui().mode() == gx::kModeGlobal);
@@ -4520,7 +5371,7 @@ void testPianoRoll() {
   f.app.update(3);
   CHECK(!seq.stepActive(0, 0) && seq.stepNoteCount(0, 0) == 0);
 
-  // R3 held + a pad makes its step the last, the same gesture the step grid uses - the roll
+  // R1 held + a pad makes its step the last, the same gesture the step grid uses - the roll
   // is the same mode with another grid on it.
   tapWithNoteHeld(f.surface, gx::padIndex(7, 5));  // step 6
   f.app.update(4);
@@ -4539,26 +5390,28 @@ void testPianoRoll() {
   CHECK(gx::isLit(frame.pads[kUpPad]) && gx::isLit(frame.pads[kDownPad]));
   CHECK(!gx::isLit(frame.pads[kLeftPad]) && gx::isLit(frame.pads[kRightPad]));
 
-  // Shift + up scrolls the notes up 4 (the bottom row is now G2); Shift + right the steps
-  // right 4. The arrows are pads, so the buttons stay free for the track pages.
+  // Shift + up scrolls the notes up one scale note (the bottom row is now D2); Shift + right
+  // the steps right one. The arrows are pads, so the buttons stay free for the track pages.
   f.surface.tapPad(kUpPad);
   f.surface.tapPad(kRightPad);
   f.surface.release(gx::kGroupShift, 0);
-  f.surface.tapPad(gx::padIndex(7, 0));  // G2, step 5
+  f.surface.tapPad(gx::padIndex(7, 0));  // D2, step 2
   f.app.update(5);
-  CHECK(seq.stepActive(0, 4) && seq.stepNote(0, 4) == 43);
-  CHECK(sameColor(frame.pads[gx::padIndex(7, 3)], gx::kBlack));  // step 8 is past the end
-  CHECK(frame.pads[gx::padIndex(6, 1)].r > frame.pads[gx::padIndex(6, 1)].g);  // step 6: last
+  CHECK(seq.stepActive(0, 1) && seq.stepNote(0, 1) == 38);
+  // The view now opens on step 2, so the eight columns are steps 2..9 of a 6-step pattern:
+  // column 6 is step 7, past the end, and column 5 is step 6, the last one.
+  CHECK(sameColor(frame.pads[gx::padIndex(7, 5)], gx::kBlack));  // step 7 is past the end
+  CHECK(frame.pads[gx::padIndex(6, 4)].r > frame.pads[gx::padIndex(6, 4)].g);  // step 6: last
 
-  // Hold R3 + B2 to jump to the second step page.
+  // Hold R1 + B2 to jump to the second step page.
   f.surface.press(gx::kGroupRight, gx::kButtonNote);
   f.surface.tap(gx::kGroupBottom, 1);
   f.surface.release(gx::kGroupRight, gx::kButtonNote);
   f.surface.tapPad(gx::padIndex(7, 0));
   f.app.update(6);
-  CHECK(seq.stepActive(0, gx::kStepsPerPage) && seq.stepNote(0, gx::kStepsPerPage) == 43);
+  CHECK(seq.stepActive(0, gx::kStepsPerPage) && seq.stepNote(0, gx::kStepsPerPage) == 38);
 
-  // Shift + B1..B4 still pick track pages.
+  // Shift + B1..B8 still pick track pages.
   f.surface.press(gx::kGroupShift, 0);
   f.surface.tap(gx::kGroupBottom, 1);
   f.surface.release(gx::kGroupShift, 0);
@@ -4762,6 +5615,387 @@ void testApcMiniSurface() {
   }
 }
 
+// The APC Key 25 as a page panel: a row of pads per kind of page, lit to show which page is
+// open and pressed to open another. Verified against the device: pads are notes 0..39 with
+// note 0 bottom-left, so the top row - the first kind of page - is notes 32..39.
+void testApcKey25Surface() {
+  typedef gx::ApcKey25Surface Key25;
+  FakeMidiPort port;
+  gx::ControlEvent e;
+  {
+    Key25 key(port);
+
+    // It comes up by turning every pad and every button it drives off, so what it shows is
+    // known from the start.
+    const size_t kDevicePads = 40;  // all five rows, every one of which the panel now uses
+    CHECK(port.sent.size() ==
+          3u * (kDevicePads + gx::kNumBottomButtons + gx::kNumPanelModes));
+    CHECK(containsBytes(port.sent, {0x90, 0, Key25::kPadOff}));
+    CHECK(containsBytes(port.sent, {0x90, 39, Key25::kPadOff}));
+    CHECK(containsBytes(port.sent, {0x90, 64, Key25::kButtonOff}));
+    CHECK(containsBytes(port.sent, {0x90, 67, Key25::kButtonOff}));
+    // KB5..KB8 are spare now, and this is the one place that darkens them.
+    CHECK(containsBytes(port.sent, {0x90, 68, Key25::kButtonOff}));
+    CHECK(containsBytes(port.sent, {0x90, 71, Key25::kButtonOff}));
+    CHECK(containsBytes(port.sent, {0x90, 82, Key25::kButtonOff}));
+    CHECK(containsBytes(port.sent, {0x90, 86, Key25::kButtonOff}));
+    CHECK(!key.pollEvent(e));
+
+    // The four corners of the page rows. Note 32 is the top-left pad, page 1 of the first
+    // kind; the LAST kind - the preset pages - is the bottom row, notes 0..7, with the window
+    // row directly above it. Five rows and five jobs, so this device has none to spare.
+    port.receive({0x90, 32, 127, 0x90, 39, 127, 0x90, 0, 127, 0x90, 7, 127});
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPage && e.pressed);
+    CHECK(e.index == gx::pagePadIndex(0, 0));
+    CHECK(key.pollEvent(e) && e.index == gx::pagePadIndex(0, 7));
+    CHECK(key.pollEvent(e) && e.index == gx::pagePadIndex(gx::kNumPageKinds - 1, 0));
+    CHECK(key.pollEvent(e) && e.index == gx::pagePadIndex(gx::kNumPageKinds - 1, 7));
+
+    // A release arrives as a Note Off - which this device sends at velocity 127, not 0 - and
+    // as a Note On of velocity 0 from anything using running status.
+    port.receive({0x80, 32, 127, 0x90, 33, 0});
+    CHECK(key.pollEvent(e) && e.index == gx::pagePadIndex(0, 0) && !e.pressed);
+    CHECK(key.pollEvent(e) && e.index == gx::pagePadIndex(0, 1) && !e.pressed);
+
+    // The window row is notes 8..15, the row above the preset pages: all eight windows, where
+    // the four buttons it used to live on were half the model.
+    port.receive({0x90, 8, 127, 0x80, 8, 127, 0x90, 15, 127});
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPresetWindow && e.index == 0 && e.pressed);
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPresetWindow && e.index == 0 && !e.pressed);
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPresetWindow &&
+          e.index == gx::kNumPanelWindows - 1 && e.pressed);
+
+    // KB5..KB8, notes 68..71, are spare: pressed and released, they report nothing at all.
+    port.receive({0x90, 68, 127, 0x80, 68, 127, 0x90, 71, 127, 0x80, 71, 127});
+    CHECK(!key.pollEvent(e));
+
+    // KR1..KR5 are notes 82..86 and open a mode each.
+    port.receive({0x90, 82, 127, 0x80, 82, 127, 0x90, 86, 127});
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPanelMode && e.index == 0 && e.pressed);
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPanelMode && e.index == 0 && !e.pressed);
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPanelMode &&
+          e.index == gx::kNumPanelModes - 1 && e.pressed);
+
+    // KB1..KB4 are notes 64..67 and are the arrows, in RollScroll order.
+    port.receive({0x90, 64, 127, 0x80, 64, 127, 0x90, 67, 127});
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPanelArrow && e.index == gx::kRollUp &&
+          e.pressed);
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPanelArrow && e.index == gx::kRollUp &&
+          !e.pressed);
+    CHECK(key.pollEvent(e) && e.group == gx::kGroupPanelArrow && e.index == gx::kRollRight &&
+          e.pressed);
+
+    // Nothing else is passed on: not KR6 - note 81, the one button with no LED - not the 8
+    // knobs (CC 48..55), not the transport, not Shift.
+    port.receive({0x90, 81, 127, 0xB0, 48, 64, 0xB0, 55, 0,
+                  0x90, 91, 127, 0x90, 93, 127, 0x90, 98, 127});
+    CHECK(!key.pollEvent(e));
+
+    // The keys are on channel 2, which is the only thing that tells them from the pads. Their
+    // notes are no help: 48..72 at the default octave clear the pads, but two octaves down the
+    // lowest key is note 12 - right on top of a pad - and it must still be ignored.
+    port.receive({0x91, 48, 100, 0x91, 72, 51, 0x91, 12, 127, 0x81, 12, 0});
+    CHECK(!key.pollEvent(e));
+
+    // Every colour the page panel uses becomes one the device has. "Holds data" and "empty"
+    // must stay apart: they are dim blue and grey, which no nearest-colour match could
+    // separate on a pad that has only green, red and yellow.
+    CHECK(Key25::padColorFor(gx::kBlack) == Key25::kPadOff);
+    CHECK(Key25::padColorFor(gx::kSelectedColor) == Key25::kPadGreen);
+    CHECK(Key25::padColorFor(gx::kFilledColor) == Key25::kPadYellow);
+    CHECK(Key25::padColorFor(gx::kEmptyColor) == Key25::kPadRed);
+    CHECK(Key25::padColorFor(gx::kFilledColor) != Key25::padColorFor(gx::kEmptyColor));
+    // The playhead's step page is white, and the UI blinks it by alternating that with the
+    // page's own colour, so the pad blinks without the device's own blink being asked for.
+    CHECK(Key25::padColorFor(gx::kWhite) == Key25::kPadGreen);
+
+    // The arrow and mode buttons are one red colour with on, off and blink - not the pads'
+    // seven, so a value that blinks a pad must not blink a button.
+    CHECK(Key25::buttonColorFor(gx::kBlack) == Key25::kButtonOff);
+    CHECK(Key25::buttonColorFor(gx::kSelectedColor) == Key25::kButtonOn);
+    CHECK(Key25::buttonColorFor(gx::kFilledColor) == Key25::kButtonBlink);
+    CHECK(Key25::buttonColorFor(gx::kEmptyColor) == Key25::kButtonOff);
+    CHECK(Key25::buttonColorFor(gx::kFilledColor) != Key25::padColorFor(gx::kFilledColor));
+
+    // Lighting the panel: the pad for a page is the note that page sits on.
+    static gx::LedFrame frame;
+    frame.clear();
+    frame.pages[gx::pagePadIndex(0, 0)] = gx::kSelectedColor;   // top-left: note 32
+    frame.pages[gx::pagePadIndex(gx::kNumPageKinds - 1, 7)] = gx::kFilledColor;  // note 7
+    frame.pageWindows[0] = gx::kSelectedColor;                  // the window row: note 8
+    frame.pageWindows[7] = gx::kFilledColor;                    // and its far end, note 15
+    frame.panelModes[2] = gx::kSelectedColor;  // KR3, note 84
+    port.sent.clear();
+    // The window row rounds with the pads, so it can take more than one frame to arrive:
+    // eight pads a frame over forty LEDs, so five frames at the very least.
+    for (int i = 0; i < 10; ++i) key.show(frame);
+    CHECK(containsBytes(port.sent, {0x90, 32, Key25::kPadGreen}));
+    CHECK(containsBytes(port.sent, {0x90, 7, Key25::kPadYellow}));
+    // The windows are pads now, in the pads' own colours - not the buttons' one red.
+    CHECK(containsBytes(port.sent, {0x90, 8, Key25::kPadGreen}));
+    CHECK(containsBytes(port.sent, {0x90, 15, Key25::kPadYellow}));
+    // And nothing reaches KB5..KB8 any more: they were turned off at start-up and no frame
+    // writes them, so they stay dark.
+    CHECK(!containsBytes(port.sent, {0x90, 68, Key25::kButtonOn}));
+    CHECK(!containsBytes(port.sent, {0x90, 71, Key25::kButtonOn}));
+    CHECK(containsBytes(port.sent, {0x90, 84, Key25::kButtonOn}));
+
+    // Nothing is sent again for a pad that has not changed.
+    port.sent.clear();
+    key.show(frame);
+    CHECK(port.sent.empty());
+
+    // A frame sends only a few pads, because LED messages sent in a burst get lost, and the
+    // next frame carries on round the grid rather than starting over - so a whole changed
+    // panel gets there, and takes more than one frame to do it.
+    for (uint8_t pad = 0; pad < gx::kNumPagePads; ++pad) {
+      frame.pages[pad] = gx::kEmptyColor;
+    }
+    port.sent.clear();
+    key.show(frame);
+    const size_t firstFrame = port.sent.size() / 3;
+    CHECK(firstFrame > 0 && firstFrame < gx::kNumPagePads);
+    int frames = 1;
+    while (!port.sent.empty() && frames < 20) {
+      port.sent.clear();
+      key.show(frame);
+      ++frames;
+    }
+    CHECK(frames > 1 && frames < 20);
+    // Everything arrived: asking again sends nothing at all.
+    port.sent.clear();
+    key.show(frame);
+    CHECK(port.sent.empty());
+  }
+  // Going away turns the pads off.
+  CHECK(containsBytes(port.sent, {0x90, 0, Key25::kPadOff}));
+  CHECK(containsBytes(port.sent, {0x90, 39, Key25::kPadOff}));
+}
+
+// The APC mini mk2 in its OTHER role: the page panel, which it takes when a Launchpad X is
+// plugged in and becomes the grid. Same hardware, same verified notes, read a second way -
+// and it brings Shift, which is the whole reason the rig wants the APC here.
+void testApcMiniPanelSurface() {
+  FakeMidiPort port;
+  gx::ControlEvent e;
+  // Where things sit on the device: pads are notes 0..63 from the BOTTOM-left, so the panel's
+  // first kind of page - its top row - is notes 56..63.
+  const uint8_t kTopRowNote = 56;
+  const uint8_t kFirstScene = 0x70;  // R1..R8
+  const uint8_t kFirstTrack = 0x64;  // B1..B8
+  const uint8_t kShift = 0x7A;
+  {
+    gx::ApcMiniPanelSurface panel(port);
+
+    // begin() sends the same Introduction the grid role does - it is the same device.
+    CHECK(panel.begin());
+    CHECK(containsBytes(port.sent, {0xF0, 0x47, 0x7F, 0x4F, 0x60}));
+    CHECK(!panel.pollEvent(e));
+
+    // The first kinds hang from the top of the grid - row 1 is notes 56..63 - and the LAST
+    // kind, the preset pages, sits on the BOTTOM row, notes 0..7, with the window row just
+    // above it. So the two ends of the grid are in use and the middle is spare.
+    const uint8_t kLastKindNote = 0;
+    port.receive({0x90, kTopRowNote, 127, 0x90, static_cast<uint8_t>(kTopRowNote + 7), 127,
+                  0x90, kLastKindNote, 127,
+                  0x90, static_cast<uint8_t>(kLastKindNote + 7), 127});
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPage && e.pressed);
+    CHECK(e.index == gx::pagePadIndex(0, 0));
+    CHECK(panel.pollEvent(e) && e.index == gx::pagePadIndex(0, 7));
+    CHECK(panel.pollEvent(e) && e.index == gx::pagePadIndex(gx::kNumPageKinds - 1, 0));
+    CHECK(panel.pollEvent(e) && e.index == gx::pagePadIndex(gx::kNumPageKinds - 1, 7));
+    CHECK(!panel.pollEvent(e));
+
+    // The window row is notes 8..15, immediately above the preset pages: pick a window on one
+    // row and a page of it on the next, which is the whole point of the pairing.
+    port.receive({0x90, 8, 127, 0x80, 8, 127, 0x90, 15, 127});
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPresetWindow && e.index == 0 && e.pressed);
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPresetWindow && e.index == 0 &&
+          !e.pressed);
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPresetWindow &&
+          e.index == gx::kNumPanelWindows - 1 && e.pressed);
+    CHECK(!panel.pollEvent(e));
+
+    // The rows in the middle are spare: they report nothing rather than an index past the
+    // panel. Notes 16..39 are the three of them - note 40 is the third kind of page and
+    // note 15 the far end of the window row, so this is the whole of the gap and no more.
+    port.receive({0x90, 16, 127, 0x80, 16, 127, 0x90, 31, 127, 0x90, 39, 127});
+    CHECK(!panel.pollEvent(e));
+
+    // A release arrives as a Note Off, and as a Note On of velocity 0 from running status.
+    port.receive({0x80, kTopRowNote, 127, 0x90, static_cast<uint8_t>(kTopRowNote + 1), 0});
+    CHECK(panel.pollEvent(e) && e.index == gx::pagePadIndex(0, 0) && !e.pressed);
+    CHECK(panel.pollEvent(e) && e.index == gx::pagePadIndex(0, 1) && !e.pressed);
+
+    // R1..R5 are the mode buttons; R6..R8 are spare and say nothing.
+    port.receive({0x90, kFirstScene, 127, 0x80, kFirstScene, 127,
+                  0x90, static_cast<uint8_t>(kFirstScene + gx::kNumPanelModes - 1), 127});
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPanelMode && e.index == 0 && e.pressed);
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPanelMode && e.index == 0 && !e.pressed);
+    CHECK(panel.pollEvent(e) && e.index == gx::kNumPanelModes - 1 && e.pressed);
+    port.receive({0x90, static_cast<uint8_t>(kFirstScene + gx::kNumPanelModes), 127});
+    CHECK(!panel.pollEvent(e));
+
+    // B1..B4 are the arrows, in RollScroll's order. B5..B8 are spare - the windows had them
+    // while there were four of them - and they say nothing, pressed or released.
+    port.receive({0x90, kFirstTrack, 127, 0x90, static_cast<uint8_t>(kFirstTrack + 3), 127});
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPanelArrow && e.index == gx::kRollUp);
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupPanelArrow && e.index == gx::kRollRight);
+    port.receive({0x90, static_cast<uint8_t>(kFirstTrack + gx::kNumPanelArrows), 127,
+                  0x80, static_cast<uint8_t>(kFirstTrack + gx::kNumPanelArrows), 127,
+                  0x90, static_cast<uint8_t>(kFirstTrack + gx::kNumBottomButtons - 1), 127});
+    CHECK(!panel.pollEvent(e));
+
+    // SHIFT. This is the point of putting the panel on an APC: core takes kGroupShift from
+    // whatever device sends it, so a Launchpad X grid never has to spare a button for it.
+    port.receive({0x90, kShift, 127, 0x80, kShift, 127});
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupShift && e.index == 0 && e.pressed);
+    CHECK(panel.pollEvent(e) && e.group == gx::kGroupShift && !e.pressed);
+
+    // The faders have no job in this role: the mixer is the MIDI Mix.
+    port.receive({0xB0, 0x30, 64, 0xB0, 0x38, 64});
+    CHECK(!panel.pollEvent(e));
+    // Nor do the device's own Drum and Note modes, which move the pads off channel 1.
+    port.receive({0x91, kTopRowNote, 127});
+    CHECK(!panel.pollEvent(e));
+
+    // Lighting it: a page pad is the note that page sits on, and the colour is the device's
+    // own palette - the same code the grid role would send for that colour.
+    static gx::LedFrame frame;
+    frame.clear();
+    frame.pages[gx::pagePadIndex(0, 0)] = gx::kSelectedColor;
+    frame.panelModes[2] = gx::kSelectedColor;
+    frame.panelArrows[0] = gx::kSelectedColor;
+    frame.pageWindows[1] = gx::kSelectedColor;
+    port.sent.clear();
+    // The window row is in the paced pad round, so give the round time to come past it.
+    for (int i = 0; i < 5; ++i) panel.show(frame);
+    const uint16_t code = gx::ApcMiniSurface::padCodeFor(gx::kSelectedColor);
+    CHECK(containsBytes(port.sent, {static_cast<uint8_t>(0x90 | (code >> 8)), kTopRowNote,
+                                    static_cast<uint8_t>(code & 0xFF)}));
+    CHECK(containsBytes(port.sent, {0x90, static_cast<uint8_t>(kFirstScene + 2), 0x01}));
+    CHECK(containsBytes(port.sent, {0x90, kFirstTrack, 0x01}));
+    // Window 2 is the second pad of the window row, note 9, in the pads' own palette - not a
+    // button colour on B6, where it used to be.
+    CHECK(containsBytes(port.sent, {static_cast<uint8_t>(0x90 | (code >> 8)), 9,
+                                    static_cast<uint8_t>(code & 0xFF)}));
+    CHECK(!containsBytes(port.sent,
+                         {0x90, static_cast<uint8_t>(kFirstTrack + gx::kNumPanelArrows + 1),
+                          0x01}));
+
+    // Nothing is sent again for an LED that has not changed.
+    port.sent.clear();
+    panel.show(frame);
+    CHECK(port.sent.empty());
+
+    // The spare rows are never written to by a frame: nothing on the panel can reach them, so
+    // they stay as clearLeds left them. Note 16 is the first of the three.
+    CHECK(!containsBytes(port.sent, {0x90, 16}));
+  }
+  // Going away turns every pad off, the spare rows included, and the buttons with them.
+  CHECK(containsBytes(port.sent, {0x90, 0, 0x00}));
+  CHECK(containsBytes(port.sent, {0x90, 63, 0x00}));
+  CHECK(containsBytes(port.sent, {0x90, kFirstScene, 0x00}));
+  CHECK(containsBytes(port.sent, {0x90, kFirstTrack, 0x00}));
+}
+
+// A Novation Launchpad X as the GRID. Every byte below was measured on the device with
+// aseqdump, in Programmer mode, and the four corner presses and both button rows are the
+// capture replayed verbatim - so this test is the device's own words, not the manual's.
+void testLaunchpadXSurface() {
+  typedef gx::LaunchpadXSurface Lpx;
+  FakeMidiPort port;
+  gx::ControlEvent e;
+  {
+    Lpx lpx(port);
+
+    // begin() puts it in Programmer mode; without that the firmware keeps the grid for its
+    // own Session, Note and Custom modes and never passes a press on.
+    CHECK(lpx.begin());
+    CHECK(containsBytes(port.sent, {0xF0, 0x00, 0x20, 0x29, 0x02, 0x0C, 0x0E, 0x01, 0xF7}));
+    CHECK(!lpx.pollEvent(e));
+
+    // The four corners, exactly as captured: note = row * 10 + column, row 1 at the BOTTOM,
+    // so 81 is top-left and 18 is bottom-right. The velocities are the measured ones.
+    port.receive({0x90, 81, 102, 0x90, 88, 102, 0x90, 11, 79, 0x90, 18, 49});
+    CHECK(lpx.pollEvent(e) && e.group == gx::kGroupPad && e.pressed);
+    CHECK(e.index == gx::padIndex(0, 0) && e.velocity == 102);  // top-left
+    CHECK(lpx.pollEvent(e) && e.index == gx::padIndex(0, 7) && e.velocity == 102);
+    CHECK(lpx.pollEvent(e) && e.index == gx::padIndex(7, 0) && e.velocity == 79);
+    CHECK(lpx.pollEvent(e) && e.index == gx::padIndex(7, 7) && e.velocity == 49);
+    CHECK(!lpx.pollEvent(e));
+
+    // Aftertouch is a firehose and is dropped - but its bytes are still counted, or the note
+    // that follows would be read out of the middle of it. This is the capture of one held
+    // pad: a press, a stream of 0xA0, then the release, and only two events come out.
+    port.receive({0x90, 18, 95, 0xA0, 18, 126, 0xA0, 18, 127, 0xA0, 18, 124, 0xA0, 18, 0,
+                  0x80, 18, 0, 0x90, 81, 64});
+    CHECK(lpx.pollEvent(e) && e.index == gx::padIndex(7, 7) && e.pressed && e.velocity == 95);
+    CHECK(lpx.pollEvent(e) && e.index == gx::padIndex(7, 7) && !e.pressed);
+    CHECK(lpx.pollEvent(e) && e.index == gx::padIndex(0, 0) && e.pressed);
+    CHECK(!lpx.pollEvent(e));
+
+    // The round buttons are CCs, not notes. Right column, top to bottom: 89, 79 ... 19.
+    port.receive({0xB0, 89, 127, 0xB0, 89, 0, 0xB0, 19, 127});
+    CHECK(lpx.pollEvent(e) && e.group == gx::kGroupRight && e.index == 0 && e.pressed);
+    CHECK(lpx.pollEvent(e) && e.group == gx::kGroupRight && e.index == 0 && !e.pressed);
+    CHECK(lpx.pollEvent(e) && e.group == gx::kGroupRight &&
+          e.index == gx::kNumRightButtons - 1 && e.pressed);
+    // Top row, left to right: 91..98. The Launchpad has no row below the grid, so the buttons
+    // core calls "bottom" are physically above it.
+    port.receive({0xB0, 91, 127, 0xB0, 98, 127, 0xB0, 98, 0});
+    CHECK(lpx.pollEvent(e) && e.group == gx::kGroupBottom && e.index == 0 && e.pressed);
+    CHECK(lpx.pollEvent(e) && e.group == gx::kGroupBottom &&
+          e.index == gx::kNumBottomButtons - 1 && e.pressed);
+    CHECK(lpx.pollEvent(e) && e.group == gx::kGroupBottom && !e.pressed);
+    CHECK(!lpx.pollEvent(e));
+
+    // The map, both ways, over the whole surface.
+    for (uint8_t pad = 0; pad < gx::kNumPads; ++pad) {
+      const uint8_t note = Lpx::noteForPad(pad);
+      CHECK(note >= 11 && note <= 88 && note % 10 >= 1 && note % 10 <= 8);
+    }
+    CHECK(Lpx::noteForPad(gx::padIndex(0, 0)) == 81);
+    CHECK(Lpx::noteForPad(gx::padIndex(7, 7)) == 18);
+    CHECK(Lpx::ccForRightButton(0) == 89 && Lpx::ccForRightButton(7) == 19);
+    CHECK(Lpx::ccForBottomButton(0) == 91 && Lpx::ccForBottomButton(7) == 98);
+
+    // Nothing the device numbers but has no control on - the gaps at 10, 20, 80 - reports.
+    port.receive({0x90, 10, 127, 0x90, 80, 127, 0x90, 89, 127, 0x90, 99, 127});
+    CHECK(!lpx.pollEvent(e));
+    // Nor does the mode change it echoes back at us.
+    port.receive({0xF0, 0x00, 0x20, 0x29, 0x02, 0x0C, 0x0E, 0x01, 0xF7});
+    CHECK(!lpx.pollEvent(e));
+    // Nor anything off channel 1.
+    port.receive({0x91, 81, 127});
+    CHECK(!lpx.pollEvent(e));
+
+    // Lighting it: one RGB SysEx a frame carrying pads and buttons together, each channel
+    // halved into the device's 7 bits. No palette search - the colour goes out as it is.
+    static gx::LedFrame frame;
+    frame.clear();
+    frame.pads[gx::padIndex(0, 0)] = gx::Rgb{254, 0, 0};
+    frame.right[0] = gx::Rgb{0, 254, 0};
+    frame.bottom[7] = gx::Rgb{0, 0, 254};
+    port.sent.clear();
+    lpx.show(frame);
+    CHECK(containsBytes(port.sent, {0x03, 81, 127, 0, 0}));  // top-left pad, red
+    CHECK(containsBytes(port.sent, {0x03, 89, 0, 127, 0}));  // R1, green
+    CHECK(containsBytes(port.sent, {0x03, 98, 0, 0, 127}));  // B8, blue
+    CHECK(containsBytes(port.sent, {0xF0, 0x00, 0x20, 0x29, 0x02, 0x0C, 0x03}));
+    CHECK(port.sent.back() == 0xF7);
+
+    // Nothing is sent again for an LED that has not changed.
+    port.sent.clear();
+    lpx.show(frame);
+    CHECK(port.sent.empty());
+  }
+  // Going away darkens it and hands it back in Live mode, so the next piece of software to
+  // open the device finds it the way it expects.
+  CHECK(containsBytes(port.sent, {0x03, 81, 0, 0, 0}));
+  CHECK(containsBytes(port.sent, {0xF0, 0x00, 0x20, 0x29, 0x02, 0x0C, 0x0E, 0x00, 0xF7}));
+}
+
 void testStepTapAndHold() {
   MemoryStorage storage;
   std::unique_ptr<Fixture> fOwner(new Fixture(storage));
@@ -4852,7 +6086,7 @@ void testTrackMidiChannel() {
   const gx::LedFrame& frame = f.surface.frame;
   const uint8_t kChannel1Pad = gx::padIndex(2, 0);
   const uint8_t kChannel10Pad = gx::padIndex(3, 1);
-  tapWithShift(f.surface, gx::kButtonProject);  // Shift + R1
+  tapWithShift(f.surface, gx::kButtonProbability);  // Shift + R3
   f.surface.tapPad(1);
   f.app.update(0);
   CHECK(sameColor(frame.pads[1], gx::kSelectedColor));
@@ -4913,13 +6147,13 @@ void testTrackMidiChannel() {
 
   // Project mode still leaves for note mode, which is how a track is picked there. (Pattern
   // mode is not a case: its B buttons are its page row, so they never select a track.)
-  f.surface.tapButton(gx::kButtonProject);
+  tapWithShift(f.surface, gx::kButtonClear);
   f.surface.tap(gx::kGroupBottom, 1);
   f.app.update(8);
   CHECK(f.app.ui().mode() == gx::kModeNote && f.app.ui().selectedTrack() == 1);
   f.surface.tap(gx::kGroupBottom, 0);
   f.app.update(8);
-  tapWithShift(f.surface, gx::kButtonProject);  // back to global settings for the save check
+  tapWithShift(f.surface, gx::kButtonProbability);  // back to global settings for the save check
   f.app.update(9);
 
   // Channels are saved with the project.
@@ -4958,7 +6192,7 @@ void testTrackMidiPort() {
   const gx::LedFrame& frame = f.surface.frame;
   const uint8_t kPort1Pad = gx::padIndex(4, 0);
   const uint8_t kPort3Pad = gx::padIndex(4, 2);
-  tapWithShift(f.surface, gx::kButtonProject);  // Shift + R1
+  tapWithShift(f.surface, gx::kButtonProbability);  // Shift + R3
   f.surface.tapPad(1);                          // the MIDI channel setting
   f.app.update(0);
   CHECK(routeInUse(frame.pads[kPort1Pad], 0));  // track 1 is on port 1
@@ -5018,7 +6252,7 @@ void testTrackInstrument() {
   const uint8_t kPort1Pad = gx::padIndex(4, 0);
   const uint8_t kInstrument1Pad = gx::padIndex(5, 0);
   const uint8_t kInstrument12Pad = gx::padIndex(6, 3);
-  tapWithShift(f.surface, gx::kButtonProject);  // Shift + R1
+  tapWithShift(f.surface, gx::kButtonProbability);  // Shift + R3
   f.surface.tapPad(1);                          // the MIDI channel setting
   f.app.update(0);
   CHECK(std::string(f.app.ui().padLabel(kInstrument1Pad)) == "I1");
@@ -5096,15 +6330,15 @@ void testShiftButtonLabels() {
   };
 
   // Without Shift: the button names, and B1..B8.
-  CHECK(right(gx::kButtonProject) == "PROJECT" && right(gx::kButtonPlay) == "PLAY");
+  CHECK(right(gx::kButtonProbability) == "PROB" && right(gx::kButtonPlay) == "PLAY");
   CHECK(bottom(0) == "(B)");
 
   // Shift in note mode: the Shift layer of R1..R8, and track pages on B1..B8.
   f.surface.press(gx::kGroupShift, 0);
   f.app.update(0);
-  CHECK(right(gx::kButtonProject) == "GLOBAL" && right(gx::kButtonPattern) == "SCENE");
+  CHECK(right(gx::kButtonProbability) == "GLOBAL" && right(gx::kButtonPattern) == "SCENE");
   CHECK(right(gx::kButtonNote) == "SCALE" && right(gx::kButtonParams) == "PRESET");
-  CHECK(right(gx::kButtonClear) == "PROB" && right(gx::kButtonPlay) == "SONG");
+  CHECK(right(gx::kButtonClear) == "PROJECT" && right(gx::kButtonPlay) == "SONG");
   // R6 and R7 are blank: the APC's firmware keeps them for its own Drum and Note modes.
   CHECK(right(gx::kButtonDuplicate) == "" && right(gx::kButtonRecord) == "");
   CHECK(bottom(0) == "T1-8" && bottom(1) == "T9-16");
@@ -5117,21 +6351,22 @@ void testShiftButtonLabels() {
   f.app.update(0);
   CHECK(padName(0) != "S1-32");  // and back to the mode's own pad once Shift is up
 
-  // Pattern mode without Shift: the track pages across the whole row now, where the pattern
-  // pages used to share it.
+  // Pattern mode: the bottom buttons are the tracks, so they keep their own B1..B8 labels,
+  // and Shift names the track pages there as it does in note mode.
   f.surface.tapButton(gx::kButtonPattern);
   f.app.update(1);
-  CHECK(bottom(0) == "T1-8" && bottom(1) == "T9-16");
-  CHECK(bottom(gx::kNumTrackPages - 1) == "T57-64");
-  if (gx::kNumTrackPages < gx::kNumBottomButtons) CHECK(bottom(gx::kNumTrackPages) == "");
+  CHECK(bottom(0) == "(B)" && bottom(1) == "(B)");
   f.surface.press(gx::kGroupShift, 0);
   f.app.update(1);
-  CHECK(right(1) == "SCENE" && bottom(1) == "T9-16");  // Shift is the same as anywhere else
-  // And the top pad row names the pattern pages it is showing.
-  CHECK(padName(0) == "PAT 1-8");
-  CHECK(padName(1) == "PAT 9-16");
-  CHECK(padName(gx::kNumPatternPages - 1) == "PAT 57-64");  // the row is full
-  if (gx::kNumPatternPages < gx::kGridCols) CHECK(padName(gx::kNumPatternPages) == "");
+  // Shift is the same as anywhere else: R2's layer is the preset mode, R4's the scenes - and
+  // the indices are spelled out so a reorder of the row has to come back through here.
+  CHECK(right(gx::kButtonParams) == "PRESET" && right(gx::kButtonPattern) == "SCENE");
+  CHECK(right(gx::kButtonProbability) == "GLOBAL" && bottom(1) == "T9-16");
+  CHECK(bottom(gx::kNumTrackPages - 1) == "T57-64");
+  if (gx::kNumTrackPages < gx::kNumBottomButtons) CHECK(bottom(gx::kNumTrackPages) == "");
+  // The top pad row is no page row here - every pad is a pattern - so it keeps whatever the
+  // mode names it, which is nothing.
+  CHECK(padName(0) == "(pad)");
   f.surface.release(gx::kGroupShift, 0);
 
   // Shift on a piano roll track: the scrolling is on the pads now, so the buttons say only
@@ -5148,7 +6383,7 @@ void testShiftButtonLabels() {
   f.app.update(3);
   CHECK(bottom(4) == "(B)" && right(gx::kButtonNote) == "NOTE");
 
-  // Holding R3 in note mode: B1..B8 are step pages.
+  // Holding R1 in note mode: B1..B8 are step pages.
   f.surface.press(gx::kGroupRight, gx::kButtonNote);
   f.app.update(4);
   CHECK(bottom(0) == "S1-32" && bottom(1) == "S33-64" && right(gx::kButtonNote) == "NOTE");
@@ -5157,11 +6392,13 @@ void testShiftButtonLabels() {
   f.app.update(5);
   CHECK(bottom(0) == "(B)");
 
-  // Holding R1: project pages.
-  f.surface.press(gx::kGroupRight, gx::kButtonProject);
+  // Shift in project mode: project pages, not track pages.
+  tapWithShift(f.surface, gx::kButtonClear);
+  f.surface.press(gx::kGroupShift, 0);
   f.app.update(6);
   CHECK(bottom(0) == "PG1" && bottom(7) == "PG8");
-  f.surface.release(gx::kGroupRight, gx::kButtonProject);
+  f.surface.release(gx::kGroupShift, 0);
+  f.surface.tapButton(gx::kButtonNote);
   f.app.update(7);
   CHECK(bottom(7) == "(B)");
 }
@@ -5475,7 +6712,7 @@ void testExternalClock() {
   // while an outside clock is really driving and white while our own is, so AUTO shows which
   // of the two it has settled on without any other display.
   f.surface.press(gx::kGroupShift, 0);
-  f.surface.tapButton(gx::kButtonProject);  // Shift + R1: global settings
+  f.surface.tapButton(gx::kButtonProbability);  // Shift + R3: global settings
   f.surface.release(gx::kGroupShift, 0);
   f.surface.tapPad(3);                      // the DEVICES page
   f.app.updateSurface(3000);
@@ -5691,7 +6928,7 @@ void testArpeggiator() {
   const uint8_t kRatePad = gx::padIndex(4, 5);
   const uint8_t kOctavePad = gx::padIndex(6, 2);  // three octaves
 
-  tapWithShift(f.surface, gx::kButtonProject);  // Shift + R1
+  tapWithShift(f.surface, gx::kButtonProbability);  // Shift + R3
   f.surface.tapPad(gx::kGlobalArp);
   f.app.update(0);
   CHECK(std::string(f.app.ui().padLabel(gx::kGlobalArp)) == "ARP");
@@ -5766,7 +7003,7 @@ void testRatchets() {
   const uint8_t kGateLanePad = gx::padIndex(6, 3);  // rows 7-8: the gate, or the ratchets
 
   f.surface.tapPad(0);                      // a step to work on, in note mode
-  f.surface.tapButton(gx::kButtonParams);   // R4: velocity and gate
+  f.surface.tapButton(gx::kButtonParams);   // R2: velocity and gate
   f.surface.tapPad(0);                      // select the step
   f.app.update(0);
   CHECK(f.app.ui().mode() == gx::kModeStepParams);
@@ -5862,7 +7099,7 @@ void testDevicesPage() {
   const uint8_t kRefreshPad = gx::padIndex(7, 0);
 
   // Without a platform to ask, the page shows everything absent and the refresh pad is inert.
-  tapWithShift(f.surface, gx::kButtonProject);  // Shift + R1
+  tapWithShift(f.surface, gx::kButtonProbability);  // Shift + R3
   f.surface.tapPad(kDevicesPad);
   f.app.update(0);
   CHECK(std::string(f.app.ui().padLabel(kDevicesPad)) == "DEVI-\nCES");
@@ -6020,7 +7257,7 @@ void testScaleMode() {
     const gx::LedFrame& frame = f.surface.frame;
 
     f.surface.press(gx::kGroupShift, 0);
-    f.surface.tapButton(gx::kButtonNote);  // Shift + R3
+    f.surface.tapButton(gx::kButtonNote);  // Shift + R1
     f.surface.release(gx::kGroupShift, 0);
     f.app.update(0);
     CHECK(f.app.ui().mode() == gx::kModeScale);
@@ -6031,7 +7268,7 @@ void testScaleMode() {
     CHECK(sameColor(frame.pads[gx::padIndex(0, 0)], gx::kBlack));       // no black key there
     CHECK(sameColor(frame.pads[kFirstScalePad + gx::kScaleChromatic], gx::kSelectedColor));
     CHECK(sameColor(frame.pads[kFirstScalePad + gx::kScaleMajor], gx::kFilledColor));
-    CHECK(sameColor(frame.right[gx::kButtonNote], gx::kWhite));  // R3 leads back to note mode
+    CHECK(sameColor(frame.right[gx::kButtonNote], gx::kWhite));  // R1 leads back to note mode
 
     f.surface.tapPad(gx::padIndex(1, 5));  // A
     f.surface.tapPad(kFirstScalePad + gx::kScaleMinor);
@@ -6040,7 +7277,7 @@ void testScaleMode() {
     CHECK(sameColor(frame.pads[gx::padIndex(1, 5)], gx::kSelectedColor));
     CHECK(!sameColor(frame.pads[gx::padIndex(1, 0)], gx::kSelectedColor));
 
-    // R3 returns to note mode, whose keyboard is now A minor from A2: A2 B2 C3 ... G3 A3 B3.
+    // R1 returns to note mode, whose keyboard is now A minor from A2: A2 B2 C3 ... G3 A3 B3.
     f.surface.tapButton(gx::kButtonNote);
     f.surface.press(gx::kGroupPad, 0);
     f.surface.tapPad(gx::padIndex(7, 1));  // second key: B2
@@ -6069,7 +7306,7 @@ void testScaleMode() {
   const gx::Sequencer& seq = reopened.app.sequencer();
   CHECK(seq.scaleRoot() == 9 && seq.scale() == gx::kScaleMinor);
 
-  // Shift + R3 opens scale mode from pattern mode too.
+  // Shift + R1 opens scale mode from pattern mode too.
   reopened.surface.tapButton(gx::kButtonPattern);
   reopened.surface.press(gx::kGroupShift, 0);
   reopened.surface.tapButton(gx::kButtonNote);
@@ -6124,7 +7361,7 @@ void testPadLabels() {
   checkPadLabelsFit(ui);
 
   // Global settings: the settings, then the picked setting's pads.
-  tapWithShift(f.surface, gx::kButtonProject);
+  tapWithShift(f.surface, gx::kButtonProbability);
   f.app.update(1);
   CHECK(ui.mode() == gx::kModeGlobal);
   CHECK(label(0) == "TEMPO" && label(1) == "MIDI\nCH" && label(16) == "(none)");
@@ -6152,9 +7389,12 @@ int main(int argc, char* argv[]) {
   testSlotStore();
   testFileStorage(argc > 1 ? argv[1] : ".");
   testVoiceLibrary(argc > 1 ? argv[1] : ".");
+  testMidiMessageBytes();
   testMidiEventSink();
+  testMidiInstrumentOutput();
   testVoiceTable();
   testMidiClock();
+  testMidiLog();
 #ifdef GX_HAVE_AUDIO
   testSpscQueue();
   testAudioEngine();
@@ -6166,11 +7406,14 @@ int main(int argc, char* argv[]) {
   testTransportButtons();
   testTrackButtonsReturnToNoteMode();
   testShiftLightsWhileHeld();
+  testRightButtonLayout();
   testNoteMode();
   testProjectMode();
   testProjectPages();
   testPatternMode();
-  testPatternPages();
+  testPatternGrid();
+  testPanelRowLayout();
+  testPagePanel();
   testFactoryPatterns();
   testTrackPagesInNoteMode();
   testTrackPageLimit();
@@ -6212,6 +7455,9 @@ int main(int argc, char* argv[]) {
   testSeparateClock();
   testShiftButtonLabels();
   testApcMiniSurface();
+  testApcKey25Surface();
+  testApcMiniPanelSurface();
+  testLaunchpadXSurface();
   testKeyboardOctave();
   testScales();
   testScaleMode();

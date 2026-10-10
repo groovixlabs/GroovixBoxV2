@@ -14,7 +14,7 @@
 <div class="page-narrow">
   <div id="topnav"></div>
   <main>
-        <h2>Probability <span class="ctl">SHIFT</span> + <span class="ctl">R5</span></h2>
+        <h2>Probability <span class="ctl">R3</span></h2>
         <p class="section-intro">How likely each step is to play every time the pattern comes round, and how far off the grid it plays. The steps stay on top; probability and micro-timing are the two lanes below them.</p>
         <figure>
           <div class="device-frame"><div class="device" id="fig-probability"></div></div>
@@ -37,8 +37,8 @@
           <li id="triplets"><strong>Triplets.</strong> A beat is 96 ticks and the grid sits at 0, 24, 48 and 72, so every 8th- and 16th-note triplet position in the beat is exactly 8 ticks from a step. That is what the ±8 rungs are for: an 8th-note triplet is step 2 at +8 and step 4 at −8, and 16th triplets fill in at step 2 ±8 and step 4 ±8. For triplets <em>inside</em> one step, a <a href="params.html#ratchet">ratchet</a> of 3 or 6 divides it evenly instead, and the <a href="global.html#arp">arpeggiator</a> has 1/8T, 1/16T and 1/32T rates.</li>
           <li><strong>The grid doesn't move.</strong> A nudged step still belongs to its place: the playhead, the bar and the song count it where it sits, only the notes play early or late. Use it for a snare that drags or a hat that pushes.</li>
           <li>For a groove across the whole pattern rather than one step, use <a href="global.html">swing</a>; the two add up. Swing delays every second step — the “e” and the “a” — so a hit on the offbeat 8th (steps 3, 7, 11, 15) is left where it is.</li>
-          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B4</span> changes the track page, so a track past the eighth can be edited without leaving this mode.</li>
-          <li><span class="ctl">R3</span> returns to Note mode.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">B1</span>–<span class="ctl">B8</span> changes the track page, so a track past the eighth can be edited without leaving this mode.</li>
+          <li><span class="ctl">R1</span> returns to Note mode.</li>
         </ul>
   </main>
 </div>
@@ -70,11 +70,7 @@
         if (lanePad === 11) return { c: PROBABILITY, lit: true };
         return { c: g.dim(PROBABILITY, lanePad < 11 ? 0.35 : 0.05) };
       },
-      right: function (i) {
-        var spec = g.functionButtons(-1, false, false)(i);
-        if (i === 4) spec = { c: "#ff6a14" };
-        return spec;
-      },
+      right: g.functionButtons(2, false, false),  // R3 is the mode's own button now
       bottom: g.trackButtons(0)
     });
   })();

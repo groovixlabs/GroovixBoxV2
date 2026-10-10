@@ -408,7 +408,7 @@ const Rgb kValueColor = {40, 100, 255};
 const Rgb kStepColor = {243, 244, 246};
 
 const ModeLegend kGlobalLegend = {
-    "SHIFT + R1",
+    "SHIFT + R3",
     "Global settings",
     {
         {1, 1, kPickColor, "row 1", "tempo, MIDI, swing, devices, arp"},
@@ -420,7 +420,7 @@ const ModeLegend kGlobalLegend = {
     },
     3,
     {"fader 1 sets the picked value", "B1-B8 only move the selection here",
-     "R1 back to project", NULL},
+     "R3 back to probability", NULL},
     3,
     {kPickColor, {}, kValueColor, kValueColor, kValueColor, kValueColor, kValueColor, kStepColor},
 };

@@ -18,7 +18,7 @@ enum GlobalSetting {
   kNumGlobalSettings,
 };
 
-// Shift + R1: settings. The top row picks one; nothing is picked until a pad is tapped, and
+// Shift + R3: settings. The top row picks one; nothing is picked until a pad is tapped, and
 // the pick then stays for later visits.
 //  - pad 1, tempo: shown in the 3x5 font on the rows below; fader 1 sets it, and pads 5 and 6
 //    of the bottom row step it up and down by 1

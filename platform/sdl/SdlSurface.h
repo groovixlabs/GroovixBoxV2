@@ -51,18 +51,12 @@ class SdlSurface : public ControlSurface {
     kPanelX = kGridX - kPanelPadding,
     kPanelY = kGridY - kPanelPadding,
     kPanelRight = kRightX + kButtonSize + kLabelGap + kLabelWidth + kPanelPadding,
-    // A row of page buttons under B1..B8: the mixer's A2 row brought over to the keyboard
-    // side, so pages can be changed without holding Shift or R1/R3/R4.
-    kPageRowGap = 14,
-    kPageButtonHeight = 22,
-
-    kFaderGap = 18,  // from the page row to the faders
+    kFaderGap = 18,  // from the B row's labels to the faders
     kFaderTravel = 112,
     kFaderCapWidth = 36,
     kFaderCapHeight = 16,
     kFaderSlotWidth = 6,
-    kPageRowY = kBottomY + kButtonSize + kLabelGap + kTextHeight + kPageRowGap,
-    kFaderY = kPageRowY + kPageButtonHeight + kLabelGap + kTextHeight + kFaderGap,
+    kFaderY = kBottomY + kButtonSize + kLabelGap + kTextHeight + kFaderGap,
     kFaderHeight = kFaderTravel + kFaderCapHeight,
     kFooterLineGap = 6,
 
@@ -145,7 +139,6 @@ class SdlSurface : public ControlSurface {
   static SDL_Rect bottomRect(uint8_t index);
   // The page row: button n is the mixer's A2 button n, so it pages whatever the open mode
   // pages over and lights the same way, with nothing new in core to keep in step.
-  static SDL_Rect pageRect(uint8_t index);
   static SDL_Rect shiftRect();
   // Mixer: knobs and A1/A2 buttons are indexed row by row, side buttons top to bottom.
   static SDL_Rect knobRect(uint8_t index);

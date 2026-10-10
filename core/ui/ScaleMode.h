@@ -7,7 +7,7 @@
 
 namespace gx {
 
-// Shift + R3 opens scale mode and R3 returns to note mode. The top two rows are a piano
+// Shift + R1 opens scale mode and R1 returns to note mode. The top two rows are a piano
 // for the root note (black keys above white keys, C to C) and the bottom four rows hold
 // the scales. The selected root and scale light green; note mode's keyboard then offers
 // only notes of that scale. The last two pads of the bottom row set the selected track's

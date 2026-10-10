@@ -65,10 +65,10 @@
         <div class="km-group">
           <p class="km-caption">Function keys → right-hand buttons</p>
           <ul class="km-keys">
-            <li><kbd>F1</kbd><span class="km-to">↓</span><span class="ctl">R1</span><span class="km-name">Project</span></li>
-            <li><kbd>F2</kbd><span class="km-to">↓</span><span class="ctl">R2</span><span class="km-name">Pattern</span></li>
-            <li><kbd>F3</kbd><span class="km-to">↓</span><span class="ctl">R3</span><span class="km-name">Note</span></li>
-            <li><kbd>F4</kbd><span class="km-to">↓</span><span class="ctl">R4</span><span class="km-name">Params</span></li>
+            <li><kbd>F1</kbd><span class="km-to">↓</span><span class="ctl">R1</span><span class="km-name">Note</span></li>
+            <li><kbd>F2</kbd><span class="km-to">↓</span><span class="ctl">R2</span><span class="km-name">Params</span></li>
+            <li><kbd>F3</kbd><span class="km-to">↓</span><span class="ctl">R3</span><span class="km-name">Prob</span></li>
+            <li><kbd>F4</kbd><span class="km-to">↓</span><span class="ctl">R4</span><span class="km-name">Pattern</span></li>
             <li><kbd>F5</kbd><span class="km-to">↓</span><span class="ctl">R5</span><span class="km-name"><span class="led" style="--c:#ff6a14"></span>Clear</span></li>
             <li><kbd>F6</kbd><span class="km-to">↓</span><span class="ctl">R6</span><span class="km-name"><span class="led" style="--c:#1e9cff"></span>Duplicate</span></li>
             <li><kbd>F7</kbd><span class="km-to">↓</span><span class="ctl">R7</span><span class="km-name"><span class="led" style="--c:#ff2b2b"></span>Record</span></li>
@@ -99,11 +99,10 @@
           </ul>
         </div>
       </div>
-      <p><strong>The bar across the top of the window jumps to a mode</strong> — PROJECT, SETTINGS, SONG, SCENE, PATTERN, NOTE, SCALE, PARAM, PRESET, PROB — without holding <kbd>Shift</kbd>, and the mode you are in is lit. Clicking one presses the buttons it stands for (<kbd>Shift</kbd> + <kbd>F3</kbd> for SCALE), so it does exactly what the device does. The hardware has no room for these; only the simulator has them.</p>
-      <p><strong>The PAGE row under <kbd>B1</kbd>–<kbd>B8</kbd> changes page without a modifier.</strong> Each button is the mixer’s A2 button, so it pages whatever the open mode pages over — steps in Note mode, projects in Project mode, presets in Preset mode — and in <a href="pattern.html">Pattern mode</a> it splits the same way the pads’ bottom row does: 1–4 the track pages, 5–8 the pattern pages. Green is the page on screen, dim blue a page holding something, grey an empty one.</p>
-      <p>Track keys use the top number row, not the keypad. They select tracks on the current track page, so after <kbd>Shift</kbd> + <kbd>2</kbd> the <kbd>1</kbd> key picks track 9. Everywhere but <a href="global.html">Global settings</a> and <a href="pattern.html">Pattern mode</a> they also go to Note mode; in Global settings they only move the selection, and in Pattern mode they page the columns instead — <kbd>1</kbd>–<kbd>8</kbd> are the track pages, with or without <kbd>Shift</kbd>, and the pattern pages are on <kbd>Shift</kbd> + the top pad row. Elsewhere <kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>8</kbd> changes the track page.</p>
-      <p>While <kbd>Shift</kbd> is held, the simulator relabels the buttons with their Shift functions for the current mode — GLOBAL, SCENE, SCALE, PARAMS, PROB and SONG on the right, track pages below — and draws the labels brighter. It also names the top pad row for the pages Shift has turned it into: <strong>S1-32</strong>–<strong>S225-256</strong> in the step modes, <strong>PAT 1-8</strong>–<strong>PAT 57-64</strong> in Pattern mode, so a pad Shift has taken over says what it does rather than what is under it. In Pattern mode the bottom buttons are labelled with their track pages (<strong>T1-8</strong>–<strong>T57-64</strong>) with no Shift at all.</p>
-      <p>Holding a button that turns B1–B8 into page buttons relabels them too: <strong>PG1</strong>–<strong>PG8</strong> while Shift is held in Project or Preset mode (or R1 in Project mode, R4 in Preset mode), and the steps each page shows (<strong>S1-32</strong>, <strong>S33-64</strong>, …) while R3 is held in Note mode, R4 in Step params or R5 in Probability mode.</p>
+      <p><strong>The bar across the top of the window jumps to a mode</strong> — PROJECT, SETTINGS, SONG, SCENE, PATTERN, NOTE, SCALE, PARAM, PRESET, PROB — without holding <kbd>Shift</kbd>, and the mode you are in is lit. Clicking one presses the buttons it stands for (<kbd>Shift</kbd> + <kbd>F1</kbd> for SCALE), so it does exactly what the device does. The hardware has no room for these; only the simulator has them.</p>
+      <p>Track keys use the top number row, not the keypad. They select tracks on the current track page, so after <kbd>Shift</kbd> + <kbd>2</kbd> the <kbd>1</kbd> key picks track 9. Everywhere but <a href="global.html">Global settings</a> and <a href="pattern.html">Pattern mode</a> they also go to Note mode; in those two they only move the selection, so you can give one track after another a setting or a pattern without leaving. <kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>8</kbd> changes the track page in every mode whose pads work on the selected track, Pattern mode included.</p>
+      <p>While <kbd>Shift</kbd> is held, the simulator relabels the buttons with their Shift functions for the current mode — SCALE, PRESET, SCENE, GLOBAL, PROB and SONG on the right, track pages below — and draws the labels brighter. It also names the top pad row for the pages Shift has turned it into: <strong>S1-32</strong>–<strong>S225-256</strong> in the step modes, so a pad Shift has taken over says what it does rather than what is under it. In Pattern mode Shift takes no pad row, so nothing there is relabelled: every pad is still a pattern.</p>
+      <p>Where B1–B8 become page buttons they are relabelled too: <strong>PG1</strong>–<strong>PG8</strong> while Shift is held in Project or Preset mode (or R2 in Preset mode), and the steps each page shows (<strong>S1-32</strong>, <strong>S33-64</strong>, …) while R1 is held in Note mode on a piano roll track — the one place that gesture still pages.</p>
       <p>To help you learn the settings modes, the simulator also prints on the pads what they do: note names, scale names and the keyboard pads in Scale mode, and the settings, +1/−1, channel numbers and the device names in Global settings. The APC mini has no display, so its pads stay plain.</p>
     </section>
 
@@ -113,17 +112,15 @@
         <table class="shortcuts">
           <thead><tr><th>Keys</th><th>Does</th></tr></thead>
           <tbody>
-            <tr><td><kbd>Shift</kbd> + <kbd>F1</kbd></td><td>Opens <a href="global.html">Global settings</a></td></tr>
-            <tr><td><kbd>Shift</kbd> + <kbd>F2</kbd></td><td>Opens <a href="scene.html">Scenes</a> — from Pattern mode too</td></tr>
-            <tr><td><kbd>Shift</kbd> + <kbd>F3</kbd></td><td>Opens <a href="scale.html">Scale mode</a></td></tr>
-            <tr><td><kbd>Shift</kbd> + <kbd>F4</kbd></td><td>Opens <a href="params.html">Step parameters</a></td></tr>
-            <tr><td><kbd>Shift</kbd> + <kbd>F5</kbd></td><td>Opens <a href="probability.html">Probability</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F1</kbd></td><td>Opens <a href="scale.html">Scale mode</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F2</kbd></td><td>Opens <a href="preset.html">Preset mode</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F3</kbd></td><td>Opens <a href="global.html">Global settings</a></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F4</kbd></td><td>Opens <a href="scene.html">Scenes</a> — from Pattern mode too</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F5</kbd></td><td>Opens <a href="project.html">Project mode</a></td></tr>
             <tr><td><kbd>Shift</kbd> + <kbd>F8</kbd></td><td>Opens the <a href="song.html">Song</a> — shift-play plays the song</td></tr>
             <tr><td><kbd>Shift</kbd> + <kbd>F6</kbd> / <kbd>F7</kbd></td><td>Nothing here, and nothing on the APC either: its firmware keeps those two for its own Drum and Note pad modes and never sends them</td></tr>
-            <tr><td><kbd>1</kbd>–<kbd>8</kbd></td><td>Track page 1–8 (tracks 1–8 … 57–64) — which tracks the columns show. <kbd>Shift</kbd> makes no difference<span class="where">Pattern mode</span></td></tr>
-            <tr><td><kbd>Shift</kbd> + click a pad on the top row</td><td>Pattern page 1–8 (patterns 1–8 … 57–64) — which patterns the rows show; the row shows which page you are on while <kbd>Shift</kbd> is held<span class="where">Pattern mode</span></td></tr>
-            <tr><td><kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Track page 1–8 (tracks 1–8 … 57–64); the selected track keeps its position. Eight pages of eight is all 64 tracks, so the whole row is live.<span class="where">Note, Scale, Step parameters, Probability, Scenes and Global settings — every mode whose pads work on the selected track</span></td></tr>
-            <tr><td><kbd>Shift</kbd> + click the roll’s arrow pads</td><td>Scrolls the view by 4: left (8,6), down (8,7), right (8,8), up (7,7). Up and down move through the notes, left and right through the steps; an arrow with nowhere to go is dark<span class="where">Note mode, on a piano roll track</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Track page 1–8 (tracks 1–8 … 57–64); the selected track keeps its position. Eight pages of eight is all 64 tracks, so the whole row is live.<span class="where">Note, Pattern, Scale, Step parameters, Probability, Scenes and Global settings — every mode whose pads work on the selected track</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + click the roll’s arrow pads</td><td>Scrolls the view by 1: left (8,6), down (8,7), right (8,8), up (7,7). Up and down move through the notes, left and right through the steps; an arrow with nowhere to go is dark<span class="where">Note mode, on a piano roll track</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -135,10 +132,9 @@
         <table class="shortcuts">
           <thead><tr><th>Keys</th><th>Does</th></tr></thead>
           <tbody>
-            <tr><td>Hold <kbd>F1</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Opens <a href="project.html">Project mode</a> on page 1–8<span class="where">From any mode</span></td></tr>
-            <tr><td>Hold <kbd>F3</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Step page 1–8 (32 steps each); the playing page blinks while <kbd>F3</kbd> is held<span class="where">Note mode</span></td></tr>
-            <tr><td>Hold <kbd>F4</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Opens <a href="preset.html">Preset mode</a> on page 1–8<span class="where">In Step parameters: step page 1–8 instead</span></td></tr>
-            <tr><td>Hold <kbd>F5</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Step page 1–8<span class="where">Probability mode</span></td></tr>
+            <tr><td>Hold <kbd>F1</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Step page 1–8 (32 steps each); the playing page blinks while <kbd>F1</kbd> is held<span class="where">Note mode, on a piano roll track — the roll’s grid has no spare pads to put the gesture on</span></td></tr>
+            <tr><td>Hold <kbd>F2</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Opens <a href="params.html">Step parameters</a><span class="where">In Preset mode: preset page 1–8 instead</span></td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>8</kbd></td><td>Project page 1–8<span class="where">Project mode. No function key opens it any more, so there is none to hold here</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -152,8 +148,8 @@
           <tbody>
             <tr><td>Hold <kbd>F5</kbd> + click</td><td>Clears the clicked step, pattern or project. There is no undo. Preset mode has nothing to clear.</td></tr>
             <tr><td>Hold <kbd>F6</kbd> + click, click</td><td>Duplicates from the first click to each click after it; you can change page in between</td></tr>
-            <tr><td>Hold <kbd>F3</kbd> + click a step</td><td>Makes it the pattern’s last step (it turns red). <kbd>F3</kbd> rather than <kbd>Shift</kbd>, because <kbd>Shift</kbd> on the top row picks the step page<span class="where">Note mode</span></td></tr>
-            <tr><td>Hold <kbd>F3</kbd> + click a pad</td><td>Makes its step the pattern’s last step<span class="where">Note mode, on a piano roll track</span></td></tr>
+            <tr><td>Hold <kbd>F1</kbd> + click a step</td><td>Makes it the pattern’s last step (it turns red). <kbd>F1</kbd> rather than <kbd>Shift</kbd>, because <kbd>Shift</kbd> on the top row picks the step page<span class="where">Note mode</span></td></tr>
+            <tr><td>Hold <kbd>F1</kbd> + click a pad</td><td>Makes its step the pattern’s last step<span class="where">Note mode, on a piano roll track</span></td></tr>
             <tr><td><kbd>Shift</kbd> + click a pad on the top row</td><td>Goes straight to that page of 32 steps; while <kbd>Shift</kbd> is held the row shows which page you are on<span class="where">Note, Step parameters and Probability</span></td></tr>
             <tr><td><kbd>Shift</kbd> + click the top-left or bottom-left key</td><td>Moves the track’s keyboard up or down an octave — vertical, because pitch runs up the keyboard<span class="where">Note mode</span></td></tr>
             <tr><td><kbd>Shift</kbd> + click any other key</td><td>Plays that key’s single note on a track whose keyboard is in <a href="scale.html#chords">chords</a><span class="where">Note mode</span></td></tr>

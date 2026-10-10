@@ -5,9 +5,13 @@
 #   sudo apt install libasound2-dev:arm64                # what groovix links against
 #
 #   cmake -S . -B build-rpi -DCMAKE_TOOLCHAIN_FILE=cmake/rpi-aarch64.cmake \
-#         -DGX_BUILD_SIMULATOR=OFF -DGX_NUM_TRACKS=32 -DGX_NUM_PATTERNS=32 -DGX_MAX_STEPS=256
+#         -DGX_BUILD_SIMULATOR=OFF -DGX_BUILD_AUDIO=OFF
 #   cmake --build build-rpi --target groovix
 #   scp build-rpi/groovix pi@raspberrypi:~/
+#
+# The capacities are left at their defaults on purpose - 64 tracks, 64 patterns, 256 steps,
+# the same as a desktop build, so project files move between the two and the factory bank
+# sits where the manual says it does. See the README before narrowing any of them.
 #
 # With a Pi's own filesystem copied to the desktop instead of the arm64 packages, point
 # GX_SYSROOT at it:

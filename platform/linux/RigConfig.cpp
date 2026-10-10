@@ -70,10 +70,39 @@ std::string RigConfig::value(const char* key) const {
   return std::string();
 }
 
-std::string RigConfig::portSpec(uint8_t port) const {
+std::string RigConfig::portValue(uint8_t port, const char* suffix) const {
   if (port >= kNumMidiPorts) return std::string();
-  const char key[3] = {'p', static_cast<char>('1' + port), '\0'};
-  return value(key);
+  std::string key("p");
+  key += static_cast<char>('1' + port);
+  key += suffix;
+  return value(key.c_str());
 }
+
+std::string RigConfig::portSpec(uint8_t port) const { return portValue(port, ""); }
+
+std::string RigConfig::portSocket(uint8_t port) const { return portValue(port, ".socket"); }
+
+// Both switches read the same way and are wrong in the same way, so they share this: a port
+// whose line says "off" loses its bit, and anything else keeps it.
+uint8_t RigConfig::portMask(const char* suffix) const {
+  uint8_t mask = 0xFF;
+  for (uint8_t port = 0; port < kNumMidiPorts; ++port) {
+    const std::string setting = portValue(port, suffix);
+    if (setting.empty() || strcasecmp(setting.c_str(), "on") == 0) continue;
+    if (strcasecmp(setting.c_str(), "off") == 0) {
+      mask = static_cast<uint8_t>(mask & ~(1u << port));
+      continue;
+    }
+    // A typo here would silently go on sending the very bytes the line was written to stop,
+    // so say so rather than guess at what was meant.
+    std::fprintf(stderr, "controls: p%u%s = %s is not \"on\" or \"off\"; left on\n",
+                 static_cast<unsigned>(port + 1), suffix, setting.c_str());
+  }
+  return mask;
+}
+
+uint8_t RigConfig::transportPorts() const { return portMask(".transport"); }
+
+uint8_t RigConfig::clockPorts() const { return portMask(".clock"); }
 
 }  // namespace gx

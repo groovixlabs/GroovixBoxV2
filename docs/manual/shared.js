@@ -5,7 +5,7 @@
       clear: "#ff6a14", dup: "#1e9cff", rec: "#ff2b2b", play: "#36d65f"
     };
     var TRACK = ["#ffbd6c", "#ff8a1f", "#ffe01a", "#44e050", "#14d6c6", "#3b6cff", "#a55cff", "#ff4fb0"];
-    var R_NAMES = ["PROJECT", "PATTERN", "NOTE", "PARAMS", "CLEAR", "DUPLICATE", "RECORD", "PLAY"];
+    var R_NAMES = ["NOTE", "PARAMS", "PATTERN", "PROJECT", "CLEAR", "DUPLICATE", "RECORD", "PLAY"];
     var R_COLORS = [C.white, C.white, C.white, C.white, C.clear, C.dup, C.rec, C.play];
     var NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 

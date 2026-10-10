@@ -10,14 +10,14 @@ namespace gx {
 
 static const uint8_t kNumStepPads = kStepsPerPage;  // top four rows: one page of steps
 
-// R3: the top four rows are the selected track's steps, the bottom four a keyboard of the
+// R1: the top four rows are the selected track's steps, the bottom four a keyboard of the
 // project's scale (see ScaleMode). It starts on the scale root at bottom-left and rises one
 // scale note per pad, left to right and row by row upwards; every row starts on the root
 // unless the scale has 8 or more notes per octave.
 //  - tap an empty step to switch it on with the track's last note; pressing a lit step shows
 //    its notes and never switches it off: only Clear + step removes it (Duplicate copies it)
 //  - Shift + a step makes it the pattern's last step, which then lights red
-//  - hold R3 and press B1..B8 to show another page of 32 steps
+//  - hold R1 and press B1..B8 to show another page of 32 steps
 //  - hold note keys and press a step to give it that chord
 //  - hold steps and press note keys to add those notes, or take out ones already there
 //  - note pads play their note, and while playing + recording write it at the playhead
@@ -38,6 +38,12 @@ class NoteMode : public Mode {
 
   // The piano roll of tracks that show one. It scrolls itself, from its own arrow pads.
   void showRollStepPage(UiState& state, uint8_t page) { roll_.showStepPage(state, page); }
+  // And from arrow buttons elsewhere - a page panel has four of its own, which reach the roll
+  // without the Shift its pad cluster needs, and move it by exactly as much.
+  void scrollRoll(UiState& state, uint8_t direction) { roll_.scroll(state, direction); }
+  bool canScrollRoll(const UiState& state, uint8_t direction) const {
+    return roll_.canScroll(state, direction);
+  }
 
  private:
   // Note of a keyboard pad in the track's octave and the current scale, or kInvalidNote

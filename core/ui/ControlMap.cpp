@@ -160,26 +160,41 @@ bool ControlMap::load(const char* text, size_t length, uint16_t* errorLine) {
 }
 
 // One "name = cc[, mode]" line, already trimmed and without its comment.
-// Keys the platform reads from the same file for itself: midiout and midiin, which name the
-// devices to send to and listen to, and p1..p8, which say where each MIDI port goes. They are not controls, so the map passes over
-// them rather than calling the line a mistake.
-static bool isPlatformKey(const char* name, size_t length) {
-  if (length == 2 && (name[0] == 'p' || name[0] == 'P') && name[1] >= '1' &&
-      name[1] <= '0' + static_cast<char>(kNumMidiPorts)) {
-    return true;
+// A name against a lower-case key, ignoring case and with no terminator to rely on.
+static bool keyIs(const char* name, size_t length, const char* key) {
+  size_t n = 0;
+  while (key[n] != '\0') ++n;
+  if (n != length) return false;
+  for (size_t i = 0; i < n; ++i) {
+    char c = name[i];
+    if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+    if (c != key[i]) return false;
   }
-  static const char* const kKeys[] = {"midiout", "midiin"};
-  for (size_t k = 0; k < sizeof(kKeys) / sizeof(kKeys[0]); ++k) {
-    size_t n = 0;
-    while (kKeys[k][n] != '\0') ++n;
-    if (n != length) continue;
-    bool same = true;
-    for (size_t i = 0; i < n && same; ++i) {
-      char c = name[i];
-      if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
-      same = c == kKeys[k][i];
+  return true;
+}
+
+// Keys the platform reads from the same file for itself: midiout and midiin, which name the
+// devices to send to and listen to, displayfont, which names the screen's font, surface.grid,
+// surface.panel and surface.mixer, which say which device plays which role, p1..p8, which
+// say where each MIDI port goes, and a port's own suffixes - .socket, which sends it to a
+// network server instead of to a cable, .transport, which keeps Start and Stop off it, and
+// .clock, which stops the clock on it.
+// They are not controls, so the map passes over them rather than calling the line a mistake -
+// and it must, because a line it calls a mistake is reported to the user as a broken file.
+static bool isPlatformKey(const char* name, size_t length) {
+  const bool portName = length >= 2 && (name[0] == 'p' || name[0] == 'P') && name[1] >= '1' &&
+                        name[1] <= '0' + static_cast<char>(kNumMidiPorts);
+  if (portName) {
+    if (length == 2) return true;
+    static const char* const kSuffixes[] = {".socket", ".transport", ".clock"};
+    for (size_t s = 0; s < sizeof(kSuffixes) / sizeof(kSuffixes[0]); ++s) {
+      if (keyIs(name + 2, length - 2, kSuffixes[s])) return true;
     }
-    if (same) return true;
+  }
+  static const char* const kKeys[] = {"midiout",      "midiin",        "displayfont",
+                                      "surface.grid", "surface.panel", "surface.mixer"};
+  for (size_t k = 0; k < sizeof(kKeys) / sizeof(kKeys[0]); ++k) {
+    if (keyIs(name, length, kKeys[k])) return true;
   }
   return false;
 }

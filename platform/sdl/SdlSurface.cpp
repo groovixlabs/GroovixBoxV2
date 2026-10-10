@@ -108,11 +108,11 @@ struct ModeButton {
   bool shift;
 };
 const ModeButton kModeButtons[] = {
-    {"PROJECT", kButtonProject, false}, {"SETTINGS", kButtonProject, true},
-    {"SONG", kButtonPlay, true},        {"SCENE", kButtonPattern, true},
-    {"PATTERN", kButtonPattern, false}, {"NOTE", kButtonNote, false},
-    {"SCALE", kButtonNote, true},       {"PARAM", kButtonParams, false},
-    {"PRESET", kButtonParams, true},    {"PROB", kButtonClear, true},
+    {"PROJECT", kButtonClear, true},        {"SETTINGS", kButtonProbability, true},
+    {"SONG", kButtonPlay, true},            {"SCENE", kButtonPattern, true},
+    {"PATTERN", kButtonPattern, false},     {"NOTE", kButtonNote, false},
+    {"SCALE", kButtonNote, true},           {"PARAM", kButtonParams, false},
+    {"PRESET", kButtonParams, true},        {"PROB", kButtonProbability, false},
 };
 const uint8_t kNumModeButtons = sizeof(kModeButtons) / sizeof(kModeButtons[0]);
 
@@ -487,12 +487,6 @@ SDL_Rect SdlSurface::bottomRect(uint8_t index) {
   return rect;
 }
 
-// Under each B button, a pad's width so the row reads as one strip rather than eight studs.
-SDL_Rect SdlSurface::pageRect(uint8_t index) {
-  SDL_Rect rect = {kGridX + index * kPitch, kPageRowY, kPadSize, kPageButtonHeight};
-  return rect;
-}
-
 // Bottom-right corner: in the R column, on the B row.
 SDL_Rect SdlSurface::shiftRect() {
   SDL_Rect rect = {kRightX, kBottomY, kButtonSize, kButtonSize};
@@ -719,15 +713,6 @@ bool SdlSurface::hitTest(int x, int y, ControlEvent& out) const {
       return true;
     }
   }
-  for (uint8_t i = 0; i < kNumMixStrips; ++i) {
-    const SDL_Rect rect = pageRect(i);
-    if (SDL_PointInRect(&point, &rect)) {
-      // It is the A2 button, not a control of its own: one page mechanism, not two.
-      out.group = kGroupMixButton;
-      out.index = mixButtonIndex(1, i);
-      return true;
-    }
-  }
   const SDL_Rect shift = shiftRect();
   if (SDL_PointInRect(&point, &shift)) {
     out.group = kGroupShift;
@@ -921,20 +906,6 @@ void SdlSurface::draw() {
     drawText(r, rect.x + (rect.w - textWidth(text, kTextScale)) / 2,
              rect.y + rect.h + kLabelGap, text, kTextScale);
   }
-
-  // The page row, lit by the mixer's own A2 colours: green the page on screen, dim blue one
-  // holding something, grey an empty one, dark where the mode has no such page.
-  for (uint8_t i = 0; i < kNumMixStrips; ++i) {
-    const uint8_t a2 = mixButtonIndex(1, i);
-    const SDL_Rect rect = pageRect(i);
-    drawControl(r, rect, frame_.mixButtons[a2], mixButtonPressed_[a2], kButtonRadius);
-    std::snprintf(label, sizeof(label), "%d", i + 1);
-    setColor(r, isLit(frame_.mixButtons[a2]) ? kStatus : kLabel);
-    drawText(r, rect.x + (rect.w - textWidth(label, kTextScale)) / 2,
-             rect.y + (rect.h - kTextHeight) / 2, label, kTextScale);
-  }
-  setColor(r, kHint);
-  drawText(r, kGridX, kPageRowY + kPageButtonHeight + kLabelGap, "PAGE", kTextScale);
 
   const SDL_Rect shift = shiftRect();
   drawControl(r, shift, frame_.shift, shiftPressed_, kButtonRadius);

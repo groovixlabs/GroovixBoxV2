@@ -47,8 +47,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             foreach (gx_platform_keys() as $key) {
-                if (!array_key_exists('route_' . $key, $_POST)) continue;
-                $where = trim((string)$_POST['route_' . $key]);
+                // PHP turns a dot in a field name into an underscore, so p8.socket arrives
+                // as route_p8_socket - the same dance the control fields already do.
+                $field = 'route_' . str_replace('.', '_', $key);
+                if (!array_key_exists($field, $_POST)) continue;
+                $where = trim((string)$_POST[$field]);
+                if (gx_is_socket_key($key)) {
+                    // The radio decides: on MIDI, the port keeps the device above and the
+                    // socket line comes out of the file altogether.
+                    $port = (int)substr($key, 1, strpos($key, '.') - 1);
+                    $mode = (string)($_POST['mode_p' . $port] ?? 'midi');
+                    $values[$key] = ($mode === 'socket' && $where !== '') ? $where : null;
+                    continue;
+                }
+                if (gx_is_surface_key($key)) {
+                    // "auto" is the default, and the default is written by saying nothing:
+                    // a rig that never mentions a role behaves as it always has.
+                    $values[$key] = ($where === '' || strtolower($where) === 'auto') ? null : $where;
+                    continue;
+                }
+                if (gx_is_port_switch_key($key)) {
+                    // Only "off" is worth a line: a port that gets both is the default, so
+                    // switching one back on takes the line out rather than writing "on".
+                    $values[$key] = strtolower($where) === 'off' ? 'off' : null;
+                    continue;
+                }
                 $values[$key] = $where === '' ? null : $where;
             }
         }
@@ -229,6 +252,8 @@ function gx_field(array $assignments, string $name, string $label, ?string $hint
   select.picker:disabled { opacity: .45; }
   th code { font-family: var(--mono); font-size: 13px; }
   .label { color: var(--dim); font-weight: 400; margin-left: 10px; font-size: 13px; }
+  /* Beside the port's dropdown rather than under it: it belongs to that port's row. */
+  label.holdback { color: var(--dim); font-size: 13px; white-space: nowrap; }
   tr.inherited th code { color: var(--dim); }
   .from, .hint { color: var(--dim); font-size: 12.5px; }
   input[type=text], textarea, select {
@@ -357,13 +382,75 @@ function gx_field(array $assignments, string $name, string $label, ?string $hint
         <td><?php gx_picker('midiin', $assignments['midiin'] ?? '', $deviceChoices,
                             'whatever looks like one'); ?></td>
       </tr>
-      <?php for ($p = 1; $p <= GX_MIDI_PORTS; $p++): $key = 'p' . $p; ?>
+      <?php foreach (GX_SURFACE_ROLES as $roleKey => $roleLabel):
+              $choices = gx_surface_choices($roleKey);
+              $chosen = strtolower((string)($assignments[$roleKey] ?? '')); ?>
+      <tr>
+        <th><code><?= e($roleKey) ?></code><span class="label">which device is the
+            <?= e(strtolower($roleLabel)) ?></span></th>
+        <td>
+          <select name="route_<?= e(str_replace('.', '_', $roleKey)) ?>">
+            <option value="auto"<?= $chosen === '' || $chosen === 'auto' ? ' selected' : '' ?>>
+              whichever is plugged in</option>
+            <?php foreach ($choices as $id => $label): ?>
+            <option value="<?= e($id) ?>"<?= $chosen === $id ? ' selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </td>
+      </tr>
+      <?php endforeach; ?>
+      <?php for ($p = 1; $p <= GX_MIDI_PORTS; $p++): $key = 'p' . $p;
+            $socketKey = $key . '.socket';
+            $socket = $assignments[$socketKey] ?? '';
+            $onSocket = $socket !== ''; ?>
       <tr>
         <th><code>P<?= $p ?></code><span class="label">a device of its own</span></th>
-        <td><?php gx_picker($key, $assignments[$key] ?? '', $portChoices, 'follows midiout'); ?></td>
+        <td><?php gx_picker($key, $assignments[$key] ?? '', $portChoices, 'follows midiout'); ?>
+          <?php foreach (GX_PORT_SWITCHES as $suffix => $label):
+                  $off = strtolower((string)($assignments["$key.$suffix"] ?? '')) === 'off';
+                  // The hidden field is the unticked answer: a checkbox that is not ticked
+                  // posts nothing, and on this form a field that is absent means "leave the
+                  // line alone" rather than "send it again". Last value posted wins. ?>
+          <input type="hidden" name="route_p<?= $p ?>_<?= $suffix ?>" value="on">
+          <label class="holdback"><input type="checkbox" name="route_p<?= $p ?>_<?= $suffix ?>"
+                 value="off" <?= $off ? 'checked' : '' ?>> <?= e($label) ?></label>
+          <?php endforeach; ?>
+        </td>
       </tr>
-      <?php endfor; ?>
+      <?php if ($p === GX_MIDI_PORTS): ?>
+      <tr>
+        <th><code>P<?= $p ?></code> out<span class="label">cable or network</span></th>
+        <td>
+          <label><input type="radio" name="mode_p<?= $p ?>" value="midi"
+                        <?= $onSocket ? '' : 'checked' ?>> MIDI hardware, as set above</label>
+          <label><input type="radio" name="mode_p<?= $p ?>" value="socket"
+                        <?= $onSocket ? 'checked' : '' ?>> Socket server</label>
+          <input type="text" name="route_p<?= $p ?>_socket" value="<?= e($socket) ?>"
+                 placeholder="192.168.1.50:5000" size="22">
+          <span class="label">A dotted address and port, not a name. The instrument sends
+            raw MIDI bytes over UDP — one datagram a message — and never waits on the far
+            end, so a server that is not listening costs nothing but is not told twice.
+            Choosing MIDI hardware takes the line out of the file; P<?= $p ?> then goes back
+            to the device above.</span>
+        </td>
+      </tr>
+      <?php endif; endfor; ?>
     </table>
+
+    <p class="hint"><strong>Hold back Start and Stop</strong> writes
+       <code>p<em>n</em>.transport = off</code>. Playing sends MIDI Start on every port, which
+       is what gear following your tempo wants — but a groovebox with a sequencer of its own
+       reads Start as <em>play your own pattern</em>, so a Korg Volca used here as a sound
+       module starts its own sequence over yours the moment you press Play. On its own this
+       leaves the clock running, so the device still follows the tempo and its delay and LFO
+       sync stay in time while its sequencer stays put.</p>
+    <p class="hint"><strong>Hold back the clock</strong> writes
+       <code>p<em>n</em>.clock = off</code> and stops the 24-a-beat stream as well. Tick it
+       for gear that keeps its own time and has nothing to sync, or that drifts, chatters or
+       wakes up when it is clocked: the port then carries nothing but its notes. The two are
+       independent — either, both or neither — and a port with no line at all gets both, the
+       way every port behaved before these existed. Unticking comments the line out, so what
+       you had written is still there to read.</p>
 
     <div class="actions">
       <button type="submit">Save routing</button>

@@ -13,6 +13,11 @@ const uint16_t kPresetsPerPage = 64;
 
 void LogMidiOutput::send(const MidiMessage& message) {
   if (!out_) return;
+  // The clock is 24 bytes a beat on every port - some 1500 lines a second across eight of
+  // them at 120 BPM - and every one says the same thing. Leaving it out is what makes the
+  // rest of the log readable. Start and Stop still print: there are two of those a take, and
+  // they are the ones worth seeing.
+  if (message.status == kMidiClock) return;
   const int channel = (message.status & 0x0F) + 1;
   const int port = message.port + 1;
   switch (message.status & 0xF0) {
@@ -50,8 +55,16 @@ void LogMidiOutput::send(const MidiMessage& message) {
       break;
     }
     default:
-      std::fprintf(out_, "MIDI P%d %02X %02X %02X\n", port, message.status, message.data1,
-                   message.data2);
+      // The realtime bytes carry no channel, so the hex form reads as a message on channel 9
+      // that it is not. Now that the clock no longer buries them, name the two that are left.
+      if (message.status == kMidiStart) {
+        std::fprintf(out_, "MIDI P%d start\n", port);
+      } else if (message.status == kMidiStop) {
+        std::fprintf(out_, "MIDI P%d stop\n", port);
+      } else {
+        std::fprintf(out_, "MIDI P%d %02X %02X %02X\n", port, message.status, message.data1,
+                     message.data2);
+      }
       break;
   }
 }

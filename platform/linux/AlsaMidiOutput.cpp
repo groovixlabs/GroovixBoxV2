@@ -21,19 +21,6 @@ const unsigned kSinkCaps = SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE;
 const int kSendAttempts = 10;
 const useconds_t kSendRetryUs = 500;
 
-// Bytes in a channel or realtime message, 0 for one we don't send (SysEx and friends).
-uint8_t messageLength(uint8_t status) {
-  if (status >= 0xF8) return 1;  // clock, start, stop and the rest of the realtime bytes
-  if (status >= 0xF0) return 0;  // system common: not sent through MidiMessage
-  switch (status & 0xF0) {
-    case 0xC0:  // program change
-    case 0xD0:  // channel pressure
-      return 2;
-    default:
-      return 3;
-  }
-}
-
 }  // namespace
 
 AlsaMidiOutput::AlsaMidiOutput() : seq_(NULL), connected_(0), dropped_(0) {
@@ -297,7 +284,7 @@ void AlsaMidiOutput::send(const MidiMessage& message) {
     ++dropped_;
     return;
   }
-  const uint8_t length = messageLength(message.status);
+  const uint8_t length = midiMessageLength(message.status);
   if (length == 0) return;
 
   // Built by hand rather than through snd_midi_event, which keeps running status between

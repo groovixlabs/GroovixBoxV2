@@ -14,7 +14,7 @@
 <div class="page-narrow">
   <div id="topnav"></div>
   <main>
-        <h2>Note mode <span class="ctl">R3</span></h2>
+        <h2>Note mode <span class="ctl">R1</span></h2>
         <p class="section-intro">Program the selected track. The top four rows are its 32 steps; the bottom four rows are a chromatic keyboard.</p>
         <figure>
           <div class="device-frame"><div class="device" id="fig-note"></div></div>
@@ -27,8 +27,8 @@
           <li><strong>Hold note keys and press a step</strong> to give that step the chord you are holding, up to 4 notes. Or <strong>hold steps and tap note keys</strong>: a key adds its note to the step, or takes it out if the step already has it. Taking out its last note empties the step.</li>
           <li><strong>Holding a step lights every note of its chord</strong> on the keyboard in green. While playing, the notes of the step under the playhead light in the track colour.</li>
           <li><span class="ctl">R5</span> + step clears it. <span class="ctl">R6</span> + step + step copies a step within the track.</li>
-          <li><strong><span class="ctl">SHIFT</span> + the top pad row</strong> goes straight to that page of 32 steps — pad 1 is page 1, pad 8 is page 8, one press, no walking. While <span class="ctl">SHIFT</span> is held those same eight pads <em>are</em> the map: green for the page you are on, dim blue for a page holding steps, grey for empty, the playing page blinking. Where you are and where you can go are the one row, so there is nothing to hold open and nothing to count. Every page is reachable whether the pattern is that long or not, since ending a pattern on a later step is how it is lengthened. <span class="ctl">B1</span>–<span class="ctl">B8</span> stay with the tracks, and the page the playhead is on also blinks on the mixer's A2 row.</li>
-          <li><strong>Hold <span class="ctl">R3</span> and tap a step</strong> to make it the pattern's last. It lights <span class="led" style="--c:#ff3b3b"></span>red and the steps after it go dark. Patterns run up to 8 pages, 256 steps. It is <span class="ctl">R3</span> rather than <span class="ctl">SHIFT</span> because <span class="ctl">SHIFT</span> on the top row picks the step page — something you do constantly while composing, where a length is set once a pattern. <span class="ctl">SHIFT</span> on any other step now does nothing at all.</li>
+          <li><strong><span class="ctl">SHIFT</span> + the top pad row</strong> goes straight to that page of 32 steps — pad 1 is page 1, pad 8 is page 8, one press, no walking. While <span class="ctl">SHIFT</span> is held those same eight pads <em>are</em> the map: green for the page you are on, dim blue for a page holding steps, grey for empty, the playing page blinking. Where you are and where you can go are the one row, so there is nothing to hold open and nothing to count. Every page is reachable whether the pattern is that long or not, since ending a pattern on a later step is how it is lengthened. <span class="ctl">B1</span>–<span class="ctl">B8</span> stay with the tracks.</li>
+          <li><strong>Hold <span class="ctl">R1</span> and tap a step</strong> to make it the pattern's last. It lights <span class="led" style="--c:#ff3b3b"></span>red and the steps after it go dark. Patterns run up to 8 pages, 256 steps. It is <span class="ctl">R1</span> rather than <span class="ctl">SHIFT</span> because <span class="ctl">SHIFT</span> on the top row picks the step page — something you do constantly while composing, where a length is set once a pattern. <span class="ctl">SHIFT</span> on any other step now does nothing at all.</li>
         </ul>
         <h3>Keyboard</h3>
         <ul>
@@ -56,10 +56,11 @@
         </figure>
         <ul>
           <li><strong>Tap a pad</strong> to add that note to the step; tap it again to take it out. <strong>Hold a pad</strong> to hear its note without changing the step. A step holds up to 4 notes and switches off when its last note goes.</li>
-          <li><strong><span class="ctl">SHIFT</span> turns four pads of the bottom right into arrows</strong> — left at (8,6), down at (8,7), right at (8,8) and up at (7,7), the inverted T your thumb finds without looking. They scroll the view 4 at a time, so half of what you saw stays on screen: up and down move through the notes, left and right through the steps. An arrow with nowhere further to go is dark, so a lit arrow always moves something. The scrolling is on the pads because the thing being moved is the grid; <span class="ctl">B1</span>–<span class="ctl">B8</span> are left to the track pages.</li>
+          <li><strong><span class="ctl">SHIFT</span> turns four pads of the bottom right into arrows</strong> — left at (8,6), down at (8,7), right at (8,8) and up at (7,7), the inverted T your thumb finds without looking. They scroll the view <strong>one step at a time</strong> — or one note of the track’s scale: up and down move through the notes, left and right through the steps. One press, one place, so you can land on exactly the note you want; to cross a pattern in a hurry, hold <span class="ctl">R1</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span> for a whole step page instead. An arrow with nowhere further to go is dark, so a lit arrow always moves something. The scrolling is on the pads because the thing being moved is the grid; <span class="ctl">B1</span>–<span class="ctl">B8</span> are left to the track pages.</li>
           <li><strong><span class="ctl">SHIFT</span> does nothing to any other pad of the roll</strong>, and lights nothing else. Every pad here is a note, and a note is not something to add by accident with a thumb on a modifier.</li>
-          <li><strong>Hold <span class="ctl">R3</span> and tap a pad</strong> to make its step the pattern’s last — the same gesture the step grid uses, since the roll is the same mode with another grid on it. Steps past the end are dark.</li>
-          <li><strong>Hold <span class="ctl">R3</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> to jump to a step page. <span class="ctl">R5</span> + pad clears a step and <span class="ctl">R6</span> + pad + pad copies one.</li>
+          <li><strong>A <a href="index.html#page-panel">page panel</a>’s four arrow buttons scroll the same view by the same amount, without needing <span class="ctl">SHIFT</span>.</strong> Both gestures go through one scroll, so they are interchangeable — the amount belongs to the roll, not to whichever arrow you reached for. The four buttons are dark whenever no roll is on screen.</li>
+          <li><strong>Hold <span class="ctl">R1</span> and tap a pad</strong> to make its step the pattern’s last — the same gesture the step grid uses, since the roll is the same mode with another grid on it. Steps past the end are dark.</li>
+          <li><strong>Hold <span class="ctl">R1</span> and press <span class="ctl">B1</span>–<span class="ctl">B8</span></strong> to jump to a step page. <span class="ctl">R5</span> + pad clears a step and <span class="ctl">R6</span> + pad + pad copies one.</li>
           <li>The rows follow the track’s keyboard: the song’s scale, its own scale, or every note from C on a drum track. Each track remembers where you scrolled.</li>
         </ul>
         <h3>Tracks</h3>
@@ -85,7 +86,7 @@
         if (n === 40) return { c: g.C.green, lit: true, t: g.noteName(n) };
         return { c: n % 12 === 0 ? g.dim(g.TRACK[0], 0.35) : "#4b4d55", t: g.noteName(n) };
       },
-      right: g.functionButtons(2, false, false),
+      right: g.functionButtons(0, false, false),
       bottom: g.trackButtons(0)
     });
 
@@ -103,7 +104,7 @@
         if (held.indexOf(n) >= 0) return { c: g.C.white, lit: true, t: g.noteName(n) };
         return { c: n % 12 === 0 ? g.dim(g.TRACK[0], 0.35) : "#4b4d55", t: g.noteName(n) };
       },
-      right: g.functionButtons(2, true, true),
+      right: g.functionButtons(0, true, true),
       bottom: g.trackButtons(0)
     });
 
@@ -117,7 +118,7 @@
         if (row === 0 || row === 7) return { c: g.dim(g.TRACK[0], 0.14) };
         return { c: g.dim(g.C.white, 0.08) };
       },
-      right: g.functionButtons(2, false, false),
+      right: g.functionButtons(0, false, false),
       bottom: g.trackButtons(0)
     });
   })();

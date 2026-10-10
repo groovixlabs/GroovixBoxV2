@@ -7,7 +7,7 @@ namespace gx {
 
 namespace {
 
-const uint8_t kScrollBy = 4;            // half the view, so what was on screen stays in sight
+// kRollScrollBy is in the header: one amount, for every arrow that reaches this roll.
 const uint8_t kInactiveNoteLevel = 45;  // notes of a switched-off step
 const uint8_t kPastEndNoteLevel = 20;   // notes of steps past the pattern's end
 const uint8_t kRootRowLevel = 22;       // the scale root's rows, tinted with the track colour
@@ -20,6 +20,8 @@ const int kMaxDegree = 255 - (kGridRows - 1);  // scaleNote takes degrees up to 
 // Shift turns four pads of the bottom right into an arrow cluster - left, down and right
 // along the bottom row with up above the middle one. The inverted T a thumb finds without
 // looking, and on the pads rather than the buttons because the thing being moved is the grid.
+// They move by kRollScrollBy, the same as a page panel's arrow buttons: a nudge is what an
+// arrow means, and a long way across a pattern is what the step pages are for.
 // Indexed by RollScroll, so the order here is the order of that enum.
 const uint8_t kScrollPads[kNumRollScrolls] = {
     padIndex(6, 6),  // up:    row 7, column 7
@@ -71,7 +73,7 @@ void PianoRoll::handlePad(UiState& state, uint8_t pad, bool pressed) {
   const uint16_t step = static_cast<uint16_t>(firstStep(state) + pad % kGridCols);
   uint16_t from = kNoSlot;
   if (state.noteHeld) {
-    // R3 held + a pad ends the pattern at that pad's step, the same gesture the step grid
+    // R1 held + a pad ends the pattern at that pad's step, the same gesture the step grid
     // uses - the roll is the same mode with another grid on it, so it answers the same way.
     sequencer_.setTrackLength(track, static_cast<uint16_t>(step + 1));
     return;
@@ -165,24 +167,21 @@ void PianoRoll::render(const UiState& state, LedFrame& frame) const {
 }
 
 void PianoRoll::scroll(UiState& state, uint8_t direction) {
+  // Every edge is already guarded here, so the four moves below cannot run past one.
   if (!canScroll(state, direction)) return;
   const uint8_t track = state.track;
   switch (direction) {
     case kRollUp:
-      noteOffsets_[track] = static_cast<int16_t>(noteOffsets_[track] + kScrollBy);
+      noteOffsets_[track] = static_cast<int16_t>(noteOffsets_[track] + kRollScrollBy);
       break;
-    case kRollDown: {
-      // Stop at the lowest note instead of overshooting, so scrolling up comes back.
-      const int bottom = bottomDegree(track);
-      const int by = bottom < kScrollBy ? bottom : kScrollBy;
-      noteOffsets_[track] = static_cast<int16_t>(noteOffsets_[track] - by);
+    case kRollDown:
+      noteOffsets_[track] = static_cast<int16_t>(noteOffsets_[track] - kRollScrollBy);
       break;
-    }
     case kRollLeft:
-      setFirstStep(state, firstStep(state) - kScrollBy);
+      setFirstStep(state, static_cast<uint16_t>(firstStep(state) - kRollScrollBy));
       break;
     case kRollRight:
-      setFirstStep(state, firstStep(state) + kScrollBy);
+      setFirstStep(state, static_cast<uint16_t>(firstStep(state) + kRollScrollBy));
       break;
   }
   reset();  // held pads now sit on other notes
@@ -192,11 +191,11 @@ bool PianoRoll::canScroll(const UiState& state, uint8_t direction) const {
   const uint8_t track = state.track;
   switch (direction) {
     case kRollUp:
-      return noteForDegree(track, bottomDegree(track) + kScrollBy) != kInvalidNote;
+      return noteForDegree(track, bottomDegree(track) + kRollScrollBy) != kInvalidNote;
     case kRollDown:
-      return bottomDegree(track) > 0;
+      return bottomDegree(track) >= kRollScrollBy;
     case kRollLeft:
-      return firstStep(state) > 0;
+      return firstStep(state) >= kRollScrollBy;
     case kRollRight:
       return firstStep(state) < kMaxSteps - kGridCols;
     default:

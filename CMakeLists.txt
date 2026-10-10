@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(GroovixBox CXX)
+project(GroovixBox C CXX)  # C for tools/gx_midimon.c, which is meant to build anywhere
 
 # The core must build with the older GCC toolchains used for MCUs (e.g. Teensyduino),
 # so everything sticks to C++11.
@@ -127,12 +127,17 @@ endif()
 # ---- Interface implementations shared by OS platforms (PC, Mac, iPad) ----
 find_package(Threads REQUIRED)
 add_library(gx_platform_common STATIC
+  platform/common/ApcKey25Surface.cpp
+  platform/common/ApcMiniPanelSurface.cpp
   platform/common/ApcMiniSurface.cpp
   platform/common/MidiMixSurface.cpp
   platform/common/ClockThread.cpp
   platform/common/FileStorage.cpp
+  platform/common/LaunchpadXSurface.cpp
   platform/common/LogMidiOutput.cpp
+  platform/common/MidiInstrumentOutput.cpp
   platform/common/RigPaths.cpp
+  platform/common/SocketMidiOutput.cpp
   platform/common/VoiceLibrary.cpp)
 target_include_directories(gx_platform_common PUBLIC platform)
 target_link_libraries(gx_platform_common PUBLIC gx_core Threads::Threads)
@@ -208,6 +213,12 @@ if(GX_BUILD_AUDIO)
   target_link_libraries(gx_render PRIVATE gx_platform_common gx_audio)
   target_compile_options(gx_render PRIVATE ${GX_WARNINGS})
 endif()
+
+# Prints the MIDI arriving on a UDP port: the far end of "p8.socket", for seeing what the
+# instrument sends before writing the real server. Plain C and no dependencies, so it also
+# builds on its own wherever that server will live: cc -O2 -o gx_midimon tools/gx_midimon.c
+add_executable(gx_midimon tools/gx_midimon.c)
+target_compile_options(gx_midimon PRIVATE -Wall -Wextra)
 target_compile_options(gx_tests PRIVATE ${GX_WARNINGS})
 add_test(NAME core_tests COMMAND gx_tests ${CMAKE_CURRENT_BINARY_DIR})
 add_test(NAME layer_rules

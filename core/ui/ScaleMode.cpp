@@ -183,7 +183,7 @@ const Rgb kScaleColor = {40, 100, 255};
 const Rgb kLayoutColor = {160, 60, 255};
 
 const ModeLegend kScaleLegend = {
-    "SHIFT + R3",
+    "SHIFT + R1",
     "Scale",
     {
         {1, 2, kPianoColor, "rows 1-2", "the root note: black keys above white"},
@@ -195,7 +195,7 @@ const ModeLegend kScaleLegend = {
     },
     3,
     {"root and scale belong to the project", "own scale lets one track differ",
-     "R3 back to note", NULL},
+     "R1 back to note", NULL},
     3,
     {kPianoColor, kPianoColor, {}, {},
      kScaleColor, kScaleColor, kScaleColor, kLayoutColor},

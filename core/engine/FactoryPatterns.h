@@ -34,11 +34,11 @@ enum FactoryRole {
 static const uint8_t kFactoryTrackGroup = 8;
 
 // Patterns from here up are the bank. Half the patterns a build has, which on the desktop's
-// 64 is patterns 33-64: the last four of the eight pattern pages.
+// 64 is patterns 33-64 - the bottom half of pattern mode's grid.
 static const uint8_t kFirstFactoryPattern = kNumPatterns / 2;
 
-// How many of each role's slots hold something. The rest of the bank's pages are empty, left
-// for the set to grow into without moving what is already there.
+// How many of each role's slots hold something. The rest of the bank is empty, left for the
+// set to grow into without moving what is already there.
 static const uint8_t kFactoryPatternsPerRole = 8;
 
 // Whether this pattern index belongs to the bank rather than to the project.

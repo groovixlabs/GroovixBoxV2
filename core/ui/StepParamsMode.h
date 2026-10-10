@@ -20,7 +20,7 @@ enum StepLane {
 static const uint8_t kNoLane = 0xFF;
 static const uint8_t kMaxStepLanes = 2;
 
-// Per-step parameters: Shift + R4 edits velocity and gate, Shift + R5 probability. The top four
+// Per-step parameters: R2 edits velocity and gate, R3 probability. The top four
 // rows are the current page of steps: tap one to select it, hold several to edit them together.
 // Below them each parameter has two rows, 16 pads read left to right and then along the second
 // row:

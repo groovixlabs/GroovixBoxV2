@@ -16,34 +16,34 @@
   <div id="tutnav"></div>
   <main>
         <h2>3. Patterns, mutes and scenes</h2>
-        <p class="section-intro">One loop is not a track. Here you make a second version of a pattern, silence tracks to build sections, store those sections as scenes and put them in order. Everything stays on the first page of patterns, 1–8, and the first eight tracks.</p>
+        <p class="section-intro">One loop is not a track. Here you make a second version of a pattern, silence tracks to build sections, store those sections as scenes and put them in order. Everything stays on the first eight tracks and the first few patterns.</p>
 
-        <h3>See all the tracks at once</h3>
-        <p>Press <span class="ctl">R2</span> for <a href="pattern.html">Pattern mode</a>. The grid turns sideways: <strong>each column is a track</strong>, 1–8 left to right, and <strong>each row is a pattern</strong>, 1–8 top to bottom. So the top row is pattern 1 of every track.</p>
-        <p>Green is the pattern that track is playing, dim blue means the pattern has something in it, grey means it is empty. The beat from tutorial 1 shows as green pads along the top row.</p>
+        <h3>See a track’s patterns at once</h3>
+        <p>Press <span class="ctl">R4</span> for <a href="pattern.html">Pattern mode</a>. <strong>Every pad is one of the selected track’s 64 patterns</strong>, reading left to right and top down, so the first pad is pattern 1 and the last is pattern 64. <span class="ctl">B1</span>–<span class="ctl">B8</span> pick the track, just as they do in Note mode, and the grid changes to that track’s patterns.</p>
+        <p>Green is the pattern the track is playing — there is always exactly one — dim blue means a pattern has something in it, grey means it is empty. Amber in the bottom half is the <a href="pattern.html#bank">built-in bank</a>, which ships with the instrument. The beat from tutorial 1 shows as a green pad at the top left of each of its tracks.</p>
 
         <h3>Make a variation</h3>
         <ol>
-          <li>Hold <span class="ctl">R6</span> (Duplicate).</li>
-          <li>Tap the <strong>green pad in track 3’s column</strong> — the hats. It marks the source.</li>
-          <li>Tap the pad <strong>one row below</strong>, pattern 2 of the same track. The copy lands there.</li>
-          <li>Release <span class="ctl">R6</span>, then tap that pad to make track 3 play the copy. Tapping a pattern also selects its track.</li>
-          <li>Press <span class="ctl">R3</span> to edit it in Note mode — add a few extra hats — then <span class="ctl">R2</span> to come back.</li>
+          <li>Press <span class="ctl">B3</span> for track 3 — the hats. Its green pad is pattern 1.</li>
+          <li>Hold <span class="ctl">R6</span> (Duplicate) and tap that green pad. It marks the source.</li>
+          <li>Tap the pad <strong>next to it</strong>, pattern 2. The copy lands there.</li>
+          <li>Release <span class="ctl">R6</span>, then tap that pad to make track 3 play the copy.</li>
+          <li>Press <span class="ctl">R1</span> to edit it in Note mode — add a few extra hats — then <span class="ctl">R4</span> to come back.</li>
         </ol>
         <p>Tapping a pattern switches that track over <strong>from the next step</strong>; it does not wait for the end of the bar, the way a scene does. Each track switches on its own, so you can leave the kick on pattern 1 while the hats run through 2, 3 and 4.</p>
-        <p>The bottom buttons do not pick tracks here — they page the grid, <span class="ctl">B1</span>–<span class="ctl">B4</span> across the tracks and <span class="ctl">B5</span>–<span class="ctl">B8</span> down the patterns — which is why the track comes from the pad you tap. With 8 tracks and 8 patterns there is only one page of each, so you can leave them alone for now.</p>
+        <p>To copy a pattern to a <em>different</em> track, press that track’s <span class="ctl">B</span> button while still holding <span class="ctl">R6</span>: the source remembers which track it came from.</p>
 
         <h3>Silence a track</h3>
-        <p>Still in Pattern mode: <strong>hold <span class="ctl">SHIFT</span> and tap a pad on the bottom row</strong>. That column’s track goes quiet and the whole column dims, so you can see at a glance what is playing. Tap again to bring it back.</p>
-        <p>While <span class="ctl">SHIFT</span> is held the bottom row stops being patterns and becomes the eight mute switches, lit in each track’s colour and dark where a track is muted. Muting only stops the sequencer: notes you play by hand still sound.</p>
+        <p>Mutes are on the mixer: <strong>press the <span class="ctl">MUTE</span> button of that track’s strip</strong>, no modifier. The track goes quiet; in Pattern mode <strong>its whole grid dims</strong>, so it is obvious the pattern you are auditioning is not being heard. Press again to bring it back.</p>
+        <p>Without a mixer, <a href="scene.html">Scenes</a>’ bottom pad row does the same for the eight tracks of the current track page — also a bare press. Muting only stops the sequencer: notes you play by hand still sound.</p>
 
         <figure>
           <div class="device-frame"><div class="device" id="fig-live"></div></div>
-          <figcaption>Pattern mode. Track 3 has moved to its copy on pattern 2, and track 2 is muted — its whole column is dimmed. Blue pads are patterns with something in them.</figcaption>
+          <figcaption>Pattern mode on track 3, which has moved to its copy on pattern 2. Blue pads are patterns with something in them, amber ones are the built-in bank, and <span class="ctl">B3</span> is lit for the track on screen.</figcaption>
         </figure>
 
         <h3>Store the mutes as a scene</h3>
-        <p>A <a href="scene.html">scene</a> is what is playing — which tracks are silent, and which pattern each of the others plays: an intro with only drums, a drop with everything in. Hold <span class="ctl">SHIFT</span> and press <span class="ctl">R2</span>, and the grid flips to Scene mode. <span class="ctl">R2</span> on its own flips back.</p>
+        <p>A <a href="scene.html">scene</a> is what is playing — which tracks are silent, and which pattern each of the others plays: an intro with only drums, a drop with everything in. Hold <span class="ctl">SHIFT</span> and press <span class="ctl">R4</span>, and the grid flips to Scene mode. <span class="ctl">R4</span> on its own flips back.</p>
         <ul>
           <li>The <strong>top four rows are 32 scene pads</strong>: grey empty, blue holds a scene, green the one playing.</li>
           <li>The <strong>bottom row mutes tracks 1–8</strong> directly, no <span class="ctl">SHIFT</span> needed. This is where you set up a section.</li>
@@ -67,9 +67,9 @@
 
         <h3>What you learned</h3>
         <ul>
-          <li><span class="ctl">R2</span> shows every track’s patterns at once; <span class="ctl">R6</span> makes variations.</li>
-          <li><span class="ctl">SHIFT</span> + the bottom row mutes tracks; the column dims.</li>
-          <li><span class="ctl">SHIFT</span> + <span class="ctl">R2</span> opens scenes: <span class="ctl">R7</span> + pad captures the mutes, a tap launches them.</li>
+          <li><span class="ctl">R4</span> shows all 64 of a track’s patterns at once, with <span class="ctl">B1</span>–<span class="ctl">B8</span> picking the track; <span class="ctl">R6</span> makes variations.</li>
+          <li>The mixer’s <span class="ctl">MUTE</span> row silences tracks; a muted track’s grid dims.</li>
+          <li><span class="ctl">SHIFT</span> + <span class="ctl">R4</span> opens scenes: <span class="ctl">R7</span> + pad captures the mutes, a tap launches them.</li>
           <li><span class="ctl">SHIFT</span> + <span class="ctl">R8</span> arranges the scenes into a song, four bars a step, and <span class="ctl">R8</span> there plays it.</li>
         </ul>
         <p>That is the whole instrument without paging. The next tutorials add the other 24 tracks, the other 24 patterns, longer patterns and the mixer.</p>
@@ -82,20 +82,20 @@
   (function () {
     var g = window.GxManual;
     g.renderTutorial(2);
-    var selected = [0, 0, 1, 0, 0, 0, 0, 0];          // pattern each track plays
-    var withData = { 0: [0, 2], 1: [0], 2: [0, 1], 3: [0, 1], 4: [0], 5: [0] };
-    var muted = [1];
+    // Track 3's own patterns: pad i is pattern i + 1, and it plays the copy on pattern 2.
+    var amber = "#964600";   // the built-in bank, rows 5-8
+    var selected = 1;
+    var withData = [0, 1];
     g.surface("fig-live", {
       pad: function (i) {
-        var track = i % 8, pattern = Math.floor(i / 8), spec;
-        if (selected[track] === pattern) spec = { c: g.C.green, lit: true };
-        else if ((withData[track] || []).indexOf(pattern) >= 0) spec = { c: g.C.blue, lit: true };
-        else spec = { c: g.C.grey };
-        return muted.indexOf(track) >= 0 ? { c: g.dim(spec.c, 0.28) } : spec;
+        if (i === selected) return { c: g.C.green, lit: true };
+        if (i >= 32) return i < 40 ? { c: amber, lit: true } : { c: g.C.grey };
+        if (withData.indexOf(i) >= 0) return { c: g.C.blue, lit: true };
+        return { c: g.C.grey };
       },
-      right: g.functionButtons(1, true, false),
-      // Pattern mode's bottom row is the track pages, all eight of them.
-      bottom: function (i) { return i === 0 ? { c: g.C.green } : { c: g.C.grey }; }
+      right: g.functionButtons(3, true, false),
+      // The bottom row is the tracks, as in note mode: track 3 is the one on screen.
+      bottom: g.trackButtons(2)
     });
   })();
 </script>
